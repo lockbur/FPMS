@@ -19,6 +19,7 @@ public class LoadData
 	//1
 	//2
 	//3
+	//4
 	public int load(String tradeType,String filePath, String fileName,UpLoadBean updateBean,FMSDownloadBean downBean ) throws Exception 
 	{
 		CommonLogger.info("sqlldr start,tradetpye:" + tradeType + " file :"+filePath+File.separator+fileName);
