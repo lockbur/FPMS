@@ -16,7 +16,7 @@ import com.forms.prms.tool.fms.UpLoadBean;
 public class LoadData 
 {
 	public static String FILE_NAME = "fms";
-	
+	//1
 	public int load(String tradeType,String filePath, String fileName,UpLoadBean updateBean,FMSDownloadBean downBean ) throws Exception 
 	{
 		CommonLogger.info("sqlldr start,tradetpye:" + tradeType + " file :"+filePath+File.separator+fileName);
