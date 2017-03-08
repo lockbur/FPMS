@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.bgtImport.dao.BudgetImportDao">
+	
+	<select id="getImportList" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" 
+									resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		SELECT 
+				BATCH_NO,
+				ORG21_CODE,
+				BGT_YEAR,
+				SUB_TYPE,
+				DECODE(SUB_TYPE,'11','专项包','12','省行统购资产'	,'21','非省行统购资产','22','非专项包费用')SUB_TYPE_NAME,
+				BGT_TYPE,
+				DECODE(BGT_TYPE,'00','临时预算','01','正式预算','02','追加预算')BGT_TYPE_NAME,
+				STATUS,
+				SS1.PARAM_NAME AS STATUS_NAME,
+				INST_OPER,
+				INST_DATE,
+				FILE_PATH,
+				SOURCE_FILENAME
+			FROM ERP_BUDGET_SUM_TOTAL A
+			left join SYS_SELECT ss1 on ss1.PARAM_VALUE=a.STATUS
+				and ss1.CATEGORY_ID='BGT_IMPORT_FLAG'
+		<where>
+			ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+			<if test="orgType ==1 ">
+			AND SUB_TYPE IN('11','12')
+			</if>
+			<if test="orgType ==2 ">
+			AND SUB_TYPE IN('21','22')
+			</if>
+			<if test="bgtYear != null and bgtYear != ''">
+				AND BGT_YEAR = #{bgtYear ,jdbcType=VARCHAR}
+		 	</if>
+		 	<if test="bgtType !=null and bgtType !=''">
+		 		AND BGT_TYPE = #{bgtType ,jdbcType=VARCHAR}
+		 	</if>
+			<if test="subType != null and subType != ''">
+				AND SUB_TYPE = #{subType ,jdbcType=VARCHAR}
+		 	</if>
+			<if test="status != null and status != ''">
+				AND STATUS = #{status ,jdbcType=VARCHAR}
+		 	</if>
+		</where>
+		ORDER BY A.INST_DATE DESC
+	</select>
+	<!--查看是否有正在导入的监控指标-->
+	<select id="getMontCount"  parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" resultType="Integer">
+		SELECT COUNT(1) 
+			FROM  TBL_MONT_APRV 
+		WHERE 
+		DATA_YEAR = #{bgtYear , jdbcType=VARCHAR}
+		AND    ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+		AND    PRO_TYPE = '01'
+		AND    SUB_TYPE = #{subType , jdbcType=VARCHAR}
+		AND    CNT_STATUS NOT IN('C5','C3')
+	</select>
+	<!--得到正式预算的个数-->
+	<select id="checkZsBgtIsDone" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		
+		SELECT 
+			A.Status ,
+			SS1.PARAM_NAME AS STATUS_NAME
+		FROM  ERP_BUDGET_SUM_TOTAL  a
+		left join SYS_SELECT ss1 on ss1.PARAM_VALUE=a.STATUS
+				and ss1.CATEGORY_ID='BGT_IMPORT_FLAG'
+		WHERE 
+			BGT_YEAR = #{bgtYear , jdbcType=VARCHAR}
+			AND    SUB_TYPE = #{subType , jdbcType=VARCHAR}
+			AND    (BGT_TYPE = '01')
+			AND    ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+			AND    ROWNUM='1'
+		 
+		
+	</select>
+	<select id="isHaveLsOrZs" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" 
+			resultType="Integer">
+		
+		SELECT 
+		count(1)
+		FROM  ERP_BUDGET_SUM_TOTAL  a
+		left join SYS_SELECT ss1 on ss1.PARAM_VALUE=a.STATUS
+				and ss1.CATEGORY_ID='BGT_IMPORT_FLAG'
+		WHERE 
+			BGT_YEAR = #{bgtYear , jdbcType=VARCHAR}
+			AND    SUB_TYPE = #{subType , jdbcType=VARCHAR}
+			AND    BGT_TYPE  IN('00','01')
+			AND STATUS IN ('05')
+			AND    ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+			AND    ROWNUM='1'
+		 
+		
+	</select>
+	<!--监控指标没制定预算不能制定-->
+	<select id="isMontDone" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" 
+			resultType="Integer">
+		
+		SELECT 
+		count(1)
+		FROM  TB_MONT_NAME  a
+		 
+		WHERE 
+			DATA_YEAR = #{bgtYear , jdbcType=VARCHAR}
+			AND    MONT_TYPE = #{subType , jdbcType=VARCHAR}
+			AND    ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+			AND    ROWNUM='1'
+		 
+		
+	</select>
+	<!--校验初次下达只能下达一次-->
+	<select id="checkInitCount" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" resultType="Integer">
+		
+		SELECT COUNT(1) 
+			FROM  ERP_BUDGET_SUM_TOTAL 
+		WHERE 
+			BGT_YEAR = #{bgtYear , jdbcType=VARCHAR}
+		AND    ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+		AND    SUB_TYPE = #{subType , jdbcType=VARCHAR}
+		AND   BGT_TYPE = #{bgtType , jdbcType=VARCHAR}
+		AND    (STATUS ='05')
+	</select>
+	<!--校验正式预算追加前必须下达了初始预算-->
+	<select id="checkBgt" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" resultType="Integer">
+		
+		SELECT
+		count(1) from ERP_BUDGET_SUM_TOTAL
+		WHERE 
+			BGT_YEAR = #{bgtYear , jdbcType=VARCHAR}
+		AND    ORG21_CODE = #{org21Code , jdbcType=VARCHAR}
+		AND    SUB_TYPE = #{subType , jdbcType=VARCHAR}
+		AND     STATUS  not in('02','05','06') and rownum ='1'
+	</select>
+	<!--得到汇总表里面的批次信息-->
+	<select id="getBatchNo"  resultType="String">
+		SELECT 'BGT'||to_char(sysdate, 'yyyymmdd')||RM_GET_COMMON_ID('BATCHNOSEQ')
+		FROM dual
+	</select>
+	<!--修改汇总状态-->
+	<update id="updateStatus" parameterType="String" >
+		UPDATE ERP_BUDGET_SUM_TOTAL SET STATUS =#{nextStatus , jdbcType=VARCHAR},memo=#{memo , jdbcType=VARCHAR},
+		IP_ADDRESS = NULL
+		WHERE BATCH_NO =#{batchNo , jdbcType=VARCHAR} AND STATUS=#{preStatus , jdbcType=VARCHAR}
+	</update>
+	<!--插入汇总信息-->
+	<insert id="insertSummary" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		insert into ERP_BUDGET_SUM_TOTAL
+		(
+		 	  batch_no        ,
+			  org21_code      ,
+			  bgt_year        ,
+			  sub_type        ,
+			  status          ,
+			  inst_oper       ,
+			  inst_date       ,
+			  file_path       ,
+			  source_filename ,
+			  memo            ,
+			  bgt_type        
+		)values(
+			#{batchNo , jdbcType=VARCHAR},
+			#{org21Code , jdbcType=VARCHAR},
+			#{bgtYear , jdbcType=VARCHAR},
+			#{subType , jdbcType=VARCHAR},
+			#{status , jdbcType=VARCHAR},
+			#{instOper , jdbcType=VARCHAR},
+			to_char(sysdate,'yyyy-MM-dd HH24:MI:SS') ,
+			#{filePath , jdbcType=VARCHAR},
+			#{sourceFilename , jdbcType=VARCHAR},
+			'',
+			#{bgtType , jdbcType=VARCHAR}
+		)
+	</insert>
+	<!--预算明细数据的导入-->
+	<insert id="insertDetail" parameterType="java.util.List">
+		insert into ERP_BUDGET_SUM_TEMP (
+			  batch_no     ,
+			  seq          ,
+			  bgt_orgcode  ,
+			  bgt_orgname  ,
+			  bgt_montcode ,
+			  bgt_montname ,
+			  bgt_matrcode ,
+			  bgt_matrname ,
+			  bgt_sum      ,
+			  excel_no     
+			 
+			 
+		) (
+	 		<foreach collection="budgetBeans" item="item" index="index" separator="union" > 
+				select 
+					#{item.batchNo, jdbcType=VARCHAR},
+					#{item.seq, jdbcType=VARCHAR},
+					#{item.bgtOrgcode, jdbcType=VARCHAR},
+					#{item.bgtOrgname, jdbcType=VARCHAR},
+					#{item.bgtMontcode, jdbcType=VARCHAR},
+					#{item.bgtMontname, jdbcType=VARCHAR},
+					#{item.bgtMatrcode, jdbcType=VARCHAR},
+					#{item.bgtMatrname, jdbcType=VARCHAR},
+					#{item.bgtSum, jdbcType=VARCHAR},
+					#{item.excelNo, jdbcType=VARCHAR}
+					from dual 
+				    
+	  		 </foreach> 
+			
+		)
+	</insert>
+	<!--导入后校验存储过程-->
+	<update id="checkBudgetProduce" parameterType="String">
+		CALL PRC_MADB_BUDGET(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<!--删除汇总-->
+	<update id="delSummary" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		delete ERP_BUDGET_SUM_TOTAL WHERE BATCH_NO=#{batchNo, jdbcType=VARCHAR}
+	</update>
+	<!--删除明细-->
+	<update id="delDetail" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		delete ERP_BUDGET_SUM_TEMP WHERE BATCH_NO=#{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<!--删除SYS_file_info-->
+	<update id="delSysFileInfo" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		delete SYS_file_info WHERE FILE_NAME=#{fileInfoName, jdbcType=VARCHAR}
+	</update>
+	<!--删除错误信息-->
+	<update id="delErrorInfo" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		delete upload_data_error_info WHERE BATCH_NO=#{batchNo, jdbcType=VARCHAR}
+	</update>
+	<!--得到汇总信息-->
+	<select id="getTotalInfo" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean"
+			resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+			SELECT 
+				BATCH_NO,
+				ORG21_CODE,
+				BGT_YEAR,
+				SUB_TYPE,
+				DECODE(SUB_TYPE,'11','专项包','12','省行统购资产'	,'21','非省行统购资产','22','非专项包费用')SUB_TYPE_NAME,
+				BGT_TYPE,
+				DECODE(BGT_TYPE,'00','临时预算','01','正式预算','02','追加预算')BGT_TYPE_NAME,
+				STATUS,
+				SS1.PARAM_NAME AS STATUS_NAME,
+				INST_OPER,
+				INST_DATE,
+				FILE_PATH,
+				SOURCE_FILENAME,
+				memo
+			FROM ERP_BUDGET_SUM_TOTAL A
+			left join SYS_SELECT ss1 on ss1.PARAM_VALUE=a.STATUS
+				and ss1.CATEGORY_ID='BGT_IMPORT_FLAG'
+			where batch_no = #{batchNo, jdbcType=VARCHAR}
+	</select>
+	<!--得到错误明细-->
+	<select id="getErrorList" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" 
+								resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		SELECT
+		A.*,
+		B.ERR_DESC,
+		B.ROW_NO
+		FROM upload_data_error_info B
+		LEFT JOIN  ERP_BUDGET_SUM_TEMP A ON B.BATCH_NO = A.BATCH_NO AND B.ROW_NO = A.EXCEL_NO
+		WHERE B.BATCH_NO = #{batchNo, jdbcType=VARCHAR} 
+		order by to_number(b.row_no) asc
+	</select>
+	<!--导出数据-->
+	<select id="getImportDetailForExcel" parameterType="String" 
+								resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		SELECT A.BGT_ORGCODE,A.BGT_ORGNAME
+		 ,A.BGT_MONTCODE,A.BGT_MONTNAME,
+		 A.BGT_MATRCODE,A.BGT_MATRNAME,
+		 A.Bgt_Overdraw,a.bgt_sum, B.ERR_DESC
+		
+		  FROM ERP_BUDGET_SUM_TEMP A
+		  LEFT JOIN upload_data_error_info B
+		    ON B.BATCH_NO = A.BATCH_NO
+		   AND B.ROW_NO = A.EXCEL_NO
+		  LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.BGT_MONTCODE
+		  LEFT JOIN TB_MATR_TYPE D ON D.MATR_CODE = A.BGT_MATRCODE
+		WHERE A.BATCH_NO = #{batchNo, jdbcType=VARCHAR}  
+	</select>
+	<!--导入模板下载-->
+	<select id="getDownloadTemp" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" 
+								resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		<if test="orgType == 1">
+			 SELECT  NVL2(F.DUTY_NAME, F.DUTY_NAME, NVL2(F2.ORG2_NAME, F2.ORG2_NAME, F3.ORG1_NAME)) AS bgt_ORG_name,
+                e.bgt_ORGCODE,
+                E.BGT_MONTCODE,
+                DECODE(E.BGT_MATRCODE,'00000000000','',E.BGT_MATRCODE)BGT_MATR_CODE,
+                E.BGT_OVERDRAW,
+                (E.BGT_FROZEN + E.BGT_USED) AS BGT_FROZEN_USED,
+                T.MATR_NAME as bgt_matr_name,
+                M.MONT_NAME as bgt_mont_name
+			  FROM ERP_BUDGET_SUM E
+			  LEFT JOIN TB_MATR_TYPE T
+			    ON E.BGT_MATRCODE = T.MATR_CODE
+			  LEFT JOIN TB_MONT_NAME M
+			    ON E.BGT_MONTCODE = M.MONT_CODE 
+			  LEFT JOIN tB_FNDWRR F
+			    ON F.DUTY_CODE = E.BGT_ORGCODE    
+			  left join (select distinct org2_code, org2_name from TB_FNDWRR where org1_code = #{org21Code,jdbcType=VARCHAR })  F2
+			    ON F2.org2_code = E.BGT_ORGCODE
+			  left join (select distinct org1_code, org1_name from TB_FNDWRR where org1_code = #{org21Code,jdbcType=VARCHAR }) F3
+			    ON F3.org1_code = E.BGT_ORGCODE
+			 where
+			  E.BGT_YEAR = #{bgtYear,jdbcType=VARCHAR }
+			  and M.mont_type = #{subType,jdbcType=VARCHAR }
+			  
+			  and exists  (select 1
+			            from tb_fndwrr a
+			           where a.org1_code = #{org21Code,jdbcType=VARCHAR }
+			            and (a.org1_code = e.bgt_orgcode or a.org2_code = e.bgt_orgcode or
+			               a.duty_code = e.bgt_orgcode               
+			               ))
+			
+		</if>
+		<if test="orgType == 2">
+			 SELECT  NVL2(F.DUTY_NAME, F.DUTY_NAME,F2.ORG2_NAME) AS bgt_ORG_name,
+                e.bgt_ORGCODE,
+                E.BGT_MONTCODE,
+                DECODE(E.BGT_MATRCODE,'00000000000','',E.BGT_MATRCODE)BGT_MATR_CODE,
+                E.BGT_OVERDRAW,
+                (E.BGT_FROZEN + E.BGT_USED) AS BGT_FROZEN_USED,
+                T.MATR_NAME as bgt_matr_name,
+                M.MONT_NAME as bgt_mont_name
+			  FROM ERP_BUDGET_SUM E
+			  LEFT JOIN TB_MATR_TYPE T
+			    ON E.BGT_MATRCODE = T.MATR_CODE
+			  LEFT JOIN TB_MONT_NAME M
+			    ON E.BGT_MONTCODE = M.MONT_CODE 
+			  LEFT JOIN tB_FNDWRR F
+			    ON F.DUTY_CODE = E.BGT_ORGCODE    
+			  left join (select distinct org2_code, org2_name from TB_FNDWRR where org2_code = #{org21Code,jdbcType=VARCHAR })  F2
+			    ON F2.org2_code = E.BGT_ORGCODE
+			 where
+			  E.BGT_YEAR = #{bgtYear,jdbcType=VARCHAR }
+			  and M.mont_type = #{subType,jdbcType=VARCHAR }
+			  
+			  and exists  (select 1
+			            from tb_fndwrr a
+			           where a.org2_code = #{org21Code,jdbcType=VARCHAR }
+			            and (a.org2_code = e.bgt_orgcode or
+			               a.duty_code = e.bgt_orgcode               
+			               ))
+			
+		</if>
+		
+	</select>
+	<!--导出只有透支的模板-->
+	<select id="getDownloadTempOnlyOver" parameterType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean" 
+								resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		<if test="orgType == 1">
+			 SELECT  NVL2(F.DUTY_NAME, F.DUTY_NAME, NVL2(F2.ORG2_NAME, F2.ORG2_NAME, F3.ORG1_NAME)) AS bgt_ORG_name,
+                e.bgt_ORGCODE,
+                E.BGT_MONTCODE,
+               DECODE(E.BGT_MATRCODE,'00000000000','',E.BGT_MATRCODE)BGT_MATR_CODE,
+                E.BGT_OVERDRAW,
+                (E.BGT_FROZEN + E.BGT_USED) AS BGT_FROZEN_USED,
+                T.MATR_NAME as bgt_matr_name,
+                M.MONT_NAME as bgt_mont_name
+			  FROM ERP_BUDGET_SUM E
+			  LEFT JOIN TB_MATR_TYPE T
+			    ON E.BGT_MATRCODE = T.MATR_CODE
+			  LEFT JOIN TB_MONT_NAME M
+			    ON E.BGT_MONTCODE = M.MONT_CODE 
+			  LEFT JOIN tB_FNDWRR F
+			    ON F.DUTY_CODE = E.BGT_ORGCODE    
+			  left join (select distinct org2_code, org2_name from TB_FNDWRR where org1_code = #{org21Code,jdbcType=VARCHAR })  F2
+			    ON F2.org2_code = E.BGT_ORGCODE
+			  left join (select distinct org1_code, org1_name from TB_FNDWRR where org1_code = #{org21Code,jdbcType=VARCHAR }) F3
+			    ON F3.org1_code = E.BGT_ORGCODE
+			 where
+			  E.BGT_YEAR = #{bgtYear,jdbcType=VARCHAR }
+			  and E.BGT_OVERDRAW != 0
+			  and M.mont_type = #{subType,jdbcType=VARCHAR }
+			  and exists  (select 1
+			            from tb_fndwrr a
+			           where a.org1_code = #{org21Code,jdbcType=VARCHAR }
+			            and (a.org1_code = e.bgt_orgcode or a.org2_code = e.bgt_orgcode or
+			               a.duty_code = e.bgt_orgcode               
+			               ))
+		</if>
+		<if test="orgType == 2">
+			 SELECT  NVL2(F.DUTY_NAME, F.DUTY_NAME,F2.ORG2_NAME) AS bgt_ORG_name,
+                e.bgt_ORGCODE,
+                E.BGT_MONTCODE,
+               DECODE(E.BGT_MATRCODE,'00000000000','',E.BGT_MATRCODE)BGT_MATR_CODE,
+                E.BGT_OVERDRAW,
+                (E.BGT_FROZEN + E.BGT_USED) AS BGT_FROZEN_USED,
+                T.MATR_NAME as bgt_matr_name,
+                M.MONT_NAME as bgt_mont_name
+			  FROM ERP_BUDGET_SUM E
+			  LEFT JOIN TB_MATR_TYPE T
+			    ON E.BGT_MATRCODE = T.MATR_CODE
+			  LEFT JOIN TB_MONT_NAME M
+			    ON E.BGT_MONTCODE = M.MONT_CODE 
+			  LEFT JOIN tB_FNDWRR F
+			    ON F.DUTY_CODE = E.BGT_ORGCODE    
+			  left join (select distinct org2_code, org2_name from TB_FNDWRR where org2_code = #{org21Code,jdbcType=VARCHAR })  F2
+			    ON F2.org2_code = E.BGT_ORGCODE
+			 where
+			  E.BGT_YEAR = #{bgtYear,jdbcType=VARCHAR }
+			  and E.BGT_OVERDRAW !=0
+			  and M.mont_type = #{subType,jdbcType=VARCHAR }
+			  and exists  (select 1
+			            from tb_fndwrr a
+			           where a.org2_code = #{org21Code,jdbcType=VARCHAR }
+			            and (a.org2_code = e.bgt_orgcode or
+			               a.duty_code = e.bgt_orgcode               
+			               ))
+			
+		</if>
+	</select>
+	<!--提交-->
+	<update id="callSubmitProduce" parameterType="String">
+		CALL prc_madb_budget(#{batchNo,jdbcType=VARCHAR })
+	</update>
+	<select id="getPath" parameterType="String" resultType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		SELECT * FROM ERP_BUDGET_SUM_TOTAL A WHERE BATCH_NO =#{batchNo,jdbcType=VARCHAR }
+	</select> 
+	<select id="isMore" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean" resultType="String">
+		select #{tzjy,jdbcType=VARCHAR}-(select BGT_SUM_VALID from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR}) from dual
+	</select>
+	<select id="isMore1" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean" resultType="String">
+		select #{tzjy,jdbcType=VARCHAR}+(select BGT_USED from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR}) from dual
+	</select> 
+	<!--提交-->
+	<update id="adjustAdd" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		update ERP_BUDGET_SUM 
+		set BGT_USED=(select BGT_USED+#{tzjy,jdbcType=VARCHAR} from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR}),
+			BGT_SUM_VALID=(select BGT_SUM_VALID-#{tzjy,jdbcType=VARCHAR} from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR})
+	</update> 
+	<update id="adjustReduce" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		update ERP_BUDGET_SUM 
+		set BGT_USED=(select BGT_USED-#{tzjy,jdbcType=VARCHAR} from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR}),
+			BGT_SUM_VALID=(select BGT_SUM_VALID+#{tzjy,jdbcType=VARCHAR} from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR})
+	</update> 
+	<update id="adjust" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		<!--
+		update ERP_BUDGET_SUM 
+		set BGT_USED=(select BGT_USED+#{tzjy,jdbcType=VARCHAR} from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR}),
+			BGT_SUM_VALID=(select BGT_SUM_VALID-#{tzjy,jdbcType=VARCHAR} from ERP_BUDGET_SUM where BGT_ID=#{bgtId,jdbcType=VARCHAR})
+        -->
+        update ERP_BUDGET_SUM t
+   			set BGT_USED = BGT_USED + #{tzjy,jdbcType=VARCHAR}, BGT_SUM_VALID = BGT_SUM_VALID - #{tzjy,jdbcType=VARCHAR}
+ 	    where BGT_ID = #{bgtId,jdbcType=VARCHAR} and (BGT_SUM_VALID - #{tzjy,jdbcType=VARCHAR}) >= 0			
+	</update> 
+	<insert id="insertLog" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		insert into ERP_BUDGET_SUM_MAN_LOG
+		(
+		 	    BGT_ID	,
+				BGT_ID_SEQ	,
+				OPER_VAL	,
+				OPER_USER	,
+				OPER_DATE,
+				OPER_TIME,
+				OPER_RESON	,
+				OPER_MEMO	,
+				type
+   
+		)values(
+			#{bgtId , jdbcType=VARCHAR},
+			(SELECT NVL(MAX(BGT_ID_SEQ),0)+1 FROM ERP_BUDGET_SUM_MAN_LOG WHERE BGT_ID = #{bgtId ,jdbcType=VARCHAR}),
+			#{tzjy , jdbcType=VARCHAR},
+			#{instOper , jdbcType=VARCHAR},
+			to_char(sysdate,'YYYY-MM-DD'),
+			to_char(sysdate,'HH24:MI:SS') ,
+			#{operReson , jdbcType=VARCHAR},
+			#{operMemo , jdbcType=VARCHAR},
+			#{type , jdbcType=VARCHAR}
+		)
+	</insert>
+	<select id="getBgtUsed" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean" resultType="String">
+		select BGT_USED 
+		from ERP_BUDGET_SUM
+		where BGT_ID=#{bgtId ,jdbcType=VARCHAR}
+	</select> 
+	
+	<select id="isUsed" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean" resultType="int">
+		select count(1) 
+		from ERP_BUDGET_SUM_CNT
+		where BGT_ID=#{bgtId ,jdbcType=VARCHAR}
+		AND ROWNUM = 1
+	</select> 
+	
+	<update id="updateStatusAndIpAddress" parameterType="String" >
+		UPDATE ERP_BUDGET_SUM_TOTAL SET STATUS =#{nextStatus , jdbcType=VARCHAR},IP_ADDRESS=#{ipAddress , jdbcType=VARCHAR}
+		WHERE BATCH_NO =#{batchNo , jdbcType=VARCHAR} AND STATUS=#{preStatus , jdbcType=VARCHAR}
+	</update>
+</mapper>

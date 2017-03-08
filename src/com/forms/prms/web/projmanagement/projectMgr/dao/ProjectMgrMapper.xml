@@ -1,0 +1,442 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.projmanagement.projectMgr.dao.ProjectMgrDAO">
+	
+	<!-- 查找项目类型选择列表 -->
+	<select id="getProjectType" parameterType="String" resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		 <!--SELECT DISTINCT PROJ_TYPE AS PROJ_TYPE FROM TD_PROJECT t
+		 where t.ORG1_CODE = #{org1Code, jdbcType=VARCHAR}-->
+		 <!--20160422 wangkai-->
+		 SELECT 
+		 	T.PARAM_NAME AS PROJ_TYPE_NAME,
+		 	T.PARAM_VALUE AS PROJ_TYPE
+		 FROM td_project_type T
+		 WHERE T.USE_FLAG = '1'
+		 AND T.ORG1_CODE = #{org1Code, jdbcType=VARCHAR}
+	</select>
+
+	<!-- 项目 列表 -->
+	<select id="listProj" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project"
+	                      resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT A.PROJ_ID,
+			   A.PROJ_TYPE,
+			   T.PARAM_NAME AS PROJ_TYPE_NAME,
+			   A.PROJ_NAME,
+			   A.PROJ_DESC,
+			   A.SCOPE,
+			   DECODE(A.SCOPE,'1','全省','2','二级行辖内','3','制定责任中心') SCOPE_NAME,
+			   A.BUDGET_AMT,
+			   A.CNT_TOTAL_AMT,
+			   A.PAY_TOTAL_AMT,
+			   A.FREEZE_TOTAL_AMT,
+			   A.START_DATE,
+			   SUBSTR(A.START_DATE,0,4) AS START_YEAR,
+			   A.END_DATE,
+			   A.CURRENCY,
+			   A.INST_DUTY_CODE,
+			   A.ORG1_CODE
+		  FROM TD_PROJECT A 
+		  LEFT JOIN td_project_type T ON T.PARAM_VALUE = A.PROJ_TYPE
+	    <where>
+			<if test="projType != null and projType != '' and projType != 'null' ">
+			   	AND T.PARAM_VALUE = #{projType, jdbcType=VARCHAR}
+			</if>
+			<if test="startYear != null and startYear != '' and projType != 'null'">
+			   	AND A.START_DATE LIKE #{startYear, jdbcType=VARCHAR}||'%'
+			</if>
+			<if test="projName != null and projName != '' and projType != 'null'">
+			   	AND A.PROJ_NAME LIKE '%'||#{projName, jdbcType=VARCHAR}||'%'
+			</if>
+			
+			<!-- 省行超级管理员 ：查看本省定义的所有项目 -->
+			<if test="isSuper == 1">
+				AND (  (A.ORG1_CODE = #{uOrg1Code, jdbcType=VARCHAR})
+				       OR EXISTS
+				       ( SELECT 1 
+				           FROM TB_FNDWRR F 
+				          WHERE F.ORG2_CODE = A.ORG1_CODE 
+				            AND F.ORG1_CODE = #{uOrg1Code, jdbcType=VARCHAR})
+				    )
+			</if>
+			<!-- 非省行超级管理员：全省/本二级行/本责任中心的所有项目-->
+			<if test="isSuper != 1">
+			AND (   
+				  	(A.ORG1_CODE = #{uOrg1Code, jdbcType=VARCHAR} AND SUBSTR(A.PROJ_ID,1,4) = 'PRO1' AND A.SCOPE = '1')
+				    
+				    OR 
+				    (
+				       A.ORG1_CODE = #{uOrg2Code, jdbcType=VARCHAR}
+				        AND SUBSTR(A.PROJ_ID,1,4) = 'PRO2'
+				       and a.scope = '2'
+				    )
+				    OR 
+				    EXISTS (
+		                    SELECT 1 FROM TD_PROJECT_DEPT B 
+		                    WHERE B.PROJ_ID = A.PROJ_ID 
+		                      AND B.DUTY_CODE = #{uDutyCode, jdbcType=VARCHAR}
+		                      AND A.SCOPE = '3'
+				   	)
+			     )
+			</if>
+		</where>
+		ORDER BY A.START_DATE DESC,A.PROJ_ID DESC
+	</select>
+
+	<!-- 项目信息 选项列表 -->
+	<select id="getProjOption" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project"
+	                      resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT A.PROJ_ID,
+			   A.PROJ_TYPE,
+			   T.PARAM_NAME AS PROJ_TYPE_NAME,
+			   A.PROJ_NAME,
+			   A.PROJ_DESC,
+			   A.SCOPE,
+			   A.BUDGET_AMT,
+			   A.CNT_TOTAL_AMT,
+			   A.PAY_TOTAL_AMT,
+			   A.FREEZE_TOTAL_AMT,
+			   A.START_DATE,
+			   SUBSTR(A.START_DATE,0,4) AS START_YEAR,
+			   A.END_DATE,
+			   A.CURRENCY,
+			   A.INST_DUTY_CODE,
+			   A.ORG1_CODE
+		  FROM TD_PROJECT A  
+		  LEFT JOIN td_project_type T ON T.PARAM_VALUE = A.PROJ_TYPE
+		 WHERE A.START_DATE &lt;= #{signDate, jdbcType=VARCHAR}
+		   AND A.END_DATE &gt;= #{signDate, jdbcType=VARCHAR}
+			<if test="projType != null and projType != '' ">
+			    AND T.PARAM_VALUE = #{projType, jdbcType=VARCHAR}
+			</if>
+			<if test="projName != null and projName != '' ">
+			   	AND A.PROJ_NAME LIKE '%'||#{projName, jdbcType=VARCHAR}||'%'
+			</if>
+			AND (  
+				   <!--责任中心类型包含自己责任中心的项目--> 
+			        EXISTS ( SELECT 1 FROM TD_PROJECT_DEPT B 
+	                         WHERE B.PROJ_ID = A.PROJ_ID 
+	                           AND A.SCOPE ='3'
+	                           AND B.DUTY_CODE = #{uDutyCode, jdbcType=VARCHAR}
+	                       )		            
+				   <!--二级行下的二级行项目-->	
+				    OR 
+				    (A.ORG1_CODE = #{uOrg2Code, jdbcType=VARCHAR} and substr(A.PROJ_ID,1,4) = 'PRO2' AND A.SCOPE ='2')
+				    <!--一级行下的全省项目-->
+				    OR 
+				    (A.ORG1_CODE = #{uOrg1Code, jdbcType=VARCHAR} and substr(A.PROJ_ID,1,4) = 'PRO1' AND A.SCOPE ='1')
+			     )			
+		ORDER BY A.START_DATE DESC,A.PROJ_ID DESC
+	</select>
+	
+	<!-- 修改项目 列表 -->
+	<select id="listUpdProj" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project"
+	                      resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT A.PROJ_ID,
+			   A.PROJ_TYPE,
+			   T.PARAM_NAME AS PROJ_TYPE_NAME,
+			   A.PROJ_NAME,
+			   A.PROJ_DESC,
+			   A.SCOPE,
+			   A.BUDGET_AMT,
+			   A.CNT_TOTAL_AMT,
+			   A.PAY_TOTAL_AMT,
+			   A.FREEZE_TOTAL_AMT,
+			   A.START_DATE,
+			   SUBSTR(A.START_DATE,0,4) AS START_YEAR,
+			   A.END_DATE,
+			   A.CURRENCY,
+			   A.INST_DUTY_CODE,
+			   A.ORG1_CODE
+		  FROM TD_PROJECT A 
+		  LEFT JOIN td_project_type T 
+		    ON T.PARAM_VALUE = A.PROJ_TYPE
+		 WHERE A.INST_DUTY_CODE = #{uDutyCode, jdbcType=VARCHAR}
+		   AND A.END_DATE &gt;= to_char(sysdate,'yyyy-MM-dd')
+		 <!-- 超级管理员 ： 修改本责任中心超级管理员创建的项目-->
+			<if test="isSuper == 1">
+			AND SUBSTR(A.PROJ_ID,1,4) = 'PRO1'
+			</if>
+			<!-- 非超级管理员：修改本责任中心下非超级管理员创建的项目-->
+			<if test="isSuper != 1">
+			AND SUBSTR(A.PROJ_ID,1,4) = 'PRO2'
+			</if>
+			<if test="projType != null and projType != '' ">
+			   	AND T.PARAM_VALUE = #{projType, jdbcType=VARCHAR}
+			</if>
+			<if test="startYear != null and startYear != '' ">
+			   	AND A.START_DATE LIKE #{startYear, jdbcType=VARCHAR}||'%'
+			</if>
+			<if test="projName != null and projName != '' ">
+			   	AND A.PROJ_NAME LIKE '%'||#{projName, jdbcType=VARCHAR}||'%'
+			</if>
+		ORDER BY A.START_DATE DESC,A.PROJ_ID DESC
+	</select>
+	
+	<!-- 新增项目 -->
+	<insert id="addProj" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		   <selectKey resultType="java.lang.String" order="BEFORE" keyProperty="projId">  
+		       	 SELECT decode(#{isSuper, jdbcType=VARCHAR},'1','PRO1','PRO2')||#{org1Code, jdbcType=VARCHAR}||RM_GET_COMMON_ID('PROJECT') AS PROJ_ID FROM DUAL   
+	       </selectKey>
+		INSERT INTO TD_PROJECT
+		(
+			PROJ_ID,
+			PROJ_TYPE,
+			PROJ_NAME,
+			PROJ_DESC,
+			SCOPE,
+			BUDGET_AMT,
+			START_DATE,
+			END_DATE,
+			INST_DUTY_CODE,
+			ORG1_CODE
+		)
+		VALUES
+		(
+			#{projId, jdbcType=VARCHAR},
+			#{projType, jdbcType=VARCHAR},
+			#{projName, jdbcType=VARCHAR},
+			#{projDesc, jdbcType=VARCHAR},
+			#{scope, jdbcType=VARCHAR},
+			#{budgetAmt, jdbcType=DECIMAL},
+			#{startDate, jdbcType=VARCHAR},
+			#{endDate, jdbcType=VARCHAR},
+			#{instDutyCode, jdbcType=VARCHAR},
+			#{org1Code, jdbcType=VARCHAR}
+		)
+	</insert> 
+	
+	<!-- 新增项目版本 -->
+	<insert id="addProjLog" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		   <selectKey resultType="java.math.BigDecimal" order="BEFORE" keyProperty="versionNo">  
+	          SELECT SEQ_VERSION.NEXTVAL AS VERSION_NO FROM DUAL   
+	       </selectKey>
+		INSERT INTO TD_PROJECT_LOG
+		(
+			PROJ_ID,
+			VERSION_NO,
+			PROJ_TYPE,
+			PROJ_NAME,
+			PROJ_DESC,
+			SCOPE,
+			BUDGET_AMT,
+			START_DATE,
+			END_DATE,
+			CURRENCY,
+			INST_DUTY_CODE,
+			ORG1_CODE,
+			OPER_TYPE,
+			OPER_MEMO,
+			OPER_USER,
+			OPER_DUTY_CODE,
+			OPER_DATE,
+			OPER_TIME
+		)
+		VALUES
+		(
+			#{projId, jdbcType=VARCHAR},
+			#{versionNo, jdbcType=VARCHAR},
+			#{projType, jdbcType=VARCHAR},
+			#{projName, jdbcType=VARCHAR},
+			#{projDesc, jdbcType=VARCHAR},
+			#{scope, jdbcType=VARCHAR},
+			#{budgetAmt, jdbcType=DECIMAL},
+			#{startDate, jdbcType=VARCHAR},
+			#{endDate, jdbcType=VARCHAR},
+			#{currency, jdbcType=VARCHAR},
+			#{instDutyCode, jdbcType=VARCHAR},
+			#{org1Code, jdbcType=VARCHAR},
+			#{operType, jdbcType=VARCHAR},
+			#{operMemo, jdbcType=VARCHAR},
+			#{operUser, jdbcType=VARCHAR},
+			#{operDutyCode, jdbcType=VARCHAR},
+			to_char(sysdate,'yyyy-MM-dd'),
+			to_char(sysdate,'HH24:mi:ss')
+		)
+	</insert>
+	
+	
+	<!-- 项目详情 -->
+	<select id="veiwProj" parameterType="String"
+	                      resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT A.PROJ_ID,
+			   A.PROJ_TYPE,
+			   T.PARAM_NAME AS PROJ_TYPE_NAME,
+			   A.PROJ_NAME,
+			   A.PROJ_DESC,
+			   A.SCOPE,
+			   A.BUDGET_AMT,
+			   A.CNT_TOTAL_AMT,
+			   A.PAY_TOTAL_AMT,
+			   A.FREEZE_TOTAL_AMT,
+			   A.START_DATE,
+			   SUBSTR(A.START_DATE,0,4) AS START_YEAR,
+			   A.END_DATE,
+			   A.CURRENCY,
+			   A.INST_DUTY_CODE,
+			   A.ORG1_CODE,
+			   L.OPER_USER,
+			   L.OPER_DUTY_CODE,
+			   L.OPER_DATE,
+			   L.OPER_TIME
+		  FROM TD_PROJECT A 
+		  LEFT JOIN td_project_type T ON T.PARAM_VALUE = A.PROJ_TYPE
+		  LEFT JOIN (select * from (select * from td_project_log where proj_id = #{projId, jdbcType=VARCHAR} order by oper_date desc,oper_time desc) where rownum = '1') L
+		  	on A.PROJ_ID = L.PROJ_ID
+		 WHERE A.PROJ_ID = #{projId, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 查询项目责任中心列表 -->
+	<select id="getDutyCodes" parameterType="String" resultType="String">
+		SELECT DUTY_CODE 
+		  FROM TD_PROJECT_DEPT 
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR} 
+	</select>
+	
+	<!-- 更新项目 -->
+	<update id="updProject" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		UPDATE TD_PROJECT 
+		   SET PROJ_TYPE = #{projType, jdbcType=VARCHAR},
+		       PROJ_NAME = #{projName, jdbcType=VARCHAR},
+		       BUDGET_AMT = #{budgetAmt, jdbcType=VARCHAR},
+		       SCOPE = #{scope, jdbcType=VARCHAR},
+		       PROJ_DESC = #{projDesc, jdbcType=VARCHAR},
+		       START_DATE = #{startDate, jdbcType=VARCHAR},
+		       END_DATE = #{endDate, jdbcType=VARCHAR}
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR}
+		  <!-- AND START_DATE &lt;= to_char(sysdate,'yyyy-MM-dd')
+		   AND END_DATE &gt;= to_char(sysdate,'yyyy-MM-dd')-->
+	</update>
+	
+	<!-- 终止 更新终止日期 -->
+	<update id="updEndDate" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		UPDATE TD_PROJECT 
+		   SET END_DATE = #{endDate, jdbcType=VARCHAR}
+		 WHERE START_DATE &lt;= to_char(sysdate,'yyyy-MM-dd')
+		   AND END_DATE &gt;= to_char(sysdate,'yyyy-MM-dd')
+		   AND PROJ_ID IN
+		   <foreach collection="projIdList" item="projitem" open="(" close=")" separator=",">
+	     	 #{projitem, jdbcType=VARCHAR}
+	     </foreach>
+		   
+	</update>	
+	
+	<!-- 校验预算金额 是否 比合约金额大 -->
+	<select id="checkAmt" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project"
+						  resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT * FROM TD_PROJECT 
+		 WHERE #{budgetAmt, jdbcType=VARCHAR} &gt;= 
+		 (SELECT NVL(A.CNT_TOTAL_AMT,0) 
+		    FROM TD_PROJECT A 
+		   WHERE A.PROJ_ID = #{projId, jdbcType=VARCHAR}) 
+		     AND PROJ_ID = #{projId, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 新增项目与责任中心责任表 -->
+	<insert id="addProjDept" parameterType="java.util.HashMap">
+		INSERT INTO TD_PROJECT_DEPT
+			(PROJ_ID,
+			 DUTY_CODE)
+		<foreach collection="pdList" item="item" index="index" separator="union">
+			SELECT #{item.projId,jdbcType=VARCHAR},
+				   #{item.dutyCode,jdbcType=VARCHAR}
+		      FROM DUAL
+		</foreach>
+	</insert>
+	
+	<!-- 新增项目与责任中心责任表Log -->
+	<insert id="addProjDeptLog" parameterType="java.util.HashMap">
+		INSERT INTO TD_PROJECT_DEPT_LOG
+			(PROJ_ID,
+			 DUTY_CODE,
+			 VERSION_NO)
+		<foreach collection="pdList" item="item" index="index" separator="union">
+			SELECT #{item.projId,jdbcType=VARCHAR},
+				   #{item.dutyCode,jdbcType=VARCHAR},
+				   #{item.versionNo,jdbcType=NUMERIC}
+		      FROM DUAL
+		</foreach>
+	</insert>
+	
+	<!-- 删除项目责任中心关系表信息 -->
+	<delete id="deleteProjDept" parameterType="String">
+		DELETE FROM TD_PROJECT_DEPT WHERE PROJ_ID = #{projId, jdbcType=VARCHAR}
+	</delete>
+	
+	
+	<!-- 获取相关金额信息 -->
+	<select id="getAmtInfo" parameterType="String"
+							resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT NVL(FREEZE_TOTAL_AMT,0) AS FREEZE_TOTAL_AMT,
+		       NVL(CNT_TOTAL_AMT,0) AS CNT_TOTAL_AMT,
+		       NVL(BUDGET_AMT,0) AS BUDGET_AMT,
+		       NVL(PAY_TOTAL_AMT,0) AS PAY_TOTAL_AMT
+		  FROM TD_PROJECT 
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR} 
+	</select>
+	
+	<!-- 修改冻结金额 -->
+	<update id="updateFreezeAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET FREEZE_TOTAL_AMT = NVL(FREEZE_TOTAL_AMT,0) + #{freezeTotalAmt, jdbcType=DECIMAL} + NVL(#{taxNamt, jdbcType=DECIMAL},'0')
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 修改合同执行金额 -->
+	<update id="updateCntAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET CNT_TOTAL_AMT = NVL(CNT_TOTAL_AMT,0) + #{cntTotalAmt, jdbcType=DECIMAL} + nvl(#{taxNamt, jdbcType=DECIMAL},0)
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR} 
+	</update>
+	
+	<!-- 修改已付款金额 -->
+	<update id="updatePayAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET PAY_TOTAL_AMT = nvl(PAY_TOTAL_AMT,0) + #{payTotalAmt, jdbcType=DECIMAL}
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR} 
+	</update>
+	
+	<!-- 根据订单号获取物料信息 -->
+	<select id="getCntDeviceByOrder" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice" >
+		SELECT * FROM TD_CNT_DEVICE WHERE ORDER_ID = #{orderId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 订单退回释放占用金额 ,重新冻结-->
+	<update id="orderBackFree" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET CNT_TOTAL_AMT = NVL(CNT_TOTAL_AMT,0) - NVL(#{execAmt, jdbcType=DECIMAL},0) - NVL(#{taxNamt, jdbcType=DECIMAL},0),
+		   	   FREEZE_TOTAL_AMT = NVL(FREEZE_TOTAL_AMT,0) + NVL(#{execAmt, jdbcType=DECIMAL},0) + NVL(#{taxNamt, jdbcType=DECIMAL},0)
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR} 
+	</update>
+	<!-- 项目信息 选项列表 -->
+	<select id="getProjOption1" parameterType="com.forms.prms.web.projmanagement.projectMgr.domain.Project"
+	                      resultType="com.forms.prms.web.projmanagement.projectMgr.domain.Project">
+		SELECT A.PROJ_ID,
+			   A.PROJ_NAME
+		FROM TD_PROJECT A  
+		 <where>
+		 	<if test="orgFlag == 1">
+			    AND A.ORG1_CODE = #{uOrg1Code, jdbcType=VARCHAR} AND SUBSTR(A.PROJ_ID,1,4) = 'PRO1' 
+			</if>
+			<if test="orgFlag == 2">
+			    AND (A.ORG1_CODE = #{uOrg2Code, jdbcType=VARCHAR} or A.SCOPE='1' or 
+			         EXISTS ( SELECT 1 FROM TD_PROJECT_DEPT B 
+	                         WHERE B.PROJ_ID = A.PROJ_ID 
+	                           AND A.SCOPE ='3'
+	                           AND B.DUTY_CODE in(select DUTY_CODE from TB_FNDWRR where ORG2_CODE=#{uOrg2Code, jdbcType=VARCHAR})
+	                     )
+	                 ) 
+			</if>
+			<if test="orgFlag == 3">
+			    AND (A.ORG1_CODE = #{uOrg2Code, jdbcType=VARCHAR} and A.SCOPE='2')  or A.SCOPE='1' or
+			    	EXISTS ( SELECT 1 FROM TD_PROJECT_DEPT B 
+	                         WHERE B.PROJ_ID = A.PROJ_ID 
+	                           AND A.SCOPE ='3'
+	                           AND B.DUTY_CODE =#{uDutyCode, jdbcType=VARCHAR}
+	                     )
+	                  
+			</if>
+		 </where>	
+		ORDER BY  A.PROJ_ID DESC
+	</select>
+</mapper>

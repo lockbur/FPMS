@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+	
+	<mvc:default-servlet-handler/>
+	<mvc:view-controller path="/" view-name="forward:/index" />
+	
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*.do"/>
+			<bean class="com.forms.platform.web.i18n.LocaleChangeInterceptor"></bean>
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*.do"/>
+			<bean class="com.forms.platform.web.returnlink.ReturnLinkInterceptor"></bean>
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**/*.do"/>
+			<bean class="com.forms.platform.web.token.TokenInterceptor" p:errorUrl="/WEB-INF/pages/error.jsp"></bean>
+		</mvc:interceptor>
+	</mvc:interceptors>
+
+	<!-- 对静态资源文件的访问 -->
+	<mvc:resources mapping="/js/**" location="/views/js/" />
+	
+	<!-- 格式化和数据校验 -->
+	<mvc:annotation-driven>
+		<mvc:argument-resolvers>
+			<bean class="com.forms.platform.web.mvc.springmvc.argumentresolvers.PageArgumentResolver"></bean>
+		</mvc:argument-resolvers>
+	</mvc:annotation-driven>
+	
+	<!-- 视图 -->
+	<bean id="JsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+	<bean id="TextJsonView" class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" p:contentType="text/html"/>
+<!-- 	<bean id="DownloadView" class="com.forms.platform.core.downupload.download.DownloadView"/> -->
+
+	<!-- 视图解析器 -->
+	<!-- beanName解析器 -->
+	<bean id="BeanNameViewResolver" class="org.springframework.web.servlet.view.BeanNameViewResolver" p:order="2" />
+	<!-- 配置JSP视图解析器 -->
+	<bean id="jspViewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver"
+		p:contentType="text/html"
+		p:prefix="/WEB-INF/pages/"
+		p:suffix=".jsp"
+		p:viewClass="org.springframework.web.servlet.view.JstlView"
+		p:order="3"
+	/>
+	
+	<!-- 配置freeMarker视图解析器 -->
+    <bean id="freemakerViewResolver"
+        class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver"
+        p:viewClass="org.springframework.web.servlet.view.freemarker.FreeMarkerView"
+        p:suffix=".html"
+        p:contentType="text/html; charset=UTF-8"
+        p:exposeRequestAttributes="true"
+        p:exposeSessionAttributes="true" 
+        p:exposeSpringMacroHelpers="true" 
+        p:requestContextAttribute="request" 
+        p:order="4" 
+    />
+	
+	<!-- 上传 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver"
+		p:defaultEncoding="UTF-8" >
+		<!-- 上传文件大小限制20M -->
+<!-- 	   <property name="maxUploadSize" value="62914560"/>   -->
+	</bean>
+
+	<!-- 控制器异常处理 -->
+	<bean id="exceptionResolver"
+		class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+				<prop key="java.lang.Exception">
+					failure
+				</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<!-- 基于会话的国际化支持 -->
+	<bean id="localeResolver"
+		class="org.springframework.web.servlet.i18n.SessionLocaleResolver" />
+</beans>

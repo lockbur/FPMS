@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<decoratos defaultdir="/decorators">
+	<excludes>
+		<pattern>/common/jsp/error/unlogin.jsp</pattern> 
+	</excludes>
+	
+	<decorator name="none">
+		<pattern>/none.jsp</pattern>
+	</decorator>
+	
+    <decorator name="pattern" page="/common/jsp/decorators/pattern1.jsp">  
+        <pattern>/*</pattern>  
+    </decorator> 
+    
+    <decorator name="error" page="/common/jsp/decorators/pattern1-error.jsp">  
+    </decorator>
+</decoratos> 

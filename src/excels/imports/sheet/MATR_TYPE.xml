@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="100">
+	<section startRow="0" endRow="0">		
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" maxLength="11" nullAllowed="false" formatDesc="物料编码不允许为空">detail.matrCode</mapping>
+			<mapping row="1" col="1" maxLength="300" nullAllowed="false" formatDesc="物料名称不允许为空">detail.matrName</mapping>
+			<mapping row="1" col="2" maxLength="4" nullAllowed="false" formatDesc="核算码不允许为空">detail.cglCode</mapping>
+			<mapping row="1" col="3" maxLength="10" nullAllowed="false" formatDesc="物料单位不允许为空">detail.matrUnit</mapping>
+			<mapping row="1" col="4" maxLength="4" nullAllowed="false" formatDesc="损益子目不允许为空">detail.lossCode</mapping>
+			<mapping row="1" col="5" maxLength="1" nullAllowed="false" formatDesc="物料类型不允许为空">detail.matrType</mapping>		
+			<mapping row="1" col="6" maxLength="4" nullAllowed="false" formatDesc="预提科目不允许为空">detail.provisionCode</mapping>
+			<mapping row="1" col="7" maxLength="4" nullAllowed="false" formatDesc="待摊科目不允许为空">detail.prepaidCode</mapping>			
+			<mapping row="1" col="8" maxLength="1" nullAllowed="false" formatDesc="是否业务宣传费不允许为空">detail.isPublicityPay</mapping>
+			<mapping row="1" col="9" maxLength="100">detail.memo</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

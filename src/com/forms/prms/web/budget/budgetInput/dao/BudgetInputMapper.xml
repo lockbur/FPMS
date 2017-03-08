@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetInput.dao.BudgetInputDao">
+	<select id="selectAllBudget" 	parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean"
+						resultType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+		select distinct a.TMPLT_ID ,a.duty_code,d.duty_name,b.DATA_TYPE,b.DATA_YEAR,b.DATA_ATTR, 
+		b.ORG21_CODE ,
+		a.SOURCE_FILENAME,
+		a.SERVER_FILE,
+		C.ORG2_NAME as org21_Name,
+		decode(b.DATA_TYPE,'0','年初预算','1','追加预算') as DATA_TYPE_NAME,
+		decode(b.DATA_ATTR,'0','资产类','1','费用类') AS DATA_ATTR_NAME,
+		a.DATA_FLAG,
+		decode(A.DATA_FLAG,'00','待处理','01','处理中','02','处理失败','03','处理完成','04','已提交') AS data_FLAG_NAME
+		from TD_BUDGET_WRITE_HEADER a 
+		join TB_BUDGET_TMPLT b  on a.TMPLT_ID = b.TMPLT_ID
+		join TB_FNDWRR C ON C.ORG2_CODE = B.ORG21_CODE
+		join tb_fndwrr d on d.duty_code = a.duty_code 
+		where 1=1 
+		<if test="isSuperAdmin == 1 ">
+			and  a.DUTY_CODE in(select d.duty_code from  tb_fndwrr d where d.org1_code =#{userOrg1Code,jdbcType=VARCHAR}  )
+		</if>
+		<if test="isSuperAdmin != 1 ">
+			 and a.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		</if>
+		<if test="dataType != null and dataType !=''">
+			and b.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+		<if test="dataYear != null and dataYear !=''">
+			and b.DATA_YEAR = #{dataYear,jdbcType=NUMERIC}
+		</if>
+		<if test="dataAttr != null and dataAttr !=''">
+			and b.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+		ORDER BY B.DATA_YEAR DESC
+	</select>
+	<!--得到头信息 -->
+	<select id="getHeadMsg" parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean"
+						resultType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+		select ROW_INFO from TB_BUDGET_TMPLT_DETAIL where TMPLT_ID =#{tmpltId,jdbcType=VARCHAR} and ROW_SEQ =0
+	</select>
+	<!--得到主体信息-->
+	<select id="getListMsg" parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean"
+						resultType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+		select a.ROW_INFO,b.IN_AMT,b.IN_MEMO,b.IN_NOUSE_CNT,b.IN_NEED_CNT,d.duty_name as matr_Audit_Dept_Name
+		from TB_BUDGET_TMPLT_DETAIL a
+		join TD_BUDGET_WRITE_DETAIL b on b.tmplt_id =a.tmplt_id and b.ROW_SEQ =a.ROW_SEQ
+		left join TB_APPROVE_CHAIN c on c.FEE_DEPT = b.duty_code  and c.MATR_CODE = a.MATR_CODE and c.IS_PROVINCE_BUY ='0'
+		join TB_FNDWRR d on d.duty_code = c.matr_audit_dept
+		LEFT JOIN tb_matr_type E ON E.MATR_CODE = A.MATR_CODE
+		where a.TMPLT_ID =#{tmpltId,jdbcType=VARCHAR} and A.ROW_SEQ !=0 and b.DUTY_CODE =#{dutyCode,jdbcType=VARCHAR}
+		<if test="matrCode != null and matrCode !=''">
+			and A.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		</if>
+		<if test="matrName != null and matrName !=''">
+			and E.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+		</if>
+		 order by A.ROW_SEQ asc
+	</select>
+	<!--删除头信息-->
+	<delete id="delWriteHead"  parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+		delete from TD_BUDGET_WRITE_HEADER where TMPLT_ID =#{tmpltId,jdbcType=VARCHAR} and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+	</delete>
+	<!--删除明细信息-->
+	<delete id="delWriteDetail"  parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+	    delete from TD_BUDGET_WRITE_DETAIL where TMPLT_ID =#{tmpltId,jdbcType=VARCHAR} and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+	</delete>
+	<!--提交-->
+	<update id="input" parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+		update TD_BUDGET_WRITE_HEADER set DATA_FLAG ='04' where  TMPLT_ID =#{tmpltId,jdbcType=VARCHAR} and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR} and  DATA_FLAG ='03' 
+	</update> 
+	<!--增加审核表-->
+	<insert id="insertAudit" parameterType="com.forms.prms.web.budget.budgetInput.domain.BudgetInputBean">
+		MERGE INTO TD_BUDGET_FIRST_AUDIT budAudit USING (
+			    SELECT a.TMPLT_ID, B.MATR_CODE,C.MATR_AUDIT_DEPT,SUM(A.IN_AMT) IN_AMT,SUM(A.IN_NEED_CNT) IN_NEED_CNT FROM TD_BUDGET_WRITE_DETAIL A
+			    LEFT JOIN TB_BUDGET_TMPLT_DETAIL B  ON A.TMPLT_ID = B.TMPLT_ID AND A.ROW_SEQ = B.ROW_SEQ
+			    left join TB_APPROVE_CHAIN c
+			    on c.FEE_DEPT = A.duty_code
+			    and c.MATR_CODE = B.MATR_CODE
+			    and c.IS_PROVINCE_BUY = '0'
+			    where a.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+			    and B.ROW_SEQ != 0
+			    and A.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+			    GROUP BY  B.MATR_CODE,C.MATR_AUDIT_DEPT,A.TMPLT_ID
+			    ) P ON (P.tmplt_id = budAudit.tmplt_id AND p.MATR_CODE = budAudit.MATR_CODE AND budAudit.DUTY_CODE = p.MATR_AUDIT_DEPT)
+	   when MATCHED THEN
+	   	       UPDATE  set budAudit.ADD_CNT = budAudit.ADD_CNT + P.IN_AMT ,budAudit.ADD_AMT = budAudit.ADD_AMT+p.IN_NEED_CNT
+	   WHEN NOT MATCHED THEN
+	   		   INSERT (TMPLT_ID,DUTY_CODE,MATR_CODE,OLD_AMT,ADD_CNT,ADD_AMT,AUDIT_FLAG,AUDIT_AMT)
+	   		   VALUES(P.TMPLT_ID,P.MATR_AUDIT_DEPT,P.MATR_CODE,0,P.IN_AMT,P.IN_NEED_CNT,'00','')
+	</insert>
+</mapper>

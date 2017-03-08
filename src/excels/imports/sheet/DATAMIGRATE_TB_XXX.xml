@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="2">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+<!-- 		<mapping cell="A1">bean.tmpltId</mapping> -->
+		<mapping cell="B2" formatDesc="表头值F1校验有误(应为[合同事项])">bean.tmpltId</mapping>
+		<mapping cell="F1" formatDesc="表头值F1校验有误([合同编号])">bean.title</mapping>
+	</section>
+	<loop startRow="4" endRow="4" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.ZsysRoleBean">
+		<section startRow="5" endRow="5">
+			<mapping row="5" col="0">detail.roleId</mapping>
+			<mapping row="5" col="1" maxLength="6">detail.roleName</mapping>
+			<mapping row="5" col="2">detail.memo</mapping>
+			<mapping row="5" col="3">detail.enableDel</mapping>
+			<mapping row="5" col="4" nullAllowed="false">detail.roleLevel</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+<mapper namespace="com.forms.prms.web.amortization.subjectBalance.dao.SubjectBalanceDAO">
+	<select id="getSubjetcBalanceList" parameterType="com.forms.prms.web.amortization.subjectBalance.domian.SubjectBalanceBean"
+		resultType="com.forms.prms.web.amortization.subjectBalance.domian.SubjectBalanceBean">
+		SELECT B.TRADE_DATE, A.* FROM TID_CGL_BALANCE A, TI_DOWNLOAD B
+			WHERE A.BATCH_NO = B.BATCH_NO
+			<if test="null != cglCode and '' != cglCode">
+				AND A.CGL_CODE=#{cglCode,jdbcType=VARCHAR}
+			</if>
+			<choose>
+				<when test="null != dutyCode and '' != dutyCode">
+					AND DUTY_CODE=#{dutyCode,jdbcType=VARCHAR}
+				</when>
+				<otherwise>
+					AND A.ORG1_CODE=#{org1Code,jdbcType=VARCHAR}
+				</otherwise>
+			</choose>
+			
+			<choose>
+				<when test="null != befDate and '' != befDate and (null == aftDate or '' == aftDate)">
+					<![CDATA[ AND B.TRADE_DATE >= #{befDate}]]>
+				</when>
+				<when test="(null == befDate or '' == befDate) and null != aftDate and '' != aftDate">
+					<![CDATA[ AND B.TRADE_DATE <= #{aftDate}]]>
+				</when>
+				<when test="null != befDate and '' != befDate and null != aftDate and '' != aftDate">
+					AND B.TRADE_DATE BETWEEN #{befDate,jdbcType=VARCHAR} AND #{aftDate,jdbcType=VARCHAR}
+				</when>
+				<when test="(null == cglCode or '' == cglCode) and (null == dutyCode or '' == dutyCode)">
+					AND B.TRADE_DATE=TO_CHAR(SYSDATE-1,'YYYYMMDD')
+				</when>
+			</choose>
+	</select>
+</mapper>

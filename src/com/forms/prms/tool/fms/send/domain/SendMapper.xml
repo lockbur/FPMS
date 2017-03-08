@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.tool.fms.send.domain.SendDao">
+
+	<!--生成31应付发票-->
+	<insert id="addFms31ToUpload" parameterType="String">
+		CALL PRC_ERP_31(#{org1Code, jdbcType=VARCHAR})
+	</insert>
+	
+	<!--生成34订单详情-->
+	<insert id="addFms34ToUpload" parameterType="String">
+		CALL PRC_ERP_34(#{org1Code, jdbcType=VARCHAR})
+	</insert>
+	
+	<!-- 冲销预提 预提待摊 -->
+	<insert id="callERP33" parameterType="String">
+		CALL PRC_ERP_33(#{org1Code, jdbcType=VARCHAR},#{yyyymm, jdbcType=VARCHAR},#{taskType, jdbcType=VARCHAR})
+	</insert>
+
+</mapper>	

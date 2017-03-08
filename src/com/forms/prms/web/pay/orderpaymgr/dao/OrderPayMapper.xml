@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.orderpaymgr.dao.OrderPayDAO">
+	<!--订单类付款流水查询-->
+	<select id="list" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean" 
+			resultType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		SELECT *
+		FROM TD_PAY_CLEAN_LOG
+		WHERE ERP_PAY_ID IS NULL
+		<if test="cntNum != null and '' != cntNum">
+			AND CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="payId != null and '' != payId">
+			AND PAY_ID  LIKE '%'|| #{payId ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND PAY_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND PAY_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="payCancelState != null and '' != payCancelState">
+			AND PAY_CANCEL_STATE = #{payCancelState ,jdbcType=VARCHAR}
+		</if>
+	</select>
+	
+	<!--查询正常付款信息-->
+	<select id="queryPayInfo" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean" 
+			resultType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		SELECT 
+			TP.PAY_ID,
+			TP.CNT_NUM,
+			TP.INVOICE_AMT,
+			TP.PAY_AMT,
+			TP.SUSPENSE_AMT,
+			TP.PAY_DATE,
+			TP.PAY_TOTAL_AMT
+		FROM TD_PAY TP
+		JOIN TD_PAY_CLEAN_LOG TPCL ON TP.CNT_NUM = TPCL.CNT_NUM AND TP.PAY_ID != TPCL.PAY_ID
+		WHERE TPCL.BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		AND　TPCL.SEQ_NO = #{seqNo ,jdbcType=NUMERIC}
+		AND (TP.PAY_AMT +TP.SUSPENSE_AMT - TP.PAY_TOTAL_AMT) &gt;= #{payAmt ,jdbcType=NUMERIC}
+		AND TP.DATA_FLAG != upper('F4')
+	</select>
+	
+	<!--查询暂收付款信息-->
+	<select id="querySusPInfo" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean" 
+			resultType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		SELECT TPC.*
+		FROM TD_PAY_CLEAN TPC
+		LEFT JOIN TD_PAY TP ON TPC.NORMAL_PAY_ID = TP.PAY_ID
+		JOIN TD_PAY_CLEAN_LOG TPCL ON TP.CNT_NUM = TPCL.CNT_NUM 
+		WHERE TPCL.BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		AND TPCL.SEQ_NO = #{seqNo ,jdbcType=NUMERIC}
+		AND TPC.CLEAN_AMT_FMS = 0
+		AND TPCL.PAY_AMT = TPC.CLEAN_AMT
+		AND TPC.NORMAL_PAY_ID != TPCL.PAY_ID
+	</select>
+	
+	<!--更新TD_PAY_CLEAN_LOG表-->
+	<update id="updateTpcl" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean" >
+		UPDATE TD_PAY_CLEAN_LOG
+		SET ERP_PAY_ID = #{erpPayId ,jdbcType=VARCHAR},
+			PAY_TYPE = #{flag ,jdbcType=VARCHAR}
+		WHERE BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		AND SEQ_NO = #{seqNo ,jdbcType=NUMERIC}
+	</update>
+	
+	<!--更新累计付款金额-->
+	<update id="updatePayTotal" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		UPDATE TD_PAY
+		SET PAY_TOTAL_AMT = PAY_TOTAL_AMT + #{payAmt ,jdbcType=NUMERIC}
+		WHERE PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--更新付款状态-->
+	<update id="updatePayDataFlag" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		UPDATE TD_PAY
+		SET DATA_FLAG_PAY = #{dataFlagPay ,jdbcType=VARCHAR}
+		WHERE PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--根据付款单、累计付款金额更新付款的状态-->
+	<update id="updatePayDataFlagById" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		<if test="isFlag == 0 ">
+			UPDATE TD_PAY
+			SET DATA_FLAG_PAY = '3'
+			WHERE PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+			AND (PAY_AMT + SUSPENSE_AMT ) = PAY_TOTAL_AMT
+            AND DATA_FLAG_PAY = '2'
+		</if>
+		<if test="isFlag == 1 ">
+			UPDATE TD_PAY TP
+            SET DATA_FLAG_PAY = '5'
+            WHERE PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+            AND PAY_TOTAL_AMT = 0
+            AND DATA_FLAG_PAY = '4'
+		</if>
+	</update>
+	
+	<!--更新付款的状态-->
+	<update id="updateDataFlag2" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		<if test="isFlag == 0 ">
+			UPDATE TD_PAY TP
+		    SET DATA_FLAG = UPPER('F4')
+		   	WHERE DATA_FLAG_INVOICE = '2'
+		    AND (DATA_FLAG_PAY = '3' OR DATA_FLAG_PAY = '5')
+			AND PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+		</if>
+		<if test="isFlag == 1 ">
+			UPDATE TD_PAY TP
+		    SET DATA_FLAG = UPPER('F5')
+		    WHERE DATA_FLAG_INVOICE = '3'
+		    AND DATA_FLAG_PAY = '5'
+            AND PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+		</if>
+	</update>
+	
+	<!--付款取消需要更新整个付款的状态为F2-->
+	<update id="updateDataFlag" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		UPDATE TD_PAY
+		SET DATA_FLAG = UPPER('F2')
+		WHERE PAY_ID = #{erpPayId ,jdbcType=VARCHAR}
+		AND DATA_FLAG = UPPER('F4')
+	</update>
+	
+	<!--更新累计结清金额-->
+	<update id="updateSusTotal" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		UPDATE TD_PAY
+		SET SUS_TOTAL_AMT = #{payAmt ,jdbcType=NUMERIC}
+		WHERE PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--更新暂收-->
+	<update id="updateCleanAmtFms" parameterType="com.forms.prms.web.pay.orderpaymgr.domain.OrderPayBean">
+		UPDATE TD_PAY_CLEAN
+		SET CLEAN_AMT_FMS = #{cleanAmtFms ,jdbcType=NUMERIC}
+		WHERE NORMAL_PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+		AND SORT_ID = #{sortId ,jdbcType=VARCHAR}
+	</update>
+</mapper>

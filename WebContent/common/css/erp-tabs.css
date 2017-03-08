@@ -1,0 +1,16 @@
+/** for advancedSearch **/
+.tab_red {height:26px; }
+.tab_red .tab_left{width:5px; height:25px; background:url("../images/littleleft.jpg"); float:left;}
+.tab_red .tab_middle {height:25px; background:url("../images/middle3.jpg") repeat-x; float:left; text-align:center;}
+.tab_red .tab_middle a{text-decoration: none; margin-left:5px; top:1px; position:relative; margin-right:5px; line-height:26px; overflow:hidden; color:#FFFFFF; cursor:pointer;}
+.tab_red .tab_middle a:HOVER{text-decoration: none;}
+.tab_red .tab_right {width:5px; height:25px; background:url("../images/littleright.jpg"); float:left; margin-right: 2px;}
+.tab_gray {height: 26px;}
+.tab_gray .tab_left {width:4px; height:26px; background:url("../images/crmimg/tab_11.jpg"); float:left;}
+.tab_gray .tab_middle {height:26px; background:url("../images/crmimg/tab_13.jpg") repeat-x; float:left; text-align:center;}
+.tab_gray .tab_middle a{text-decoration: none; margin-left:5px; top:1px; position:relative; margin-right:5px; line-height:26px; overflow:hidden; color:#000000; cursor:pointer;}
+.tab_gray .tab_middle a:HOVER{text-decoration: none;}
+.tab_gray .tab_right {width:4px; height:26px; background: url("../images/crmimg/tab_12.jpg"); float:left; margin-right:2px;}
+
+.noborder  tr td{border: 0px;padding: 0px;}
+.redbj {background-color:#990000;}

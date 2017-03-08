@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="A1" regExp="\u79df\u91d1\u9012\u589e\u6761\u4ef6\u4fe1\u606f" formatDesc="该值应该为[租金递增条件信息]">bean.headInfos</mapping>
+
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u79df\u91d1\u5f00\u59cb\u65e5\u671f" formatDesc="该值应该为[租金开始日期]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u79df\u91d1\u7ed3\u675f\u65e5\u671f" formatDesc="该值应该为[租金结束日期]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u79df\u91d1\u4ed8\u6b3e\u7c7b\u578b" formatDesc="该值应该为[租金付款类型]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u79df\u91d1\u56fa\u5b9a\u91d1\u989d" formatDesc="该值应该为[租金固定金额]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u79df\u91d1\u6d6e\u52a8\u6bd4\u4f8b" formatDesc="该值应该为[租金浮动比例]">bean.headInfos</mapping>
+		<mapping cell="G2" regExp="\u7ba1\u7406\u8d39\u53ca\u5176\u4ed6" formatDesc="该值应该为[管理费及其他]">bean.headInfos</mapping>
+		
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntTenancyCondiBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.cntNum</mapping>
+			<mapping row="1" col="1">detail.fromDate</mapping>
+			<mapping row="1" col="2">detail.toDate</mapping>
+			<mapping row="1" col="3">detail.dzlx</mapping>
+			<mapping row="1" col="4">detail.dzed</mapping>
+			<mapping row="1" col="5">detail.fdbl</mapping>
+			<mapping row="1" col="6">detail.glfy</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.promptinfo.dao.IPromptInfoDao">
+	<!--查询所有-->
+	<select id="promptInfoList" 	resultType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean">
+		select * from TB_PROMPT_INFO
+	</select>
+	<select id="query" parameterType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean" 
+   			resultType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean">
+		SELECT * FROM TB_PROMPT_INFO
+		<where>
+			<if test="dispName != null and dispName != ''">
+				AND DISP_NAME LIKE '%' || #{dispName, jdbcType=VARCHAR} || '%'
+			</if>
+		</where>
+	</select>
+	
+	<update id="edit" parameterType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean">
+		UPDATE TB_PROMPT_INFO SET PROMPT_INFO = #{promptInfo, jdbcType=VARCHAR}
+		 WHERE DISP_NAME = #{dispName, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="delete" parameterType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean">
+		DELETE FROM TB_PROMPT_INFO
+		 WHERE DISP_NAME = #{dispName, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="add" parameterType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean">
+		INSERT INTO TB_PROMPT_INFO (DISP_NAME, PROMPT_INFO)
+		VALUES (#{dispName, jdbcType=VARCHAR}, #{promptInfo, jdbcType=VARCHAR})
+	</update>
+	
+	<select id="checkPrimaryKey" parameterType="com.forms.prms.web.sysmanagement.promptinfo.domain.PromptInfoBean"
+			resultType="java.lang.Integer">
+		SELECT count(1) FROM TB_PROMPT_INFO
+		 WHERE DISP_NAME = #{dispName, jdbcType=VARCHAR}
+	</select>
+
+</mapper>

@@ -1,0 +1,49 @@
+LOAD DATA 
+    CHARACTERSET ZHS16GBK 
+    TRUNCATE INTO TABLE TID_AP_PAY_TMP 
+    WHEN (1:3)<>'|||' 
+    FIELDS TERMINATED BY ' | ' 
+    TRAILING NULLCOLS
+(
+	SEQ_NO                     "trim(:SEQ_NO)",
+	FILLER_2                   FILLER,
+	FILLER_3                   FILLER,
+	FILLER_4                   FILLER,
+	FILLER_5                   FILLER,
+	FILLER_6                   FILLER,
+	PAY_DATE                   "trim(:PAY_DATE)",
+	PAY_AMT                    "trim(:PAY_AMT)",
+	FILLER_9                    FILLER,
+	FILLER_10                   FILLER,
+	FILLER_11                   FILLER,
+	FILLER_12                   FILLER,
+	FILLER_13                   FILLER,
+	FILLER_14                   FILLER,
+	FILLER_15                   FILLER,
+	FILLER_16                   FILLER,
+	FILLER_17                   FILLER,
+	FILLER_18                   FILLER,
+	INVOICE_NO                  "trim(:INVOICE_NO)",
+	CNT_NUM                     "trim(:CNT_NUM)",
+	PAY_ID                      "trim(:PAY_ID)",
+	FILLER_22                   FILLER,
+	FILLER_23                   FILLER,
+	FILLER_24                   FILLER,
+	FILLER_25                   FILLER,
+	FILLER_26                   FILLER,
+	FILLER_27                   FILLER,
+	PAY_CANCEL_STATE            "trim(:PAY_CANCEL_STATE)",
+	PAY_CANCEL_DATE             "trim(:PAY_CANCEL_DATE)",
+	FILLER_30                   FILLER,
+	FILLER_31                   FILLER,
+	FILLER_32                   FILLER,
+	FILLER_33                   FILLER,
+	FILLER_34                   FILLER,
+	FILLER_35                   FILLER,
+	FILLER_36                   FILLER,
+	FILLER_37                   FILLER,
+	FILLER_38                   FILLER,
+	FILLER_39                   FILLER,
+	FILLER_40                   FILLER,
+	FILLER_41                   FILLER
+)

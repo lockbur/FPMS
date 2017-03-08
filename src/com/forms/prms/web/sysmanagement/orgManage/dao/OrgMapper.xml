@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.sysmanagement.orgManage.dao.OrgManageDao">
+	<!--列表-->
+	<select id="getPageList" resultType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		<if test="isLocked == '0'.toString()">
+			select A.*,b.IS_LOCKED from TB_FNDWRR A	
+		left join TB_FNDWRR_LOCK b
+		on a.DUTY_CODE=b.DUTY_CODE
+		<where>
+			<if test="org1Code != null and org1Code !=''">
+			and A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>	
+			<if test="org2Code != null and org2Code !=''">
+			and A.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+			</if>	
+			<if test="org1Name != null and org1Name !=''">
+			and A.ORG1_NAME LIKE '%' || #{org1Name,jdbcType=VARCHAR} || '%'
+			</if>	
+			<if test="org2Name != null and org2Name !=''">
+			and A.ORG2_NAME LIKE '%' || #{org2Name,jdbcType=VARCHAR} || '%'
+			</if>	
+			<if test="dutyCode != null and dutyCode !=''">
+			and A.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+			</if>
+			<if test="dutyName != null and dutyName !=''">
+			and A.DUTY_NAME LIKE '%'|| #{dutyName,jdbcType=VARCHAR} ||'%'
+			</if>
+			<if test="orgCode != null and orgCode !=''">
+			and A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY A.DUTY_CODE 	
+	 </if>
+		<if test="isLocked == 'N'.toString()">
+			select A.* ,'N' as isLocked from TB_FNDWRR A	
+			where not exists(
+			 select 1 from tb_fndwrr_lock b
+			 where a.duty_code=b.duty_code 
+			 and b.is_locked='Y'
+			)
+			<if test="org1Code != null and org1Code !=''">
+			and A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>	
+			<if test="org2Code != null and org2Code !=''">
+			and A.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+			</if>	
+			<if test="org1Name != null and org1Name !=''">
+			and A.ORG1_NAME LIKE '%' || #{org1Name,jdbcType=VARCHAR} || '%'
+			</if>	
+			<if test="org2Name != null and org2Name !=''">
+			and A.ORG2_NAME LIKE '%' || #{org2Name,jdbcType=VARCHAR} || '%'
+			</if>	
+			<if test="dutyCode != null and dutyCode !=''">
+			and A.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+			</if>
+			<if test="dutyName != null and dutyName !=''">
+			and A.DUTY_NAME LIKE '%'|| #{dutyName,jdbcType=VARCHAR} ||'%'
+			</if>
+			<if test="orgCode != null and orgCode !=''">
+			and A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+			</if>
+			ORDER BY a.DUTY_CODE 	
+	 </if> 
+	 <if test="isLocked == 'Y'.toString()">
+			select b.is_locked,a.* from 
+			tb_fndwrr_lock b
+			left join tb_fndwrr a on b.duty_code=a.duty_code
+			where b.is_locked='Y'
+			<if test="org1Code != null and org1Code !=''">
+			and A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>	
+			<if test="org2Code != null and org2Code !=''">
+			and A.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+			</if>	
+			<if test="dutyCode != null and dutyCode !=''">
+			and A.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+			</if>
+			<if test="dutyName != null and dutyName !=''">
+			and A.DUTY_NAME LIKE '%'|| #{dutyName,jdbcType=VARCHAR} ||'%'
+			</if>
+			<if test="orgCode != null and orgCode !=''">
+			and A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+			</if>
+			ORDER BY a.DUTY_CODE 	
+	 </if>
+	</select>
+	<!--修改扫描岗-->
+	<update id="changeScanPosition" parameterType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		update tb_fndwrr set scan_position = #{scanPosition,jdbcType=VARCHAR}
+		where  DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		
+	</update>
+	<!--明细-->
+	<select id="getBean" parameterType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean"
+		resultType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		select A.* from tb_fndwrr A
+		where A.duty_code = #{dutyCode,jdbcType=VARCHAR}
+	</select>
+	<!--明细-->
+	<select id="getOuList" parameterType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean"
+		resultType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		select 
+			distinct	OU_CODE,
+			OU_NAME
+		 from tb_fndwrr A
+		<where>
+			<if test="org1Code != null and org1Code !=''">
+				and A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>
+			<if test="org2Code != null and org2Code !=''">
+				and A.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+			</if>
+			<if test="orgCode != null and orgCode !=''">
+				and A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	<!--明细-->
+	<select id="getOrgList" parameterType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean"
+		resultType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		select 
+			distinct	ORG_CODE,
+			ORG_NAME
+		 from tb_fndwrr A
+		<where>
+			<if test="org1Code != null and org1Code !=''">
+				and A.ORG1_CODE = #{dutyCode,jdbcType=VARCHAR}
+			</if>
+			<if test="org2Code != null and org2Code !=''">
+				and A.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	<!--明细-->
+	<select id="getByOrgOuList" parameterType="String"
+		resultType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		select 
+			distinct	OU_CODE,
+			OU_NAME
+		 from tb_fndwrr A
+		where A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+	</select>
+	<!--添加锁定监控指标数据-->
+	<insert id="lock" parameterType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		<if test="dutyCodes!=null">
+			MERGE INTO TB_FNDWRR_LOCK TBL
+			USING
+			(
+			<foreach collection="dutyCodes" item="item"  separator="union">
+				SELECT 
+					#{item ,jdbcType=VARCHAR} AS DUTY_CODE,
+					tb.DUTY_NAME  AS DUTY_NAME,
+					'Y' AS IS_LOCKED,
+					#{userId,jdbcType=VARCHAR} AS LOCK_OPER,
+					to_char(sysdate,'yyyy-mm-dd hh24:mm:ss') AS LOCK_TIME
+					from TB_FNDWRR TB
+					where tb.DUTY_CODE=#{item ,jdbcType=VARCHAR}
+			</foreach>
+			)DUTY_CODES
+			ON(TBL.DUTY_CODE = DUTY_CODES.DUTY_CODE  )
+			WHEN NOT MATCHED THEN 
+				INSERT VALUES
+				(
+					DUTY_CODES.DUTY_CODE,
+					DUTY_CODES.DUTY_NAME,
+					DUTY_CODES.IS_LOCKED,
+					DUTY_CODES.LOCK_OPER,
+					DUTY_CODES.LOCK_TIME,
+					null,
+					null
+				)
+			  WHEN MATCHED THEN
+  			UPDATE SET TBL.IS_LOCKED='Y',
+  					   TBL.LOCK_OPER=DUTY_CODES.LOCK_OPER,
+					   TBL.LOCK_TIME=DUTY_CODES.LOCK_TIME,
+					   TBL.UNLOCK_OPER=null,
+					   TBL.UNLOCK_TIME=null	
+		</if>
+	</insert>
+	<!-- 解锁责任中心 -->
+	<update id="openLock" parameterType="com.forms.prms.web.sysmanagement.orgManage.domain.OrgBean">
+		UPDATE TB_FNDWRR_LOCK 
+		   SET IS_LOCKED = 'N',
+		   UNLOCK_OPER=#{userId,jdbcType=VARCHAR},
+		   UNLOCK_TIME=to_char(sysdate,'yyyy-mm-dd hh24:mm:ss')
+	     WHERE IS_LOCKED = 'Y'
+	       AND DUTY_CODE IN 
+	     <foreach collection="dutyCodes" item="dutyCodeItem" open="(" close=")" separator=",">
+	     	 #{dutyCodeItem, jdbcType=VARCHAR}
+	     </foreach>
+	</update>	
+	
+</mapper>

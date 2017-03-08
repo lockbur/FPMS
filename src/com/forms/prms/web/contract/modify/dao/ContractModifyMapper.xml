@@ -1,0 +1,643 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.modify.dao.IContractModifyDAO">
+	<!-- 获取合同列表 -->
+	<select id="modifyList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.modify.domain.ModifyContract">
+		SELECT CNT.CNT_NUM,CNT.CNT_NAME,CNT.CNT_TYPE,CNT.CNT_AMT,CNT.CREATE_DEPT,CNT.CREATE_DATE,CNT.DATA_FLAG,CNT.SIGN_DATE,CNT.PROVIDER_NAME,TF.DUTY_NAME AS CREATEDEPTNAME
+			,SS.PARAM_NAME AS CNTTYPENAME,SS1.PARAM_NAME AS DATAFLAGNAME,CNT.IS_ORDER,CNT.CNT_TAX_AMT
+		FROM TD_CNT CNT
+		LEFT JOIN TB_FNDWRR TF ON CNT.CREATE_DEPT = TF.DUTY_CODE
+		LEFT JOIN SYS_SELECT SS ON SS.PARAM_VALUE = CNT.CNT_TYPE
+		LEFT JOIN SYS_SELECT SS1 ON SS1.PARAM_VALUE = CNT.DATA_FLAG
+		<where>
+			<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.CNT_NUM LIKE '%' || #{con.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.CNT_TYPE = #{con.cntType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND CNT.PROVIDER_NAME LIKE '%' || #{con.providerName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.SIGN_DATE &gt;= #{con.befDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+			</if>
+				AND CNT.CREATE_DEPT = #{dutyCode,jdbcType=VARCHAR} AND CNT.DATA_FLAG IN ('10','11','40') 
+				AND SS.CATEGORY_ID = 'CNT_TYPE' AND SS1.CATEGORY_ID = 'CNT_DATE_FLAG' <!-- 合同录入、合同退回、订单退回  -->
+		</where>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	<!-- 获取合同详情 -->
+	<select id="getDetail" parameterType="String" resultType="com.forms.prms.web.contract.modify.domain.ModifyContract">
+		SELECT CNT.*,substr(CNT.fee_start_date,0,7) feeStartDateShow,substr(CNT.fee_end_date,0,7) feeEndDateShow
+		,TCY.jf,TCY.jf_id,TCY.yf,TCY.yf_id,TCY.wydz,TCY.wdjg,TCY.wdjg_id,TCY.auto_bank_name,TCY.area,TCY.house_kind_id
+		,TCY.wyglf,TCY.yj,TCY.begin_date,TCY.end_date,TCY.remark,
+		TIP.ID,
+		TIP.ICMS_PKUUID,
+		S1.PARAM_NAME AS cntTypeName,
+		 S2.PARAM_NAME AS houseKindName,
+		 CNT.BGT_TYPE
+		FROM TD_CNT CNT
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  CNT.cnt_num=TIP.ID
+		LEFT JOIN TD_CNT_TENANCY TCY ON CNT.cnt_num = TCY.cnt_num
+		LEFT JOIN SYS_SELECT S1 ON CNT.CNT_TYPE    = S1.PARAM_VALUE AND S1.CATEGORY_ID = 'CNT_TYPE'
+		LEFT JOIN SYS_SELECT S2 ON TCY.HOUSE_KIND_ID    = S2.PARAM_VALUE AND S2.CATEGORY_ID = 'HOUSE_KIND'
+		WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	<!-- 更新合同 -->
+	<update id="updCnt" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+		UPDATE TD_CNT
+		   SET PSBH 			 = #{psbh           ,jdbcType=VARCHAR}, 
+			   STOCK_NUM 		 = #{stockNum       ,jdbcType=VARCHAR}, 
+			   QBH 				 = #{qbh            ,jdbcType=VARCHAR}, 
+			   LXLX 			 = #{lxlx           ,jdbcType=VARCHAR}, 
+			   LXSL 			 = #{lxsl           ,jdbcType=DECIMAL}, 
+			   LXJE 			 = #{lxje           ,jdbcType=DECIMAL}, 
+			   CNT_AMT 			 = #{cntAmt         ,jdbcType=DECIMAL}, 
+			   TOTAL_NUM 		 = #{totalNum       ,jdbcType=DECIMAL}, 
+			   CNT_TYPE 		 = #{cntType        ,jdbcType=VARCHAR}, 
+			   FEE_TYPE 		 = #{feeType        ,jdbcType=VARCHAR}, 
+			   FEE_SUB_TYPE 	 = #{feeSubType     ,jdbcType=VARCHAR}, 
+			   FEE_START_DATE 	 = #{feeStartDate   ,jdbcType=VARCHAR}, 
+		       FEE_END_DATE		 = #{feeEndDate     ,jdbcType=VARCHAR}, 
+		       ACTUAL_FEE_END_DATE		 = #{actualFeeEndDate     ,jdbcType=VARCHAR}, 
+			   FEE_AMT 			 = #{feeAmt         ,jdbcType=DECIMAL}, 
+			   FEE_PENALTY 		 = #{feePenalty     ,jdbcType=DECIMAL}, 
+			   SIGN_DATE 		 = #{signDate       ,jdbcType=VARCHAR}, 
+			   IS_PROVINCE_BUY 	 = #{isProvinceBuy  ,jdbcType=VARCHAR}, 
+			   ZB_AMT 			 = #{zbAmt          ,jdbcType=DECIMAL}, 
+			   DELIVER_DUTY_CODE = #{deliverDutyCode,jdbcType=VARCHAR}, 
+			   PROVIDER_CODE 	 = #{providerCode   ,jdbcType=VARCHAR}, 
+			   PROV_ACT_NO       = #{provActNo      ,jdbcType=VARCHAR}, 
+			   PROV_ACT_CURR     = #{provActCurr    ,jdbcType=VARCHAR}, 
+			   SRC_POVIDER_NAME  = #{srcPoviderName ,jdbcType=VARCHAR}, 
+			   PAY_TERM          = #{payTerm        ,jdbcType=VARCHAR}, 
+			   STAGE_TYPE        = #{stageType      ,jdbcType=VARCHAR}, 
+			   MEMO              = #{memo           ,jdbcType=VARCHAR}, 
+			   IS_ORDER 		 = #{isOrder        ,jdbcType=VARCHAR},
+			   DATA_FLAG         = #{dataFlag       ,jdbcType=VARCHAR},
+			   IS_PREPAID_PROVISION=#{isPrepaidProvision,jdbcType=VARCHAR},
+			   PROVIDER_TAX_RATE = #{providerTaxRate,jdbcType=DECIMAL},
+			   PROVIDER_TAX      = #{providerTax    ,jdbcType=DECIMAL},
+			   IS_SPEC			 = #{isSpec 		,jdbcType=VARCHAR},
+			   CNT_NAME 		 = #{cntName		,jdbcType=VARCHAR},
+			   CNT_NUM_RELATED   = #{cntNumRelated  ,jdbcType=VARCHAR},
+			   
+			   PROVIDER_NAME   = #{providerName  ,jdbcType=VARCHAR},
+			   PROVIDER_ADDR   = #{providerAddr  ,jdbcType=VARCHAR},
+			   PROVIDER_ADDR_CODE   = #{providerAddrCode  ,jdbcType=VARCHAR},
+			   ACT_NAME   = #{actName  ,jdbcType=VARCHAR},
+			   BANK_INFO   = #{bankInfo  ,jdbcType=VARCHAR},
+			   BANK_CODE   = #{bankCode  ,jdbcType=VARCHAR},
+			   BANK_AREA   = #{bankArea  ,jdbcType=VARCHAR},
+			   ACT_TYPE   = #{actType  ,jdbcType=VARCHAR},
+			   BANK_NAME   = #{bankName  ,jdbcType=VARCHAR},
+			   PAY_MODE   = #{payMode  ,jdbcType=VARCHAR},
+			   PROVIDER_TYPE   = #{providerType  ,jdbcType=VARCHAR},
+			   PAY_DUTY_CODE   = #{payDutyCode  ,jdbcType=VARCHAR}  ,
+			   CNT_ALL_AMT = #{cntAllAmt  ,jdbcType=DECIMAL},
+			   CNT_TAX_AMT = #{cntTaxAmt  ,jdbcType=DECIMAL},
+			   INST_USER = #{operUser  ,jdbcType=VARCHAR}
+		WHERE CNT_NUM = #{cntNum     ,jdbcType=VARCHAR} 
+			  AND DATA_FLAG IN ('10','11','40')		
+	</update>
+	
+	<!-- 获取合同物料列表 -->
+	<select id="getCntProj" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		<!--
+        SELECT DEV.*,PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        	SPE.special_name,REF.reference_name,TM.mont_name
+		FROM TD_CNT_DEVICE DEV
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_SPECIAL SPE ON DEV.special = SPE.special_id
+		LEFT JOIN TB_REFERENCE REF ON DEV.reference = REF.reference_id
+		LEFT JOIN TB_MONT_NAME TM ON DEV.mont_code = TM.mont_code
+        WHERE DEV.cnt_num = #{cntNum}
+        -->
+         SELECT  DISTINCT
+          DEV.cnt_num           ,
+		  DEV.sub_id            ,
+		  DEV.proj_id           ,
+		  DEV.matr_code         ,
+		  DEV.device_model_name ,
+		  DEV.exec_amt          ,
+		  DEV.exec_num          ,
+		  DEV.exec_price        ,
+		  DEV.warranty          ,
+		  DEV.productor         ,
+		  DEV.fee_dept          ,
+		  DEV.reference         ,
+		  DEV.special           ,
+		  DEV.payed_amt         ,
+		  DEV.freeze_amt        ,
+		  DEV.order_id          ,
+		  DEV.po_number         ,
+		  DEV.po_lineno         ,
+		  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code)) MONT_CODE,
+		  
+		  DEV.data_flag         ,
+		  DEV.audit_memo        ,
+		  DEV.audit_dept        ,
+		  DEV.audit_oper        ,
+		  DEV.audit_date        ,
+		  DEV.audit_time      ,  
+          DEV.TAX_CODE,
+          dev.tax_rate,
+            DEV.DEDUCT_FLAG,
+                DEV.TAX_YAMT,
+                DEV.TAX_NAMT,
+          DECODE(DEV.DEDUCT_FLAG,'Y',DEV.TAX_YAMT,'N',DEV.TAX_NAMT)CNT_TR_AMT,
+        PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        TM.mont_name,
+        TR.reference_name,TS.special_name,
+		SS2.PARAM_NAME AS data_flag_name
+		
+		FROM TD_CNT CNT
+		INNER JOIN TD_CNT_DEVICE DEV ON CNT.cnt_num = DEV.cnt_num
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_MONT_NAME TM ON TM.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code))
+		LEFT JOIN TB_REFERENCE TR ON DEV.reference = TR.reference_id
+		LEFT JOIN TB_SPECIAL TS ON DEV.special = TS.special_id
+	     
+	    
+	    LEFT JOIN SYS_SELECT SS2 ON DEV.DATA_FLAG = SS2.PARAM_VALUE AND SS2.CATEGORY_ID = 'DATA_FLAG_DEVICE' 
+	    
+        WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+    
+    <!-- 删除合同物料 -->
+	<delete id="delCntDevice" parameterType="String">
+		DELETE FROM TD_CNT_DEVICE
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+	</delete>
+	
+	<!-- 获取电子审批列表 -->
+	<select id="getDZSPProj" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.DzspInfo">
+		SELECT DZSP.ABCDE,DZSP.ABCDE_NUM,DZSP.ABCDE_AMT
+		,PRJ.PROJ_CR_ID,PRJ.CREATE_DATE,PRJ.PROJ_CR_NUM,PRJ.EXE_NUM,PRJ.PROJ_CR_AMT,PRJ.EXE_AMT 
+		FROM TD_CNT CNT
+		INNER JOIN TD_CNT_DZSP DZSP ON CNT.cnt_num = DZSP.cnt_num 
+		LEFT JOIN TB_PROJECTCR_INFO PRJ ON PRJ.AB_CDE = DZSP.ABCDE
+        WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 删除电子审批列表 -->
+	<delete id="delDZSPProj" parameterType="String">
+		DELETE FROM TD_CNT_DZSP
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 获取房屋租赁信息 -->
+	<select id="getTenancy" parameterType="String" resultType="Integer">
+		SELECT COUNT(1) FROM TD_CNT_TENANCY
+		WHERE cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 更新房屋租赁-->
+    <update id="updTenancy" parameterType="com.forms.prms.web.contract.initiate.domain.Tenancy">
+		UPDATE TD_CNT_TENANCY
+		SET AREA           = #{area,        jdbcType=DECIMAL},
+			<!--BEGIN_DATE     = #{beginDate,   jdbcType=VARCHAR}, 
+			END_DATE       = #{endDate,     jdbcType=VARCHAR}, 
+			JF		       = #{jf,          jdbcType=VARCHAR}, 
+			JF_ID		   = #{jfId,        jdbcType=VARCHAR}, 
+			YF		       = #{yf,          jdbcType=VARCHAR},
+			YF_ID		   = #{yfId,        jdbcType=VARCHAR},-->
+			REMARK		   = #{remark,      jdbcType=VARCHAR},
+			HOUSE_KIND_ID  = #{houseKindId, jdbcType=VARCHAR}, 
+			WDJG		   = #{wdjg,        jdbcType=VARCHAR},
+			WDJG_ID		   = #{wdjgId,      jdbcType=VARCHAR},
+			WYDZ 		   = #{wydz,        jdbcType=VARCHAR},
+			WYGLF		   = #{wyglf,       jdbcType=DECIMAL},
+			YJ  		   = #{yj,          jdbcType=DECIMAL},
+			AUTO_BANK_NAME = #{autoBankName,jdbcType=VARCHAR}
+		WHERE CNT_NUM = #{cntNum,        jdbcType=VARCHAR}
+		
+    </update>
+    
+	<!-- 删除房屋租赁信息 -->
+	<delete id="delTenancy" parameterType="String">
+		DELETE FROM TD_CNT_TENANCY
+		WHERE cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 获取租金递增条件列表 -->
+	<select id="getTcyDz" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.TenancyDz">
+		SELECT DZ.MATR_CODE MATR_CODE_FZ,DZ.ST_DATE FROM_DATE,DZ.ED_DATE TO_DATE,DZ.ALL_AMT CNT_AMT_TR,DZ.EXEC_AMT EXEC_AMT_TR,DZ.TAX_AMT TAX_AMT_TR 
+		FROM TD_CNT CNT
+		INNER JOIN td_cnt_tenancy_detail DZ ON CNT.cnt_num = DZ.cnt_num 
+        WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	
+	<select id="getMatrCode" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.TenancyDz">
+		SELECT  DISTINCT DZ.MATR_CODE MATR_CODE_FZ,T.MATR_NAME MATR_NAME_FZ FROM TD_CNT CNT INNER JOIN 
+		TD_CNT_TENANCY_DETAIL DZ ON CNT.CNT_NUM = DZ.CNT_NUM 
+		LEFT JOIN TB_MATR_TYPE T ON T.MATR_CODE = DZ.MATR_CODE 
+		WHERE CNT.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getTcyDzByMatrCode" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.TenancyDz">
+		SELECT DZ.MATR_CODE MATR_CODE_FZ,
+			   T.MATR_NAME MATR_NAME_FZ,
+			   DZ.ST_DATE FROM_DATE,
+			   DZ.ED_DATE TO_DATE,
+			   DZ.ALL_AMT CNT_AMT_TR,
+			   DZ.EXEC_AMT EXEC_AMT_TR,
+			   DZ.TAX_AMT TAX_AMT_TR 
+		FROM TD_CNT CNT
+		INNER JOIN td_cnt_tenancy_detail DZ ON CNT.cnt_num = DZ.cnt_num 
+		LEFT JOIN TB_MATR_TYPE T ON T.MATR_CODE = DZ.MATR_CODE 
+        WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR} and DZ.MATR_CODE = #{matrCodeFz,jdbcType=VARCHAR}
+        ORDER BY DZ.ST_DATE ASC
+	</select>
+	
+	<!-- 删除租金递增条件列表 -->
+	<delete id="delTcyDz" parameterType="String">
+		DELETE FROM td_cnt_tenancy_detail
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 查询租金递增条件列表 -->
+	<select id="selTcyDz" parameterType="String">
+		SELECT * FROM td_cnt_tenancy_detail
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取按 进度分期付款列表 -->
+	<select id="getOnSchedule" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   SUB_ID,
+    		   JDZF,
+    		   JDTJ,
+    		   JD_DATE
+		FROM TD_CNT_FKJD
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+    
+    <!-- 删除按进度分期付款 -->
+	<delete id="delOnSchedule" parameterType="String">
+		DELETE FROM TD_CNT_FKJD
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 获取按日期分期付款 -->
+	<select id="getOnDate" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   SUB_ID,
+    		   RQZF,
+    		   RQTJ
+		FROM TD_CNT_FKRQ
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+    
+    <!-- 删除按日期分期付款 -->
+	<delete id="delOnDate" parameterType="String">
+		DELETE FROM TD_CNT_FKRQ
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 获取按条件分期付款列表 -->
+	<select id="getOnTerm" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   DHZF,
+    		   YSZF,
+    		   JSZF
+		FROM TD_CNT_FKTJ
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 修改按条件分期付款-->
+    <update id="updOnTerm" parameterType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+    	UPDATE TD_CNT_FKTJ
+    	   SET DHZF = #{dhzf,jdbcType=DECIMAL},
+    		   YSZF = #{yszf,jdbcType=DECIMAL},
+    		   JSZF = #{jszf,jdbcType=DECIMAL}
+   		 WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+    </update>
+    
+    <!-- 删除按条件分期付款-->
+	<delete id="delOnTerm" parameterType="String">
+		DELETE FROM TD_CNT_FKTJ
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+	</delete>
+	
+    <!-- 删除费用类型 -->
+	<delete id="delCntFee" parameterType="String">
+		DELETE FROM TD_CNT_FEE
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+	</delete>
+	
+	<!-- 查询费用类型受益信息 -->
+	<select id="getBenefit" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT FEE.FEE_YYYYMM,FEE.SUB_ID,WRR.DUTY_NAME AS FEE_DEPT_NAME,MATR.MATR_CODE,MATR.MATR_NAME,MATR.CGL_CODE,SPE.SPECIAL_NAME
+		       ,REF.REFERENCE_NAME,FEE.CGL_CAL_AMT,FEE.CGL_FEE_AMT
+		FROM TD_CNT_DEVICE DEV
+		LEFT JOIN TD_CNT_FEE FEE ON DEV.CNT_NUM = FEE.CNT_NUM AND DEV.SUB_ID = FEE.SUB_ID
+		LEFT JOIN TB_FNDWRR WRR ON DEV.FEE_DEPT = WRR.DUTY_CODE
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.MATR_CODE = MATR.MATR_CODE
+		LEFT JOIN TB_SPECIAL SPE ON DEV.SPECIAL = SPE.SPECIAL_id
+		LEFT JOIN TB_REFERENCE REF ON DEV.REFERENCE = REF.REFERENCE_id
+		WHERE DEV.CNT_NUM=#{cntNum,jdbcType=VARCHAR} 
+		ORDER BY FEE.FEE_YYYYMM,DEV.SUB_ID
+	</select>
+	
+	<!-- 查询同一项目总的执行金额-->
+	<select id="getSumExecAmt" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT TCD.PROJ_ID, SUM(NVL(TCD.EXEC_AMT,0)) AS EXEC_AMT , SUM(NVL(TCD.TAX_NAMT,0)) AS TAX_NAMT
+		FROM TD_CNT_DEVICE TCD
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} GROUP BY PROJ_ID
+	</select>
+	
+	<!-- 修改冻结金额 -->
+	<update id="updateFreezeAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET FREEZE_TOTAL_AMT = nvl(FREEZE_TOTAL_AMT,0) - #{freezeAmt, jdbcType=DECIMAL} - NVL(#{taxNamt, jdbcType=DECIMAL},'0')
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR}
+		   AND START_DATE &lt;= to_char(sysdate,'yyyy-MM-dd')
+		   AND END_DATE &gt;= to_char(sysdate,'yyyy-MM-dd') 
+	</update>
+	
+	<!-- 合同删除时释放该合同项目占用的冻结金额 -->
+	<update id="updateFreezeTotal" parameterType="String">
+		update td_project tp
+			set tp.freeze_total_amt = tp.freeze_total_amt - 
+			    (select sum(tcd.exec_amt)
+			    from td_cnt_device tcd
+			    where tcd.cnt_num = #{cntNum,jdbcType=VARCHAR} and tcd.proj_id = tp.proj_id
+			    group by tcd.proj_id)
+			where exists (select 1 from td_cnt_device tc where tc.cnt_num = #{cntNum,jdbcType=VARCHAR} and tc.proj_id = tp.proj_id)
+	</update>
+	<!-- 修改项目执行金额 -->
+	<update id="updateProjCntAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET CNT_TOTAL_AMT = nvl(CNT_TOTAL_AMT,0) - #{cntTotalAmt, jdbcType=DECIMAL}- nvl(#{taxNamt, jdbcType=DECIMAL},0)
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR}
+		   AND START_DATE &lt;= to_char(sysdate,'yyyy-MM-dd')
+		   AND END_DATE &gt;= to_char(sysdate,'yyyy-MM-dd') 
+	</update>
+	
+	<!-- 删除合同 -->
+	<delete id="delCnt" parameterType="String">
+		DELETE FROM TD_CNT
+		WHERE CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+	</delete>
+	
+	<!-- 订单退回删除合同物料 -->
+	<select id="delOrderBackDev" parameterType="String">
+		delete from td_cnt_device
+		where CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+		and data_flag != '99'
+	</select>
+	
+	<!-- 根据合同号获取最大物料编码 -->
+	<select id="getMaxSubIdByCntNum" parameterType="String" resultType="Integer">
+		select nvl(max(sub_id),0) from td_cnt_device where cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 根据合同号获取状态为订单退回的合同中发送成功的订单对应的物料列表   -->
+	<select id="getOrderSucDevices" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT   DISTINCT
+          DEV.cnt_num           ,
+		  DEV.sub_id            ,
+		  DEV.proj_id           ,
+		  DEV.matr_code         ,
+		  DEV.device_model_name ,
+		  DEV.exec_amt          ,
+		  DEV.exec_num          ,
+		  DEV.exec_price        ,
+		  DEV.warranty          ,
+		  DEV.productor         ,
+		  DEV.fee_dept          ,
+		  DEV.reference         ,
+		  DEV.special           ,
+		  DEV.payed_amt         ,
+		  DEV.freeze_amt        ,
+		  DEV.order_id          ,
+		  DEV.po_number         ,
+		  DEV.po_lineno         ,
+		  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code)) MONT_CODE,
+		  
+		  DEV.data_flag         ,
+		  DEV.audit_memo        ,
+		  DEV.audit_dept        ,
+		  DEV.audit_oper        ,
+		  DEV.audit_date        ,
+		  DEV.audit_time      ,  
+          DEV.TAX_CODE,
+           dev.tax_rate,
+            DEV.DEDUCT_FLAG,
+                DEV.TAX_YAMT,
+                DEV.TAX_NAMT,
+          DECODE(DEV.DEDUCT_FLAG,'Y',DEV.TAX_YAMT,'N',DEV.TAX_NAMT)CNT_TR_AMT,
+		  PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        	SPE.special_name,REF.reference_name,TM.mont_name
+		FROM TD_CNT_DEVICE DEV
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_SPECIAL SPE ON DEV.special = SPE.special_id
+		LEFT JOIN TB_REFERENCE REF ON DEV.reference = REF.reference_id
+		LEFT JOIN TB_MONT_NAME TM ON TM.mont_code =  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code))
+        WHERE DEV.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		AND (DEV.DATA_FLAG = '99' OR DEV.DATA_FLAG = '90')
+		AND DEV.ORDER_ID IS NOT NULL 
+	</select>
+	<!-- 查询复核通过但是是10状态的合同的物料也不能信息修改   -->
+	<select id="checkPassDev" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT distinct
+		 DEV.cnt_num           ,
+		  DEV.sub_id            ,
+		  DEV.proj_id           ,
+		  DEV.matr_code         ,
+		  DEV.device_model_name ,
+		  DEV.exec_amt          ,
+		  DEV.exec_num          ,
+		  DEV.exec_price        ,
+		  DEV.warranty          ,
+		  DEV.productor         ,
+		  DEV.fee_dept          ,
+		  DEV.reference         ,
+		  DEV.special           ,
+		  DEV.payed_amt         ,
+		  DEV.freeze_amt        ,
+		  DEV.order_id          ,
+		  DEV.po_number         ,
+		  DEV.po_lineno         ,
+		  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code)) MONT_CODE,
+		  
+		  DEV.data_flag         ,
+		  DEV.audit_memo        ,
+		  DEV.audit_dept        ,
+		  DEV.audit_oper        ,
+		  DEV.audit_date        ,
+		  DEV.audit_time      ,  
+          DEV.TAX_CODE,
+           dev.tax_rate,
+            DEV.DEDUCT_FLAG,
+                DEV.TAX_YAMT,
+                DEV.TAX_NAMT,
+          DECODE(DEV.DEDUCT_FLAG,'Y',DEV.TAX_YAMT,'N',DEV.TAX_NAMT)CNT_TR_AMT,
+		PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        	SPE.special_name,REF.reference_name,TM.mont_name
+		FROM TD_CNT_DEVICE DEV
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_SPECIAL SPE ON DEV.special = SPE.special_id
+		LEFT JOIN TB_REFERENCE REF ON DEV.reference = REF.reference_id
+		LEFT JOIN TB_MONT_NAME TM ON tm.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code))
+        WHERE DEV.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		AND (DEV.DATA_FLAG = '99' OR DEV.DATA_FLAG = '90')
+		AND DEV.ORDER_ID IS  NULL 
+	</select>
+	<!-- 查询合同状态为10时只能修改不是90和99且订单号为空的物料  -->
+	<select id="canMotidyDev" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT distinct
+		DEV.cnt_num           ,
+		  DEV.sub_id            ,
+		  DEV.proj_id           ,
+		  DEV.matr_code         ,
+		  DEV.device_model_name ,
+		  DEV.exec_amt          ,
+		  DEV.exec_num          ,
+		  DEV.exec_price        ,
+		  DEV.warranty          ,
+		  DEV.productor         ,
+		  DEV.fee_dept          ,
+		  DEV.reference         ,
+		  DEV.special           ,
+		  DEV.payed_amt         ,
+		  DEV.freeze_amt        ,
+		  DEV.order_id          ,
+		  DEV.po_number         ,
+		  DEV.po_lineno         ,
+		  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code)) MONT_CODE,
+		  
+		  DEV.data_flag         ,
+		  DEV.audit_memo        ,
+		  DEV.audit_dept        ,
+		  DEV.audit_oper        ,
+		  DEV.audit_date        ,
+		  DEV.audit_time      ,  
+          DEV.TAX_CODE,
+           dev.tax_rate,
+            DEV.DEDUCT_FLAG,
+                DEV.TAX_YAMT,
+                DEV.TAX_NAMT,
+          DECODE(DEV.DEDUCT_FLAG,'Y',DEV.TAX_YAMT,'N',DEV.TAX_NAMT)CNT_TR_AMT,
+          PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        	SPE.special_name,REF.reference_name,TM.mont_name,MATR.IS_NOTINFEE
+		FROM TD_CNT_DEVICE DEV
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_SPECIAL SPE ON DEV.special = SPE.special_id
+		LEFT JOIN TB_REFERENCE REF ON DEV.reference = REF.reference_id
+		LEFT JOIN TB_MONT_NAME TM ON tm.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code))
+        WHERE DEV.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		AND DEV.DATA_FLAG  NOT IN( '99', '90')
+		AND DEV.ORDER_ID IS  NULL 
+	</select>
+	<!-- 根据合同号获取状态为订单退回的合同中可修改的物料列表   -->
+	<select id="orderBackNewDevices" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT 
+		DEV.sub_id            ,
+		  DEV.proj_id           ,
+		  DEV.matr_code         ,
+		  DEV.device_model_name ,
+		  DEV.exec_amt          ,
+		  DEV.exec_num          ,
+		  DEV.exec_price        ,
+		  DEV.warranty          ,
+		  DEV.productor         ,
+		  DEV.fee_dept          ,
+		  DEV.reference         ,
+		  DEV.special           ,
+		  DEV.payed_amt         ,
+		  DEV.freeze_amt        ,
+		  DEV.order_id          ,
+		  DEV.po_number         ,
+		  DEV.po_lineno         ,
+		  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code)) MONT_CODE,
+		  
+		  DEV.data_flag         ,
+		  DEV.audit_memo        ,
+		  DEV.audit_dept        ,
+		  DEV.audit_oper        ,
+		  DEV.audit_date        ,
+		  DEV.audit_time      ,  
+          DEV.TAX_CODE,
+           dev.tax_rate,
+            DEV.DEDUCT_FLAG,
+                DEV.TAX_YAMT,
+                DEV.TAX_NAMT
+                ,PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        	SPE.special_name,REF.reference_name,TM.mont_name, TS.SPECIAL_NAME,TR.REFERENCE_NAME,DECODE(DEV.DEDUCT_FLAG,'Y',DEV.TAX_YAMT,'N',DEV.TAX_NAMT) AS CNT_TR_AMT
+		FROM TD_CNT_DEVICE DEV
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_SPECIAL SPE ON DEV.special = SPE.special_id
+		LEFT JOIN TB_REFERENCE REF ON DEV.reference = REF.reference_id
+		LEFT JOIN TB_MONT_NAME TM ON   TM.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,decode(DEV.next_year,to_char(sysdate,'yyyy'),DEV.next_mont_code))
+		LEFT JOIN TB_SPECIAL TS ON  TS.SPECIAL_ID = DEV.SPECIAL
+		LEFT JOIN TB_REFERENCE TR ON  TR.REFERENCE_ID = DEV.REFERENCE
+        WHERE DEV.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		AND (DEV.DATA_FLAG NOT IN( '99','90') 
+		OR DEV.ORDER_ID IS NULL)
+		ORDER BY DEV.FEE_DEPT
+	</select>
+	
+	<!-- 订单退回的合同修改操作时删除非订单成功的原物料信息   -->
+	<delete id="delOrderBackCntDevice" parameterType="String">
+		DELETE FROM TD_CNT_DEVICE TCD
+		WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		AND (TCD.DATA_FLAG NOT IN('99','90')
+		OR TCD.ORDER_ID IS NULL)
+	</delete>
+	
+	<!-- 订单退回的合同修改时修改已成功订单的信息 -->
+	<select id="updateOrderInfo" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+		UPDATE TD_ORDER TDO
+			SET TDO.STOCK_NUM = #{stockNum,jdbcType=VARCHAR},
+		    TDO.STOCK_AMT = #{lxje,jdbcType=DECIMAL},
+		    TDO.STOCK_PROV = #{providerCode,jdbcType=VARCHAR},
+		    TDO.SIGN_DATE = #{signDate,jdbcType=VARCHAR},
+		    TDO.PAY_TERM_MEMO = #{payTerm,jdbcType=VARCHAR}
+		WHERE EXISTS (
+		     SELECT 1 FROM TD_ORDER TDO1
+		     LEFT JOIN TD_CNT TC ON TC.CNT_NUM = TDO1.CNT_NUM
+		     WHERE  TC.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="delCntFeeLog" parameterType="string">
+		DELETE FROM TD_CNT_FEE_LOG
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	<!-- 删除合同号在扫描记录表中的数据   -->
+	<delete id="delTiIcms" parameterType="String">
+		DELETE FROM TI_ICMS_PKUUID 
+		WHERE ID = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 删除合同号在审批历史记录表中的数据   -->
+	<delete id="delCntLog" parameterType="String">
+		DELETE FROM TD_CNT_AUDIT_LOG 
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+	<!-- 删除合同号在审批历史记录表中的数据   -->
+	<delete id="delCntDevLog" parameterType="String">
+		DELETE FROM TD_CNT_DEVICE_LOG 
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</delete>
+</mapper>

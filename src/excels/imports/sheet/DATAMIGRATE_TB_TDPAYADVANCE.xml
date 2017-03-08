@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="A1" regExp="\u9884\u4ed8\u6b3e\u4fe1\u606f" formatDesc="该值应该为[预付款信息]">bean.headInfos</mapping>
+
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u9884\u4ed8\u6b3e\u5355\u53f7" formatDesc="该值应该为[预付款单号]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u4f9b\u5e94\u5546\u540d\u79f0" formatDesc="该值应该为[供应商名称]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u4f9b\u5e94\u5546\u8d26\u53f7" formatDesc="该值应该为[供应商账号]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u4f9b\u5e94\u5546\u5e01\u522b" formatDesc="该值应该为[供应商币别]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u53d1\u7968\u91d1\u989d" formatDesc="该值应该为[发票金额]">bean.headInfos</mapping>
+		<mapping cell="G2" regExp="\u4ed8\u6b3e\u65e5\u671f" formatDesc="该值应该为[付款日期]">bean.headInfos</mapping>
+		<mapping cell="H2" regExp="\u4ed8\u6b3e\u65b9\u5f0f" formatDesc="该值应该为[付款方式]">bean.headInfos</mapping>
+		<mapping cell="I2" regExp="\u53d1\u7968\u8bf4\u660e" formatDesc="该值应该为[发票说明]">bean.headInfos</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayAdvanceBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" nullAllowed="false" >detail.cntNum</mapping>		
+			<mapping row="1" col="1" nullAllowed="false" >detail.payId</mapping>
+			<mapping row="1" col="2">detail.providerName</mapping>
+			<mapping row="1" col="3" maxLength="19" formatDesc="收款账号最大19位数字">detail.provActNo</mapping>
+			<mapping row="1" col="4">detail.provActCurr</mapping>
+			<mapping row="1" col="5" nullAllowed="false" regExp="\d{1,7}" formatDesc="请输入最大7位有效数字">detail.invoiceAmt</mapping>
+			<mapping row="1" col="6">detail.payDate</mapping>
+			<mapping row="1" col="7">detail.payMode</mapping>
+			<mapping row="1" col="8">detail.invoiceMemo</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

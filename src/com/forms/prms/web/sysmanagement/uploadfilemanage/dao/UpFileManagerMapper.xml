@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.uploadfilemanage.dao.UpFileManagerDAO">
+
+	<!-- 查询：查找上传文件列表 -->
+	<select id="getUpFileList"  parameterType="com.forms.prms.web.sysmanagement.uploadfilemanage.domain.UpFileBean"
+								resultType="com.forms.prms.web.sysmanagement.uploadfilemanage.domain.UpFileBean">
+		SELECT 
+			FILE_ID,
+			FILE_TYPE,
+			DECODE(FILE_TYPE ,'01' ,'控件类' , '02' , '系统参数类' , '03' , '其他类' )FILE_TYPE_DESC,
+			SOURCE_FNAME,
+			SOURCE_FPATH,
+			DELETE_FLAG,
+			FILE_DESC,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME 
+		FROM TB_UPLOAD_FILE_MNGT 
+		<where>
+			<if test="fileType != null and fileType != ''">
+				AND FILE_TYPE = #{fileType,jdbcType=VARCHAR}
+			</if>
+			<if test="sourceFName != null and sourceFName != ''">
+				AND LOWER(SOURCE_FNAME) LIKE '%'|| LOWER(#{sourceFName,jdbcType=VARCHAR}) ||'%'
+			</if>
+			<if test="fileDesc != null and fileDesc != ''">
+				AND LOWER(FILE_DESC) LIKE '%'|| LOWER(#{fileDesc,jdbcType=VARCHAR}) ||'%'
+			</if>
+			<if test="instOper != null and instOper != ''">
+				AND LOWER(INST_OPER) = LOWER(#{instOper,jdbcType=VARCHAR})
+			</if>
+		</where>
+		ORDER BY INST_DATE DESC , INST_TIME DESC
+	</select>
+	
+	<!-- 查询：根据文件ID查找指定的上传文件信息  -->
+	<select id="getUpFileById" 	parameterType="com.forms.prms.web.sysmanagement.uploadfilemanage.domain.UpFileBean"
+								resultType="com.forms.prms.web.sysmanagement.uploadfilemanage.domain.UpFileBean">
+		SELECT 
+			FILE_ID,
+			FILE_TYPE,
+			DECODE(FILE_TYPE ,'01' ,'控件类' , '02' , '系统参数类' , '03' , '其他类' )FILE_TYPE_DESC,
+			SOURCE_FNAME,
+			SOURCE_FPATH,
+			DELETE_FLAG,
+			FILE_DESC,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME 
+		 FROM TB_UPLOAD_FILE_MNGT T1
+		WHERE FILE_ID = #{fileId , jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 新增：插入上传文件的相关信息至表：TB_UPLOAD_FILE_MNGT -->
+	<insert id="saveUploadFileInfo"		parameterType="com.forms.prms.web.sysmanagement.uploadfilemanage.domain.UpFileBean">
+		INSERT INTO TB_UPLOAD_FILE_MNGT
+		(
+			FILE_ID,
+			FILE_TYPE,
+			SOURCE_FNAME,
+			SOURCE_FPATH,
+			FILE_DESC,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			DELETE_FLAG
+		)
+		VALUES
+		(
+			#{fileId , 		jdbcType=VARCHAR},
+			#{fileType , 	jdbcType=VARCHAR},
+			#{sourceFName , jdbcType=VARCHAR},
+			#{sourceFPath , jdbcType=VARCHAR},
+			#{fileDesc , 	jdbcType=VARCHAR},
+			#{instOper , 	jdbcType=VARCHAR},
+			TO_CHAR(sysdate, 'yyyy-mm-dd'),
+			TO_CHAR(sysdate, 'HH24:MI:SS'),
+			#{deleteFlag , 	jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 修改：修改更新指定ID的上传文件信息 -->
+	<update id="updateUpFile"	parameterType="com.forms.prms.web.sysmanagement.uploadfilemanage.domain.UpFileBean">
+		UPDATE	TB_UPLOAD_FILE_MNGT
+		SET	
+			<if test="sourceFName != null and sourceFName != ''">
+				SOURCE_FNAME = #{sourceFName ,jdbcType=VARCHAR} ,
+			</if>
+			<if test="sourceFPath != null and sourceFPath != ''">
+				SOURCE_FPATH = #{sourceFPath ,jdbcType=VARCHAR} ,
+			</if>
+			<if test="newFName != null and newFName != ''">
+				INST_DATE = TO_CHAR(sysdate, 'yyyy-mm-dd'),
+				INST_OPER = #{instOper ,jdbcType=VARCHAR} ,
+				INST_TIME = TO_CHAR(sysdate, 'HH24:MI:SS'),
+			</if>
+			<if test="fileType != null and fileType != ''">
+				FILE_TYPE = #{fileType ,jdbcType=VARCHAR},
+			</if>
+			FILE_DESC = #{fileDesc ,jdbcType=VARCHAR}
+		WHERE FILE_ID = #{fileId ,jdbcType=VARCHAR}
+	</update>
+
+	<!-- 删除：根据文件ID删除指定的上传文件信息  -->
+	<delete id="deleteUpFile" 	parameterType="string">
+		DELETE FROM
+			TB_UPLOAD_FILE_MNGT 
+		WHERE FILE_ID = #{fileId,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 查询：获取数据库时间戳 -->
+	<select id="getDBTimeStamp" resultType="string">
+		SELECT TO_CHAR(SYSDATE , 'yyyyMMddHH24MIss') FROM DUAL
+	</select>
+	
+</mapper>

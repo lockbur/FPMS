@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.tool.fms.receive.domain.ReceiveDao">
+	<update id="dealFms21" parameterType="String">
+		CALL PRC_FMS_21(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<update id="dealFms22" parameterType="String">
+		CALL PRC_FMS_22(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<update id="dealFms31" parameterType="String">
+		CALL PRC_FMS_31(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<update id="dealFms32" parameterType="String">
+		CALL PRC_FMS_32(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<!--订单处理fms第一次的回文件-->
+	<update id="dealFms34" parameterType="String">
+		CALL PRC_FMS_34(#{batchNo, jdbcType=VARCHAR},#{instOper, jdbcType=VARCHAR})
+	</update>
+	<!--订单处理fms第二次的回文件-->
+	<update id="dealFms25" parameterType="String">
+		CALL PRC_FMS_25(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<insert id="dealFms23" parameterType="String">
+		CALL PRC_FMS_23(#{batchNo, jdbcType=VARCHAR})
+	</insert>
+	<insert id="dealFms33" parameterType="String">
+		CALL PRC_FMS_33(#{batchNo, jdbcType=VARCHAR})
+	</insert>
+	
+	<insert id="dealFms11" parameterType="String">
+		CALL PRC_ERP_11(#{batchNo, jdbcType=VARCHAR})
+	</insert>
+	<insert id="dealFms12" parameterType="String">
+		CALL PRC_ERP_12(#{batchNo, jdbcType=VARCHAR})
+	</insert>
+	<insert id="dealFms13" parameterType="String">
+		CALL PRC_ERP_13(#{batchNo, jdbcType=VARCHAR})
+	</insert>
+	<select id="selectInitUser" parameterType="com.forms.prms.web.user.domain.User"
+				resultType="com.forms.prms.web.user.domain.User">
+		select user_id from sys_user where password is null
+	</select>
+	<update id="updateUserPwd" parameterType="String">
+		update sys_user set password =#{password, jdbcType=VARCHAR}
+		where user_id = #{userId, jdbcType=VARCHAR}
+	</update>
+</mapper>	

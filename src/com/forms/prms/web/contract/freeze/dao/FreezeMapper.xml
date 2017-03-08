@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.freeze.dao.FreezeDAO">
+	
+	<!-- 查找可冻结合同列表 -->
+	<select id="freezeList" parameterType="com.forms.prms.web.contract.freeze.domain.Contract"
+							resultType="com.forms.prms.web.contract.freeze.domain.Contract">
+		SELECT CNT.*,TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '20' 
+	       AND CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR}  || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 查找可解冻合同列表  -->
+	<select id="unfreezeList" parameterType="com.forms.prms.web.contract.freeze.domain.Contract"
+							resultType="com.forms.prms.web.contract.freeze.domain.Contract">
+		SELECT CNT.*,TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+		 WHERE CNT.DATA_FLAG = '35' 
+		   AND CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR} 
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	
+	<!-- 冻结 -->
+	<update id="freeze" parameterType="String">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '35'
+	     WHERE DATA_FLAG = '20'
+	       AND CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+	</update>
+	
+	<!-- 解冻 -->
+	<update id="unfreeze" parameterType="String">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '20' 
+		 WHERE DATA_FLAG = '35'
+		   AND CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+	</update>
+	
+</mapper>

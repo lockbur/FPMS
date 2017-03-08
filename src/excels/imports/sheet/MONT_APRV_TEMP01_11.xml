@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+		
+		<mapping cell="A1" regExp="\u7269\u6599\u7f16\u7801" formatDesc="该值应该为[物料编码]">bean.headInfos</mapping>
+		<mapping cell="B1" regExp="\u7269\u6599\u540d\u79f0" formatDesc="该值应该为[物料名称]">bean.headInfos</mapping>
+		<mapping cell="C1" regExp="\u6838\u7b97\u7801" formatDesc="核算码">bean.headInfos</mapping>
+		
+		<mapping cell="D1" regExp="\u65e7" formatDesc="该值应该为[旧]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u76d1\u63a7\u6307\u6807\u4ee3\u7801" formatDesc="该值应该为[监控指标代码]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u76d1\u63a7\u6307\u6807\u540d\u79f0" formatDesc="该值应该为[监控指标名称]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u4e13\u9879\u5305\u7c7b\u578b" formatDesc="该值应该为[专项包类型]">bean.headInfos</mapping>
+		
+		<mapping cell="G1" regExp="\u662f\u5426\u5e9f\u5f03" formatDesc="该值应该为[是否废弃]">bean.headInfos</mapping>
+		
+		<mapping cell="H1" regExp="\u65b0" formatDesc="该值应该为[新]">bean.headInfos</mapping>
+		<mapping cell="H2" regExp="\u76d1\u63a7\u6307\u6807\u540d\u79f0" formatDesc="该值应该为[监控指标名称]">bean.headInfos</mapping>
+		<mapping cell="I2" regExp="\u4e13\u9879\u5305\u7c7b\u578b" formatDesc="该值应该为[专项包类型]">bean.headInfos</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.MontBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" maxLength="11" nullAllowed="false" formatDesc="物料编码不允许为空">detail.matrCode</mapping>
+			<mapping row="1" col="1"   nullAllowed="false" formatDesc="物料名称不允许为空">detail.matrName</mapping>
+			<mapping row="1" col="3" maxLength="50">detail.lastMontCode</mapping>
+			<mapping row="1" col="4"  >detail.lastMontName</mapping>
+			<mapping row="1" col="5"  >detail.lastMontProjType</mapping>
+			<mapping row="1" col="7" maxLength="300">detail.montName</mapping>
+			<mapping row="1" col="8" maxLength="300">detail.montProjType</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

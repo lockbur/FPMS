@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.parameter.dao.ParameterDao">
+
+     <!--查询参数类别列表  -->
+	<select id="queryParamClassList" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter" 
+	resultType="com.forms.prms.web.sysmanagement.parameter.domain.ParameterClass">
+		SELECT Y.CATEGORY_ID ,
+  			Y.CATEGORY_NAME
+		FROM SYS_PARAMETER_CATEGORY Y
+		<where>
+		<if test="categoryId != null and '' != categoryId">
+			AND Y.CATEGORY_ID = #{categoryId,jdbcType=VARCHAR}
+		</if>
+			AND Y.IS_DELETED ='0'
+		</where>
+		ORDER BY Y.CATEGORY_ID ASC
+	</select>
+
+	<!--查询参数列表  -->
+	<select id="queryParameter" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter" 
+	resultType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+				SELECT     T.CATEGORY_ID,
+	           			   C.CATEGORY_NAME,
+	           			   T.PARAM_VAR_NAME,
+	           			   T.PARAM_DISP_NAME,
+	           			   T.PARAM_VALUE,
+	           			   T.PARAM_DESC,
+	           			   T.IS_PWD_TYPE,
+	           			   T.PARAM_UPDATE_VALUE
+		      FROM SYS_PARAMETER T
+		      JOIN SYS_PARAMETER_CATEGORY C ON T.CATEGORY_ID = C.CATEGORY_ID
+		      WHERE T.ENABLE_MANAGE ='1' AND C.IS_DELETED ='0'
+		<if test="paramDispName != null and '' != paramDispName">
+			AND T.PARAM_DISP_NAME LIKE '%' || #{paramDispName,jdbcType=VARCHAR} || '%'
+		</if>
+		ORDER BY T.CATEGORY_ID , T.SHOW_ORDER
+	</select>
+	<!--查询参数列表  -->
+	<select id="queryApplyHisList" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter" 
+	resultType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+				         SELECT T1.PARAM_VAR_NAME,
+				                T2.PARAM_DISP_NAME,
+				                T1.PARAM_ORIG_VALUE,
+				                T1.PARAM_UPDATE_VALUE,
+				                T1.APPLY_USER_ID,
+				                TO_CHAR(T1.APPLY_TIME, 'YYYYMMDD HH:MM:SS') AS APPLY_TIME,
+				                T1.APPROVE_USER_ID,
+				                TO_CHAR(T1.APPROVE_TIME, 'YYYYMMDD HH:MM:SS') AS APPROVE_TIME,
+				                T1.APPLY_STATUS,
+				                T2.IS_PWD_TYPE
+				           FROM SYS_PARAMETER_APPLY_LOG T1
+				           LEFT JOIN SYS_PARAMETER T2 ON T1.PARAM_VAR_NAME =
+				                                         T2.PARAM_VAR_NAME
+				          WHERE T1.PARAM_VAR_NAME = #{paramVarName,jdbcType=VARCHAR}
+				          ORDER BY T1.APPLY_TIME DESC
+	</select>
+	
+	
+	<update id="editPara" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+		  UPDATE SYS_PARAMETER T
+   				   SET T.PARAM_UPDATE_VALUE = #{paramUpdateValue,jdbcType=VARCHAR},
+			       T.APPLY_USER_ID      = #{applyUserId,jdbcType=VARCHAR},
+			       T.APPLY_TIME         = SYSDATE,
+			       T.APPLY_STATUS       = '0'
+			 WHERE T.PARAM_VAR_NAME =  #{paramVarName,jdbcType=VARCHAR}
+	</update>
+	<insert id="insertParaApplyLog" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+		 INSERT INTO SYS_PARAMETER_APPLY_LOG
+	      SELECT RM_GET_COMMON_ID('SYSPARAMETERLOGID'),
+	             S.PARAM_VAR_NAME,
+	             S.PARAM_VALUE,
+	             S.PARAM_UPDATE_VALUE,
+	             S.APPLY_USER_ID,
+	             S.APPLY_TIME,
+	             #{approveUserId,jdbcType=VARCHAR},
+	             SYSDATE,
+	             #{applyStatus,jdbcType=CHAR}
+	        FROM SYS_PARAMETER S
+	       WHERE S.PARAM_VAR_NAME = #{paramVarName,jdbcType=VARCHAR} 
+	</insert>
+	
+	<!-- SQL描述：根据ParamVarName查找系统参数对象 -->
+	<!-- 当T.REG_EXP不为null时，则认为应该使用正则校验，当T.REG_EXP为null时，则认为不使用正则校验 	([CASE-WHEN段]此需求update by 2015-09-24)-->
+	<select id="findPara" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter" 
+	resultType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+		SELECT T.PARAM_VAR_NAME,
+		       T.CATEGORY_ID,
+		       T.PARAM_DISP_NAME,
+		       T.PARAM_VALUE,
+		       T.PARAM_DESC,
+		       T.SHOW_ORDER,
+		       C.CATEGORY_NAME,
+		       T.IS_PWD_TYPE,
+		       T.PARAM_UPDATE_VALUE,
+		       T.REG_EXP,
+		       T.REG_CHECK_INFO,
+		       CASE 
+			     WHEN T.REG_EXP IS NULL THEN '0'
+			     WHEN T.REG_EXP IS NOT NULL THEN '1'
+			   END IS_USE_REG
+		  FROM SYS_PARAMETER T
+		  LEFT JOIN SYS_PARAMETER_CATEGORY C ON T.CATEGORY_ID = C.CATEGORY_ID
+		  WHERE T.PARAM_VAR_NAME = #{paramVarName,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="selectPara" resultType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+		SELECT T.PARAM_VAR_NAME, T.CATEGORY_ID, T.PARAM_VALUE,T.IS_PWD_TYPE
+  		FROM SYS_PARAMETER T
+  		LEFT JOIN SYS_PARAMETER_CATEGORY C ON T.CATEGORY_ID = C.CATEGORY_ID
+		ORDER BY T.CATEGORY_ID, T.SHOW_ORDER
+	</select>
+	<select id="checkList" resultType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+			SELECT C.CATEGORY_NAME,
+		       T.PARAM_VAR_NAME,
+		       T.PARAM_DISP_NAME,
+		       T.PARAM_VALUE,
+		       T.PARAM_UPDATE_VALUE,
+		       T.APPLY_USER_ID,
+		       T.IS_PWD_TYPE,
+		       TO_CHAR(T.APPLY_TIME, 'YYYYMMDD HH:MM:SS')  AS  APPLY_TIME
+		  FROM SYS_PARAMETER T
+		  LEFT JOIN SYS_PARAMETER_CATEGORY C ON T.CATEGORY_ID = C.CATEGORY_ID
+		 WHERE T.APPLY_STATUS = '0'
+		<if test="categoryId != null and '' != categoryId">
+				AND T.CATEGORY_ID = #{categoryId,jdbcType=INTEGER}
+		</if>
+		<if test="paramDispName != null and '' != paramDispName">
+				AND T.PARAM_DISP_NAME LIKE '%' || #{paramDispName,jdbcType=VARCHAR} || '%'
+		</if>
+		 ORDER BY T.CATEGORY_ID, T.SHOW_ORDER
+		
+	</select>
+
+
+	
+	<update id="updatePara" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+	  UPDATE SYS_PARAMETER T
+       SET T.PARAM_ORIG_VALUE   = T.PARAM_VALUE,
+           T.PARAM_VALUE        = T.PARAM_UPDATE_VALUE,
+           T.PARAM_UPDATE_VALUE = '' ,T.APPLY_STATUS = '2',
+           T.APPROVE_USER_ID    =  #{approveUserId,jdbcType=VARCHAR},
+           T.APPROVE_TIME       = SYSDATE
+       WHERE T.PARAM_VAR_NAME = #{paramVarName,jdbcType=VARCHAR}
+	</update>
+	<update id="refuse" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+		UPDATE SYS_PARAMETER T
+		   SET T.PARAM_UPDATE_VALUE = '',
+		       T.APPLY_STATUS       = '1',
+		       T.APPROVE_USER_ID    = #{approveUserId,jdbcType=VARCHAR},
+		       T.APPROVE_TIME       = SYSDATE
+		 WHERE T.PARAM_VAR_NAME = #{paramVarName,jdbcType=VARCHAR}
+	</update>
+	<select id="getPara" 		parameterType="String" resultType="String">
+		
+       select PARAM_VALUE  from sys_parameter a where a.param_var_name=#{paramVarName,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getparaBean" parameterType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter"
+					 resultType="com.forms.prms.web.sysmanagement.parameter.domain.Parameter">
+		select PARAM_VALUE,IS_PWD_TYPE from sys_parameter a where a.param_var_name=#{paramVarName,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="checkDeadlineButton" resultType="String">
+		select param_value from sys_parameter where param_var_name = upper('DEADLINE_BUTTON')
+	</select>
+	
+	<select id="getDeadlineDay" resultType="String">
+		select param_value from sys_parameter where param_var_name = upper('DEADLINE_DAY')
+	</select>
+	
+	<select id="getDeadlineTime" resultType="String">
+		select param_value from sys_parameter where param_var_name = upper('DEADLINE_TIME')
+	</select>
+	
+	<select id="checkDeadline" parameterType="String" resultType="String" >
+		select 1 from dual 
+		 where to_date(#{taskyyyymm, jdbcType=VARCHAR},'yyyymmdd hh24:mi:ss') > sysdate
+	</select>
+	
+	
+	
+</mapper>

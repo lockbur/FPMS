@@ -1,0 +1,136 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+
+
+h1,h2,h4,h5,h6 {
+	text-align: center;
+	color: #ccc;
+	text-shadow: #000 1px 1px 2px;
+	margin-bottom: 5px;
+}
+	h1 {
+		font-size: 5px;
+	}
+	h2 {
+		font-size: 5px;
+	}
+.sociales {
+	text-align: center;
+	margin-bottom: 20px;
+}
+
+	#timeline {
+		width: 800px;
+		height: 450px;
+		overflow: hidden;
+		margin: 20px auto;
+		position: relative;
+		background: url('img/dot.gif') left 30px repeat-x;
+	}
+		#dates {
+			width: 80px;
+			height: 60px;
+			overflow: hidden;
+		}
+			#dates li {
+				list-style: none;
+				float: left;
+				width: 150px;
+				height: 50px;
+				font-size: 15px;
+				text-align: center;
+				background: url('img/biggerdot.png') center bottom no-repeat;
+			}
+				#dates a {
+					line-height: 28px;
+					padding-bottom: 10px;
+				}
+				#dates .selected {
+					color: #ffcc00;
+			        font-size: 28px;
+				}
+		
+		#issues {
+			width: 800px;
+			height: 450px;
+			overflow: hidden;
+		}	
+			#issues li {
+				width: 800px;
+				height: 450px;
+				list-style: none;
+				float: left;
+			}
+				#issues li.selected img {
+					-webkit-transform: scale(1.1,1.1);
+					-moz-transform: scale(1.1,1.1);
+				    -o-transform: scale(1.1,1.1);
+				    -ms-transform: scale(1.1,1.1);
+				    transform: scale(1.1,1.1);
+				}
+				
+				#issues li h1 {
+					color: #ffcc00;
+					font-size: 30px;
+					margin: 10px 0;
+					text-shadow: #000 1px 1px 2px;
+				}
+				#issues li p {
+					font-size: 14px;
+					margin-right: 70px;
+					font-weight: normal;
+					line-height: 22px;
+					text-shadow: #000 1px 1px 2px;
+				}
+		
+		#grad_left,
+		#grad_right {
+			width: 100px;
+			height: 350px;
+			position: absolute;
+			top: 0;
+		}
+			#grad_left {
+		        left: 0;
+		        background: url('img/grad_left.png') repeat-y;
+			}
+			#grad_right {
+		        right: 0;
+		        background: url('img/grad_right.png') repeat-y;
+			}
+		
+		#next,
+		#prev {
+			position: absolute;
+			top: 0;
+			font-size: 70px;
+			top: 250px;
+			width: 22px;
+			height: 38px;
+			background-position: 0 0;
+			background-repeat: no-repeat;
+			text-indent: -9999px;
+			overflow: hidden;
+		}
+			#next:hover,
+			#prev:hover {
+				background-position: 0 -76px;
+			}
+			#next {
+				right: 0;
+				background-image: url('img/next.png');
+				border-color: orange;
+				border-style: ridge  ;
+			}
+			#prev {
+				left: 0;
+				background-image: url('img/prev.png');
+				border-color: orange;
+				border-style: ridge  ;
+			}
+				#next.disabled,
+				#prev.disabled {
+					opacity: 0.2;
+				}

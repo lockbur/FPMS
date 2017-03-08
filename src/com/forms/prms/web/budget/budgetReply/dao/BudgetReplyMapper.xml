@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetReply.dao.BudgetReplyDao">
+
+	<!-- 获取所有待批复的记录列表 -->
+	<select id="list" parameterType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean" 
+			resultType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean">
+		SELECT DISTINCT A.*,
+		                A.DATA_YEAR || ' - ' || D.PARAM_NAME || ' - ' ||
+		                CASE A.DATA_TYPE
+		                  WHEN '0' THEN
+		                   '年初预算'
+		                  WHEN '1' THEN
+		                   '追加预算'
+		                END TMPLT_NAME,
+		                #{org2Name, jdbcType=VARCHAR} org2Name,
+		                NVL(E.REPLY_AMT,0) REPLY_AMT,
+		                NVL(E.ALLOTED_AMT,0) ALLOTED_AMT
+		  FROM TB_BUDGET_TMPLT A
+		 
+		  LEFT JOIN SYS_SELECT D ON D.PARAM_VALUE = A.DATA_ATTR
+		                        AND D.CATEGORY_ID = 'CNT_TYPE'
+		  LEFT JOIN TD_BUDGET_REPLY_HEADER E ON A.TMPLT_ID = E.TMPLT_ID
+		 WHERE A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		   AND A.DATA_FLAG = '04'
+		   AND EXISTS
+		 (SELECT 1
+		          FROM TB_BUDGET_TMPLT_DUTY C
+		         WHERE C.DUTY_CODE = #{dutyCode, jdbcType=VARCHAR}
+		           AND C.TMPLT_ID = A.TMPLT_ID)
+		<if test="dataYear != null and dataYear != ''">
+			AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="dataAttr != null and dataAttr != ''">
+			AND A.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+		<if test="dataType != null and dataType != ''">
+			AND A.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+	</select>
+	
+	<!-- 根据条件查找符合的预算模板列表 -->
+	<select id="getOneTemp" parameterType="string" resultType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean">
+		SELECT DISTINCT A.TMPLT_ID TMPLT_ID,
+		                CASE A.DATA_TYPE
+		                  WHEN '0' THEN
+		                   '年初预算'
+		                  WHEN '1' THEN
+		                   '追加预算'
+		                END DATA_TYPE,
+		                A.DATA_YEAR DATA_YEAR,
+		                D.PARAM_NAME DATA_ATTR,
+		                A.DATA_ATTR DATA_ATTR_TYPE,
+		                A.ORG21_CODE ORG21_CODE,
+		                B.ORG2_NAME ORG2_NAME,
+		                NVL(C.REPLY_AMT,0) REPLY_AMT,
+		                NVL(C.ALLOTED_AMT,0) ALLOTED_AMT
+		  FROM TB_BUDGET_TMPLT A
+		  LEFT JOIN TB_FNDWRR B ON B.ORG2_CODE = A.ORG21_CODE
+		  LEFT JOIN TD_BUDGET_REPLY_HEADER C ON C.TMPLT_ID = A.TMPLT_ID
+		  LEFT JOIN SYS_SELECT D ON D.PARAM_VALUE = A.DATA_ATTR
+		                        AND D.CATEGORY_ID = 'CNT_TYPE'
+		 WHERE A.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+
+	</select>
+	
+	<!-- 获取该模板的所有监控指标 -->
+	<select id="getMont" parameterType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean" 
+			resultType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean">
+		SELECT DISTINCT A.MONT_CODE, A.MONT_NAME, NVL(D.REPLY_AMT, 0) REPLY_AMT
+		  FROM TB_MONT_NAME A
+		  JOIN TB_MONT_MATR_CONTRA B ON A.MONT_CODE = B.MONT_CODE
+		                            AND B.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  JOIN TB_BUDGET_TMPLT_DETAIL C ON B.MATR_CODE = C.MATR_CODE
+		                               AND C.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		  LEFT JOIN TD_BUDGET_REPLY_DETAIL D ON D.MONT_CODE = A.MONT_CODE
+		                                    AND D.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 更新预算批复明细表 -->
+	<insert id="mergeToDetail" parameterType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean">
+		MERGE INTO TD_BUDGET_REPLY_DETAIL T
+		USING (SELECT #{tmpltId,jdbcType=VARCHAR} TMPLT_ID,
+		              #{montCode,jdbcType=VARCHAR} MONT_CODE
+		         FROM DUAL) A
+		ON (T.TMPLT_ID = A.TMPLT_ID AND T.MONT_CODE = A.MONT_CODE)
+		WHEN MATCHED THEN
+		  UPDATE SET T.REPLY_AMT  = #{replyAmt,jdbcType=NUMERIC},
+		             T.REPLY_OPER = #{replyOper,jdbcType=VARCHAR},
+		             T.REPLY_DATE = TO_CHAR(SYSDATE,'yyyy-MM-dd'),
+		             T.REPLY_TIME = TO_CHAR(SYSDATE,'hh24:mi:ss')
+		WHEN NOT MATCHED THEN
+		  INSERT
+		    (TMPLT_ID,
+		     MONT_CODE,
+		     REPLY_AMT,
+		     REPLY_OPER,
+		     REPLY_DATE,
+		     REPLY_TIME)
+		  VALUES
+		    (A.TMPLT_ID,
+		     A.MONT_CODE,
+		     #{replyAmt,jdbcType=NUMERIC},
+		     #{replyOper,jdbcType=VARCHAR},
+		     TO_CHAR(SYSDATE,'yyyy-MM-dd'),
+		     TO_CHAR(SYSDATE,'hh24:mi:ss'))
+	</insert>
+	
+	<!-- 更新预算批复汇总表 -->
+	<insert id="mergeToHeader" parameterType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean">
+		MERGE INTO TD_BUDGET_REPLY_HEADER T
+		USING (SELECT #{tmpltId,jdbcType=VARCHAR} TMPLT_ID
+		         FROM DUAL) A
+		ON (T.TMPLT_ID = A.TMPLT_ID)
+		WHEN MATCHED THEN
+		  UPDATE SET T.REPLY_AMT   = #{replyAmt,jdbcType=NUMERIC},
+		             T.ALLOTED_AMT = #{allotedAmt,jdbcType=NUMERIC}
+		WHEN NOT MATCHED THEN
+		  INSERT
+		    (TMPLT_ID,
+		     REPLY_AMT,
+		     ALLOTED_AMT)
+		  VALUES
+		    (A.TMPLT_ID,
+		     #{replyAmt,jdbcType=NUMERIC},
+		     #{allotedAmt,jdbcType=NUMERIC})
+	</insert>
+	<!--模板已经分解的金额-->
+	<select id="getTmpltHaveSplit" parameterType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean" 
+			resultType="java.lang.String">
+		select SUM(SUM_AMT) from TD_BUDGET_SPLIT_DETAIL a where a.TMPLT_ID =#{tmpltId,jdbcType=VARCHAR}
+	</select>
+	<!--指标已经分解金额-->
+	<select id="getMontHaveSplit" parameterType="com.forms.prms.web.budget.budgetReply.domain.BudgetReplyBean" 
+			resultType="java.lang.String">
+		select SUM(SUM_AMT) from TD_BUDGET_SPLIT_DETAIL a where a.TMPLT_ID =#{tmpltId,jdbcType=VARCHAR} and a.mont_code =#{montCode,jdbcType=VARCHAR}
+	</select>
+
+</mapper>

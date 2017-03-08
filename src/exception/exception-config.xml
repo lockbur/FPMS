@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<exception-config xmlns="http://www.formssi.com/schema/exception"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xsi:schemaLocation="http://www.formssi.com/schema/exception exception-config.xsd"
+	defaultHandlers="Jsp" defaultLevel="FATAL" defaultView="failure">
+	<handlers>
+		<handler id="Jsp" beanId="JspExceptionHandler"/>
+	</handlers>
+	<exception code="0000" throwable="java.lang.Throwable" localeKey="exception.platform"/>
+	<exception code="0001" localeKey="exception.dao" classLayer="DAO"
+		throwable="java.sql.SQLException org.apache.ibatis.exceptions.PersistenceException org.springframework.dao.DataAccessException" />
+</exception-config>

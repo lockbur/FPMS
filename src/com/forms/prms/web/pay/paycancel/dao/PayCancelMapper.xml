@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.paycancel.dao.PayCancelDAO">
+	<!--查询遗留付款数据-->
+	<select id="list" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean" 
+		resultType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		SELECT T.*,
+			TC.CNT_NAME,
+			TC.CNT_TYPE,
+			SEL2.PARAM_NAME AS CNT_TYPE_NAME,
+			TC.IS_ORDER,
+			TC.PROVIDER_NAME,
+			SS.PARAM_NAME AS payDataFlag
+		FROM (SELECT 
+				'N' AS isPrePay,
+				TP.CNT_NUM,
+				TP.PAY_ID,
+				TP.PAY_DATE,
+				TP.PAY_AMT,
+				TP.INVOICE_ID,
+				TP.INVOICE_AMT,
+				TP.DATA_FLAG,
+				TP.PROVIDER_CODE,
+				TP.INST_DUTY_CODE,
+				TP.IS_OLDDATA,
+				TP.IS_CREDIT_NOTE
+			FROM TD_PAY TP
+			UNION 
+			SELECT
+				'Y' AS isPrePay,
+				TPA.CNT_NUM,
+				TPA.PAY_ID,
+				TPA.PAY_DATE,
+				TPA.PAY_AMT,
+				TPA.INVOICE_ID,
+				TPA.INVOICE_AMT,
+				TPA.DATA_FLAG,
+				TPA.PROVIDER_CODE,
+				TPA.INST_DUTY_CODE,
+				TPA.IS_OLDDATA,
+				NULL AS IS_CREDIT_NOTE
+			FROM TD_PAY_ADVANCE TPA
+		) T
+		LEFT JOIN SYS_SELECT SS ON T.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='PAY_DATA_FLAG'
+		LEFT JOIN TD_CNT TC  ON T.CNT_NUM = TC.CNT_NUM
+		LEFT JOIN SYS_SELECT SEL2 ON SEL2.CATEGORY_ID = 'CNT_TYPE' AND SEL2.PARAM_VALUE = TC.CNT_TYPE
+		LEFT JOIN TB_FNDWRR TF  ON T.INST_DUTY_CODE = TF.DUTY_CODE
+		WHERE T.IS_OLDDATA = '0' 
+		AND T.DATA_FLAG IN (UPPER('F4'),UPPER('E0'))
+		AND TF.ORG1_CODE=#{org1Code,jdbcType=VARCHAR}
+		<if test="cntNum != null and '' != cntNum">
+			AND T.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND TC.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND TC.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="createDept != null and '' != createDept">
+			AND T.INST_DUTY_CODE = #{createDept ,jdbcType=VARCHAR}
+		</if>
+		<if test="payId != null and '' != payId">
+			AND T.PAY_ID LIKE '%' || #{payId ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND T.PAY_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND T.PAY_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="isOrder != null and '' != isOrder">
+			AND TC.IS_ORDER=  #{isOrder ,jdbcType=VARCHAR}
+		</if>
+		<if test="isCreditNote != null and '' != isCreditNote">
+			AND (T.IS_CREDIT_NOTE =  #{isCreditNote ,jdbcType=VARCHAR} OR T.IS_CREDIT_NOTE is null)
+		</if>
+		ORDER BY T.PAY_DATE DESC,T.CNT_NUM DESC
+	</select>
+	
+	<!--查询合同付款信息-->
+	<select id="getPayByPayId" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean" 
+		resultType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		SELECT 
+			TP.*,
+			SS.PARAM_NAME AS payModeName,
+			TC.CNT_AMT,
+			TC.CNT_All_AMT,
+			TC.ZB_AMT,
+			TC.NORMARL_TOTAL_AMT,
+			TC.ADVANCE_TOTAL_AMT,
+			TC.CNT_TYPE,
+			TC.FREEZE_TOTAL_AMT,
+			TC.SUSPENSE_TOTAL_AMT,
+			TC.IS_ORDER
+		FROM ${table} TP
+		LEFT JOIN SYS_SELECT SS ON TP.PAY_MODE=SS.PARAM_VALUE AND SS.CATEGORY_ID='SYS_PAY_WAY'
+		LEFT JOIN TD_CNT TC  ON TP.CNT_NUM = TC.CNT_NUM
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询设备信息-->
+	<select id="getPayDeviceListByPayId" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean" 
+		resultType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		SELECT 
+			TMT.CGL_CODE,
+			TP.PROJ_NAME,
+			TMT.MATR_NAME,
+			TCD.DEVICE_MODEL_NAME,
+			TCD.EXEC_AMT,
+			TCD.EXEC_PRICE,
+			TCD.PAYED_AMT,
+			TCD.FREEZE_AMT,
+			TPD.SUB_INVOICE_AMT,
+			TPD.ADD_TAX_AMT,
+			TCD.SUB_ID,
+			TPD.IVROW_MEMO
+		FROM TD_PAY_DEVICE	TPD
+		LEFT JOIN TD_CNT_DEVICE TCD ON TPD.CNT_NUM=TCD.CNT_NUM AND TPD.SUB_ID=TCD.SUB_ID
+		LEFT JOIN TB_MATR_TYPE TMT ON TCD.MATR_CODE=TMT.MATR_CODE
+		LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID=TCD.PROJ_ID
+		WHERE TPD.PAY_ID=#{payId,jdbcType=VARCHAR}
+		AND TPD.PAY_TYPE=#{payType,jdbcType=VARCHAR}
+		AND TPD.SUB_INVOICE_AMT!=0
+	</select>
+	
+	<!--查询预付款核销列表-->
+	<select id="getPrePayCancleListByCntNum" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean" 
+		resultType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		SELECT 
+		     TPC.ADVANCE_PAY_ID,
+		     TPA.PAY_AMT,
+		     (
+		     	SELECT NVL(SUM(TPC.CANCEL_AMT),0)
+				FROM TD_PAY_ADVANCE_CANCEL TPC
+				LEFT JOIN TD_PAY_ADVANCE TPA ON TPA.PAY_ID = TPC.ADVANCE_PAY_ID
+				WHERE TPA.CNT_NUM     = #{cntNum ,jdbcType=VARCHAR}
+				AND TPA.DATA_FLAG = 'F4'
+	            AND TPC.DATA_FLAG IN('00','08','10','12')
+			 ) AS CANCEL_AMT_TOTAL,
+		     SUM(DECODE(TPC.NORMAL_PAY_ID,#{payId ,jdbcType=VARCHAR},TPC.CANCEL_AMT,0)) AS CANCEL_AMT
+		  FROM TD_PAY_ADVANCE_CANCEL TPC
+		  LEFT JOIN TD_PAY_ADVANCE TPA ON TPA.PAY_ID = TPC.ADVANCE_PAY_ID
+		  WHERE TPA.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		  AND TPC.NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR}
+		  AND TPA.DATA_FLAG = 'F4'
+	      AND TPC.DATA_FLAG IN('00','08','10','12')
+	      AND TPC.CANCEL_AMT != 0
+		  GROUP BY TPC.ADVANCE_PAY_ID,TPA.PAY_AMT
+	</select>
+	
+	<!--正常付款更新合同信息（预付款、正常付款、暂收）-->
+	<update id="updateCntInfoToPay" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_CNT TC
+		SET 
+			TC.ADVANCE_TOTAL_AMT = TC.ADVANCE_TOTAL_AMT + #{cancelAdvClAmt ,jdbcType=NUMERIC},
+		    TC.NORMARL_TOTAL_AMT = TC.NORMARL_TOTAL_AMT - #{cancelPayAmt ,jdbcType=NUMERIC} - #{cancelAdvClAmt ,jdbcType=NUMERIC},
+		    TC.SUSPENSE_TOTAL_AMT = TC.SUSPENSE_TOTAL_AMT - #{cancelSusAmt ,jdbcType=NUMERIC}
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</update>
+	<!--正常付款更新付款信息（金额）-->
+	<update id="updatePayInfo" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_PAY 
+		SET 
+			INVOICE_AMT = INVOICE_AMT- #{cancelInvoAmt ,jdbcType=NUMERIC},
+			ADVANCE_CANCEL_AMT = ADVANCE_CANCEL_AMT - #{cancelAdvClAmt ,jdbcType=NUMERIC},
+			PAY_AMT = PAY_AMT - #{cancelPayAmt ,jdbcType=NUMERIC},
+			SUSPENSE_AMT = SUSPENSE_AMT - #{cancelSusAmt ,jdbcType=NUMERIC}
+		WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--正常付款更新合同设备信息（物料的已付金额）-->
+	<update id="updateCntDevInfo" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_CNT_DEVICE TCD
+	  	SET TCD.PAYED_AMT = TCD.PAYED_AMT - #{devCancelAmt ,jdbcType=NUMERIC}
+	    WHERE TCD.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	    AND TCD.SUB_ID = #{subId ,jdbcType=VARCHAR}
+	</update>
+	<!--正常付款更新设备付款信息-->
+	<update id="updatePayDevInfo" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_PAY_DEVICE 
+	  	SET SUB_INVOICE_AMT = SUB_INVOICE_AMT - #{devCancelAmt ,jdbcType=NUMERIC}
+	  	WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND	PAY_TYPE = #{payType ,jdbcType=VARCHAR}
+		AND	SUB_ID = #{subId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--预付款更新合同信息（预付款）-->
+	<update id="updateCntInfoToPrePay" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_CNT TC
+		SET TC.ADVANCE_TOTAL_AMT = TC.ADVANCE_TOTAL_AMT - #{preCancelPayAmt ,jdbcType=NUMERIC}
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</update>
+	<!--预付款更新付款信息（预付款）-->
+	<update id="updateAdvInfo" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_PAY_ADVANCE
+		SET 
+			INVOICE_AMT =INVOICE_AMT - #{preCancelPayAmt ,jdbcType=NUMERIC},
+			PAY_AMT =PAY_AMT - #{preCancelPayAmt ,jdbcType=NUMERIC}
+		WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--根据id查询付款信息（主要是发票金额）-->
+	<select id="queryPayInfoById" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean"
+		resultType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		SELECT 
+			T.PAY_ID,
+			T.INVOICE_AMT
+		FROM ${table} T
+		WHERE T.PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</select>
+	<!--更新付款表或预付表的状态-->
+	<update id="updateDataFlag" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE ${table} T
+		SET T.DATA_FLAG = #{dataFlag ,jdbcType=VARCHAR}
+		WHERE T.PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--预付款核销信息更新-->
+	<update id="updateAdvCancelInfo" parameterType="com.forms.prms.web.pay.paycancel.domain.PayCancelBean">
+		UPDATE TD_PAY_ADVANCE_CANCEL 
+		SET CANCEL_AMT = CANCEL_AMT - #{cancelAmt ,jdbcType=NUMERIC}
+		WHERE NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND ADVANCE_PAY_ID = #{advancePayId ,jdbcType=VARCHAR}
+	</update>
+</mapper>

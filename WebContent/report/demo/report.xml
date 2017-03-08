@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2006 U (http://www.altova.com) by Administrator (SoftGroup) -->
+<report name="BarcodeReport" title="条形码测试报表">
+	<tb name="data" title="报表数据">
+		<fd name="msg" title="文本内容" type="string" size="30"
+			encoded="false" />
+	</tb>
+</report>

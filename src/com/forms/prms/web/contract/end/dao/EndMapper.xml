@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.end.dao.EndDAO">
+
+	<!-- 合同取消列表 -->
+	<select id="list" parameterType="com.forms.prms.web.contract.end.domain.EndForm"
+							resultType="com.forms.prms.web.contract.end.domain.EndForm">
+		SELECT CNT.*,TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME 
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '20' 
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+	<!-- 省行 -->
+	<if test="orgFlag == 1">
+		AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+	</if>
+	<!-- 二级行 -->
+	<if test="orgFlag == 2">
+		AND EXISTS
+		(
+		   SELECT 1 FROM TB_FNDWRR TBF WHERE TBF.ORG2_CODE = #{org2Code,jdbcType=VARCHAR} AND 
+		   (
+		   	    TBF.DUTY_CODE = CNT.CREATE_DEPT OR 
+		   		TBF.DUTY_CODE = CNT.PAY_DUTY_CODE
+		   )
+		)
+	</if>
+	<!-- 业务部门 -->		
+	<if test="orgFlag == 3">
+		AND (CNT.CREATE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+			OR CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+			)
+	</if>
+	
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 合同终止列表 -->
+	<select id="endList" parameterType="com.forms.prms.web.contract.end.domain.EndForm"
+							resultType="com.forms.prms.web.contract.end.domain.EndForm">
+		SELECT CNT.*,TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME 
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '20' 
+	<if test="dutyCode != null and '' != dutyCode">
+		AND CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR} 
+	</if>
+	<if test="org1Code != null and '' != org1Code">
+		AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR} 
+	</if>
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 合同取消 -->
+	<update id="end" parameterType="String">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '30'
+	     WHERE DATA_FLAG = '20'
+	       AND CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+	</update>	
+	
+	<!-- 合同终止 -->
+	<update id="finish" parameterType="String">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '32',
+		       STOP_DATE = TO_CHAR(sysdate,'yyyy-MM-dd')
+	     WHERE DATA_FLAG = '20'
+	       AND CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+	</update>	
+
+	<!-- 合同终止释放占用项目预算 -->
+	<update id="updateProjAmt" parameterType="String">
+		 UPDATE TD_PROJECT TP
+			SET TP.CNT_TOTAL_AMT = TP.CNT_TOTAL_AMT - 
+			   (SELECT SUM(TCD.EXEC_AMT + TCD.TAX_NAMT) -
+                                  SUM(TCD.PAYED_AMT +
+                                       DECODE(TCD.DEDUCT_FLAG,
+                                              'Y',
+                                              '0',
+                                              'N',
+                                              TCD.PAYED_AMT_TAX))
+                             FROM TD_CNT_DEVICE TCD
+                            WHERE TCD.CNT_NUM = #{cntNum,jdbcType = VARCHAR}
+                              AND TCD.PROJ_ID = TP.PROJ_ID
+                            GROUP BY TCD.PROJ_ID)
+		  WHERE EXISTS (SELECT 1 FROM TD_CNT_DEVICE TC WHERE TC.CNT_NUM = #{cntNum, jdbcType=VARCHAR}  AND TC.PROJ_ID = TP.PROJ_ID)
+	</update>
+	
+	<!-- 合同取消释放占用项目预算 -->
+	<update id="updateCancelProjAmt" parameterType="String">
+		update td_project tp
+			set tp.cnt_total_amt = tp.cnt_total_amt - 
+			    (select sum(tcd.exec_amt + tcd.tax_namt)
+			    from td_cnt_device tcd
+			    where tcd.cnt_num = #{cntNum,jdbcType=VARCHAR} and tcd.proj_id = tp.proj_id
+			    group by tcd.proj_id)
+			where exists (select 1 from td_cnt_device tc where tc.cnt_num = #{cntNum,jdbcType=VARCHAR} and tc.proj_id = tp.proj_id)
+	</update>
+	
+	<!-- 合同取消释放累计已付款金额（项目） -->
+	<update id="releaseProjPayAmt" parameterType="String">
+		UPDATE TD_PROJECT TPJ
+		   SET TPJ.PAY_TOTAL_AMT =
+		       (SELECT TPJ.PAY_TOTAL_AMT - TEMP.PAY_AMT
+		          FROM (SELECT PROJ_ID,
+		                       SUM(TPD.SUB_INVOICE_AMT + TPD.ADD_TAX_NAMT) PAY_AMT
+		                  FROM TD_PAY TP
+		                  LEFT JOIN TD_PAY_DEVICE TPD
+		                    ON TP.PAY_ID = TPD.PAY_ID
+		                  LEFT JOIN TD_CNT_DEVICE TCD
+		                    ON TPD.CNT_NUM = TCD.CNT_NUM
+		                   AND TPD.SUB_ID = TCD.SUB_ID
+		                 WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		                   AND ((TP.IS_FROZEN_BGT = '0' AND
+		                       TP.DATA_FLAG_INVOICE = '2') 
+		                       OR (TP.IS_FROZEN_BGT = '1' AND
+		                       TP.DATA_FLAG IN ('F1', 'F2', 'F4') AND
+		                       TP.DATA_FLAG_INVOICE != '3') 
+		                       )
+		                 GROUP BY TCD.PROJ_ID) TEMP
+		         WHERE TEMP.PROJ_ID = TPJ.PROJ_ID)
+		 WHERE EXISTS
+		 (SELECT 1
+		          FROM TD_PAY TP
+		          LEFT JOIN TD_PAY_DEVICE TPD
+		            ON TP.PAY_ID = TPD.PAY_ID
+		          LEFT JOIN TD_CNT_DEVICE TCD
+		            ON TPD.CNT_NUM = TCD.CNT_NUM
+		           AND TPD.SUB_ID = TCD.SUB_ID
+		         WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		           AND ((TP.IS_FROZEN_BGT = '0' AND TP.DATA_FLAG_INVOICE = '2') 
+		               OR (TP.IS_FROZEN_BGT = '1' AND
+		               TP.DATA_FLAG IN ('F1', 'F2', 'F4') AND
+		               TP.DATA_FLAG_INVOICE != '3') 
+		               )
+		           AND TCD.PROJ_ID = TPJ.PROJ_ID)	
+	</update>
+	
+	<select id="getEndAmt" parameterType="String" resultType="com.forms.prms.web.contract.end.domain.EndForm">
+		select nvl((NORMARL_TOTAL_AMT+ADVANCE_TOTAL_AMT),0) as backAmt from td_cnt where cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 合同完成（终止） 查看预提待摊合同剩余的待摊余额-->
+	<select id="getPrepaidRemainAmt" parameterType="String"
+	                                 resultType="java.math.BigDecimal">
+	    SELECT NVL(SUM(a.AFTERPREPAID_REMAIN_AMT),0)
+          FROM TI_TRADE_TOTAL A
+         WHERE A.CNT_NUM  = #{cntNum,jdbcType=VARCHAR}
+           AND A.FEE_YYYYMM = (SELECT MAX(B.FEE_YYYYMM) 
+                                 FROM TI_TRADE_TOTAL B 
+                                  WHERE A.CNT_NUM = B.CNT_NUM )
+	</select>
+	
+	<!-- 更新合同 是否一次待摊的字段 -->
+	<update id="updatePrepaidStatus" parameterType="String">
+	    UPDATE TD_CNT SET ONCE_PREPAID = '0' 
+	     WHERE CNT_NUM  = #{cntNum,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updatePayStatus" parameterType="String">
+		UPDATE TD_PAY 
+		SET DATA_FLAG = 'AX'
+		WHERE CNT_NUM  = #{cntNum,jdbcType=VARCHAR}
+		AND (DATA_FLAG like 'A_' or DATA_FLAG like 'B_' or DATA_FLAG like 'C_' OR DATA_FLAG in ('D0','F0','F1'))
+	</update>
+	<update id="updatePrePayStatus" parameterType="String">
+		UPDATE TD_PAY_ADVANCE 
+		SET DATA_FLAG = 'AX'
+		WHERE  CNT_NUM  = #{cntNum,jdbcType=VARCHAR}
+		AND (DATA_FLAG like 'A_' or DATA_FLAG like 'B_' or DATA_FLAG like 'C_' OR DATA_FLAG in ('D0','F0','F1'))
+	</update>
+	
+	<select id="cntCancelFreeBgt" statementType="CALLABLE" parameterType ="java.util.Map">
+		CALL PRC_BGT_CNT_CANCEL(  
+			#{cntNo,jdbcType=VARCHAR,mode=IN}, 
+			#{retMsg,jdbcType=VARCHAR,mode=OUT}
+		)
+	</select>
+	<select id="getAxList" parameterType= "String" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" >
+		select pay_id,#{userId,jdbcType=VARCHAR} as userId from td_pay where
+		cnt_num=#{cntNum,jdbcType=VARCHAR}
+		and data_flag='AX'
+		union
+		select pay_id,#{userId,jdbcType=VARCHAR} as userId from TD_PAY_ADVANCE where
+		cnt_num=#{cntNum,jdbcType=VARCHAR}
+		and data_flag='AX'
+	</select>
+	<insert id="batchInsert" parameterType="String">
+		INSERT INTO TD_PAY_AUDIT_LOG(
+			PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)  
+		(
+		  select 
+		    p.pay_id,
+		    (SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_PAY_AUDIT_LOG WHERE PAY_ID =p.pay_id),
+		    'AX',
+		    '因合同取消，付款单状态置为无效',
+		    #{userId,jdbcType=VARCHAR},
+		    TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+		    TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		    from  
+		   (select pay_id from td_pay where
+		    cnt_num=#{cntNum,jdbcType=VARCHAR}
+		    and data_flag='AX'
+		    union
+			select pay_id from TD_PAY_ADVANCE where
+			cnt_num=#{cntNum,jdbcType=VARCHAR}
+			and data_flag='AX'
+		    )   p
+		 )  
+	</insert>
+	<select id="dutyList" parameterType= "String" resultType="String" >
+		select distinct DUTY_CODE from SYS_WARN_PAY_INFO  sw where  sw.PAY_ID in(
+			select pay_id from td_pay where
+			cnt_num=#{cntNum,jdbcType=VARCHAR}
+			and data_flag='AX'
+			union
+			select pay_id from TD_PAY_ADVANCE where
+			cnt_num=#{cntNum,jdbcType=VARCHAR}
+			and data_flag='AX'
+		)
+	</select>
+	<delete id="delBatchPay"  parameterType="String">
+		delete from SYS_WARN_PAY_INFO where 
+		PAY_ID in (
+			select pay_id from td_pay where
+			cnt_num=#{cntNum,jdbcType=VARCHAR}
+			and data_flag='AX'
+			union
+			select pay_id from TD_PAY_ADVANCE where
+			cnt_num=#{cntNum,jdbcType=VARCHAR}
+			and data_flag='AX'
+		)
+	</delete>
+	
+	<update id="updateOrdStatus" parameterType="String">
+		update td_order set data_flag = '14' where cnt_num = #{cntNum,jdbcType=VARCHAR}
+			 and data_flag not in ('08','10','11','12','13')
+	</update>
+	
+	<select id="getOrdList" parameterType= "String" resultType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean" >
+		select order_id,cnt_num from td_order where cnt_num = #{cntNum,jdbcType=VARCHAR}
+			and data_flag not in ('08','10','11','12','13')
+	</select>
+</mapper>

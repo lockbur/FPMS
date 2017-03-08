@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.dao.ImportDao">
+<select id="shList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		SELECT distinct tma.batch_no,
+				  tma.org21_code,
+				  tma.pro_type,
+				  tma.sub_type,
+				  ss.param_name as sub_type_name,
+				  NVL2(tma.CNT_STATUS,tma.CNT_STATUS,tma.EXCEL_STATUS)status,
+				  NVL2(SS2.PARAM_NAME,SS2.PARAM_NAME,SS1.PARAM_NAME) status_name,
+				  tma.inst_user,
+				  tma.inst_memo,
+				  tma.inst_date,
+				  tma.inst_time,
+				  tma.data_year,
+				  tma.source_filename
+				FROM tbl_mont_aprv tma
+				left join tb_fndwrr tf
+				on tma.org21_Code=tf.org1_Code
+				left join SYS_SELECT ss1 on ss1.PARAM_VALUE=tma.EXCEL_STATUS
+				and ss1.CATEGORY_ID='MONT_EXCEL_STATUS'
+				left join SYS_SELECT ss2 on ss2.PARAM_VALUE=tma.CNT_STATUS
+				and ss2.CATEGORY_ID='MONT_CNT_STATUS'
+				left join sys_select ss on tma.sub_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+				where tma.org21_Code=#{org21Code,jdbcType=VARCHAR}
+				AND TMA.SUB_TYPE IN('11','12')	
+				<if test="proType != null and proType != ''">
+					AND tma.pro_type = #{proType,jdbcType=VARCHAR}
+		  		</if>
+		  		<if test="subType != null and subType != ''">
+					AND tma.sub_type = #{subType,jdbcType=VARCHAR}
+			   </if>
+		  		<if test="dataYear != null and dataYear != ''">
+					AND tma.data_year = #{dataYear,jdbcType=VARCHAR}
+			   </if>			   
+			    order by tma.INST_DATE desc,INST_TIME desc		
+	</select>	
+	<select id="fhList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		SELECT distinct tma.batch_no,
+				  tma.org21_code,
+				  tma.pro_type,
+				  tma.sub_type,
+				  ss.param_name as sub_type_name,
+				  NVL2(tma.CNT_STATUS,tma.CNT_STATUS,tma.EXCEL_STATUS)status,
+				  NVL2(SS2.PARAM_NAME,SS2.PARAM_NAME,SS1.PARAM_NAME) status_name,
+				  tma.INST_MEMO,
+				  tma.inst_user,
+				  tma.inst_date,
+				  tma.inst_time,
+				  tma.data_year,
+				  tma.source_filename
+				FROM tbl_mont_aprv tma
+				left join tb_fndwrr tf
+				on tma.org21_Code=tf.org2_Code
+				left join SYS_SELECT ss1 on ss1.PARAM_VALUE=tma.EXCEL_STATUS
+				and ss1.CATEGORY_ID='MONT_EXCEL_STATUS'
+				left join SYS_SELECT ss2 on ss2.PARAM_VALUE=tma.CNT_STATUS
+				and ss2.CATEGORY_ID='MONT_CNT_STATUS'
+				left join sys_select ss on tma.sub_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+				where tma.org21_Code=#{org21Code,jdbcType=VARCHAR}
+				AND TMA.SUB_TYPE IN('21','22')
+				<if test="proType != null and proType != ''">
+					AND tma.pro_type = #{proType,jdbcType=VARCHAR}
+		  		</if>
+		  		<if test="subType != null and subType != ''">
+					AND tma.sub_type = #{subType,jdbcType=VARCHAR}
+			   </if>
+		  		<if test="status != null and status != ''">
+					AND tma.status = #{status,jdbcType=VARCHAR}
+			   </if>
+		  		<if test="dataYear != null and dataYear != ''">
+					AND tma.data_year = #{dataYear,jdbcType=VARCHAR}
+			   </if>			   
+			    order by tma.INST_DATE desc,INST_TIME desc			
+	</select>
+	<!-- 查询监控指标 -->
+	<select id="getDataList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		select 
+			STATUS,
+			BATCH_NO
+		from tbl_mont_aprv 
+		where DATA_YEAR = #{dataYear, jdbcType=VARCHAR}
+		and PRO_TYPE = #{proType, jdbcType=VARCHAR}
+		and SUB_TYPE = #{subType, jdbcType=VARCHAR}
+		and ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+	</select> 
+	<!--得到主键最大值-->
+	<select id="getId" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+							resultType="String">
+		<if test="proType =='01'.toString()">
+			SELECT 'MT'||#{org21Code, jdbcType=VARCHAR}||#{dataYear, jdbcType=VARCHAR} ||#{subType, jdbcType=VARCHAR} ||RM_GET_COMMON_ID('BATCHNOSEQ')
+			FROM dual
+	 	</if>
+		<if test="proType !='01'.toString()">
+			SELECT 'AR'||#{org21Code, jdbcType=VARCHAR}||#{dataYear, jdbcType=VARCHAR} ||#{subType, jdbcType=VARCHAR} ||RM_GET_COMMON_ID('BATCHNOSEQ')
+			FROM dual
+	 	</if>
+	</select>
+	<!--插入汇总信息-->
+	<insert id="addData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		insert into TBL_MONT_APRV(
+			BATCH_NO,
+			org21_code,
+			pro_type,
+			sub_type,
+			path           ,
+  			inst_user        ,
+  			inst_date       ,
+ 			inst_time       ,
+			 
+			data_year      ,
+			source_filename ,
+			INST_MEMO,
+			INST_TYPE,
+			EXCEL_STATUS
+		)values(
+			#{batchNo, jdbcType=VARCHAR},
+			#{org21Code, jdbcType=VARCHAR},
+			#{proType, jdbcType=VARCHAR},
+			#{subType, jdbcType=VARCHAR},
+			#{path, jdbcType=VARCHAR},
+			#{instUser, jdbcType=VARCHAR},
+			to_char(sysdate, 'YYYY-MM-DD'),
+            to_char(sysdate, 'HH24:MI:SS'),
+            #{dataYear, jdbcType=VARCHAR},
+            #{sourceFilename, jdbcType=VARCHAR},
+             #{instMemo, jdbcType=VARCHAR},
+            #{instType, jdbcType=VARCHAR},
+            #{excelStatus, jdbcType=VARCHAR}
+		)
+	</insert>
+	<!--修改状态-->
+	<update id="updateExcelStatus" parameterType="String">
+		update tbl_mont_aprv set EXCEL_STATUS=	#{statusNex, jdbcType=VARCHAR}
+		where batch_no = 		#{batchNo, jdbcType=VARCHAR}
+		  and excel_status =	#{statusPre, jdbcType=VARCHAR}
+	</update>
+	<update id="updateCntStatus" parameterType="String">
+		update tbl_mont_aprv set CNT_STATUS=	#{statusNex, jdbcType=VARCHAR}
+		where batch_no = 		#{batchNo, jdbcType=VARCHAR}
+		<if test="statusPre != 'C0'">
+			  and CNT_status =	#{statusPre, jdbcType=VARCHAR}
+		</if>
+		<if test="statusPre == 'C0'">
+			  and CNT_status IS NULL
+		</if>
+		
+	</update>
+	<!--监控指标明细表数据 插入当年的-->
+	<insert id="insertMontDetail" parameterType="java.util.List">
+		insert into tbl_mont_name (
+			  batch_no            ,
+			  seq                  ,
+			  matr_code            ,
+			  matr_name            ,
+			  last_mont_code       ,
+			  last_mont_name       ,
+			  last_mont_proj_type  ,
+			  mont_name            ,
+			  mont_proj_type       ,
+			  excel_no  
+			 
+		) (
+	 		<foreach collection="montBeans" item="item" index="index" separator="union " > 
+				select 
+					#{item.batchNo, jdbcType=VARCHAR},
+					#{item.seq, jdbcType=VARCHAR},
+					#{item.matrCode, jdbcType=VARCHAR},
+					#{item.matrName, jdbcType=VARCHAR},
+					#{item.lastMontCode, jdbcType=VARCHAR},
+					#{item.lastMontName, jdbcType=VARCHAR},
+					#{item.lastMontProjType, jdbcType=VARCHAR},
+					#{item.montName, jdbcType=VARCHAR},
+					#{item.montProjType, jdbcType=VARCHAR},
+					#{item.excelNo, jdbcType=VARCHAR}
+					from dual
+				    
+	  		 </foreach> 
+			
+		)
+	</insert>
+	<!--监控指标明细表数据 插入下一年的-->
+	<insert id="insertMontDetailNext" parameterType="java.util.List">
+		insert into tbl_mont_name (
+			  batch_no            ,
+			  seq                  ,
+			  matr_code            ,
+			  matr_name            ,
+			  last_mont_code       ,
+			  last_mont_name       ,
+			  last_mont_proj_type  ,
+			  mont_name            ,
+			  mont_proj_type       ,
+			  excel_no
+		) (
+	 		<foreach collection="montBeans" item="item" index="index" separator="union  " > 
+				select 
+					#{item.batchNo, jdbcType=VARCHAR},
+					#{item.seq, jdbcType=VARCHAR},
+					#{item.matrCode, jdbcType=VARCHAR},
+					#{item.matrName, jdbcType=VARCHAR},
+					#{item.lastMontCode, jdbcType=VARCHAR},
+					#{item.lastMontName, jdbcType=VARCHAR},
+					#{item.lastMontProjType, jdbcType=VARCHAR},
+					#{item.montName, jdbcType=VARCHAR},
+					#{item.montProjType, jdbcType=VARCHAR},
+					#{item.excelNo, jdbcType=VARCHAR}  
+					from dual 
+					
+	  		 </foreach> 
+			
+		)
+	</insert>
+	<!--审批链数据导入-->
+	<insert id="insertAprvDetail" parameterType="java.util.List">
+		insert into TBL_APRV_CHAIN (
+			      batch_no             ,
+				  seq                  ,
+				  fee_code             ,
+				  mont_code            ,
+				  mont_name            ,
+				  matr_code            ,
+				  matr_name            ,
+				  matr_buy_dept        ,
+				  matr_buy_dept_name   ,
+				  matr_audit_dept      ,
+				  matr_audit_dept_name ,
+				  finc_dept_s          ,
+				  finc_dept_s_name     ,
+				  finc_dept_2          ,
+				  finc_dept_2_name     ,
+				  finc_dept_1          ,
+				  finc_dept_1_name     ,
+				  decompose_org  ,
+				  DECOMPOSE_ORG_NAME,
+				  ORG_CODE   ,
+				  ORG_NAME   ,
+				  EXCEL_NO
+		)(
+			<foreach collection="aprvBeans" item="item" index="index" separator="union  " > 
+				select 
+					#{item.batchNo, jdbcType=VARCHAR},
+					#{item.seq, jdbcType=VARCHAR},
+					#{item.feeCode, jdbcType=VARCHAR},
+					#{item.montCode, jdbcType=VARCHAR},
+					#{item.montName, jdbcType=VARCHAR},
+					#{item.matrCode, jdbcType=VARCHAR},
+					#{item.matrName, jdbcType=VARCHAR},
+					#{item.matrBuyDept, jdbcType=VARCHAR},
+					#{item.matrBuyDeptName, jdbcType=VARCHAR},
+					#{item.matrAuditDept, jdbcType=VARCHAR},
+					#{item.matrAuditDeptName, jdbcType=VARCHAR},
+					#{item.fincDeptS, jdbcType=VARCHAR},
+					#{item.fincDeptSName, jdbcType=VARCHAR},
+					#{item.fincDept2, jdbcType=VARCHAR},
+					#{item.fincDept2Name, jdbcType=VARCHAR},
+					#{item.fincDept1, jdbcType=VARCHAR},
+					#{item.fincDept1Name, jdbcType=VARCHAR},
+					#{item.decomposeOrg, jdbcType=VARCHAR},
+					#{item.decomposeOrgName, jdbcType=VARCHAR},
+					#{item.orgCode, jdbcType=VARCHAR},
+					#{item.orgName, jdbcType=VARCHAR},
+					#{item.excelNo, jdbcType=VARCHAR}
+				    from dual
+	  		 </foreach> 
+			
+		)
+	</insert>
+	<!--监控指标的校验-->
+	<update id="checkMont" parameterType="String">
+		CALL PRC_MADB_CHECK_MONT(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<!--存储过程的校验-->
+	<update id="checkAprv" parameterType="String">
+		CALL PRC_MADB_CHECK_APRV(#{batchNo, jdbcType=VARCHAR})
+	</update>
+	<update id="checkUserRoleRln" parameterType="String">
+		CALL PRC_USERINFO_VALID_OR_COMMIT(#{batchNo, jdbcType=VARCHAR},#{isCheck, jdbcType=VARCHAR},#{userId, jdbcType=VARCHAR})
+	</update>
+	<!--检查已经存在的数据-->
+	<select id="getExistData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.MontBean"
+					resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.MontBean">
+		select batch_no from tbl_mont_aprv 
+		where org21_code =#{org21Code, jdbcType=VARCHAR}
+		and pro_type = #{proType, jdbcType=VARCHAR}
+		and sub_type = #{subType, jdbcType=VARCHAR}
+		and status in ('01','03','04','05')
+		
+	</select>
+	<!--删除汇总信息-->
+	<delete id="deleteBatch" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		delete from tbl_mont_aprv where batch_no =#{batchNo, jdbcType=VARCHAR}
+	</delete>
+	<!--删除明细信息-->
+	<delete id="deleteMontDetail" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		delete from tbl_mont_name where batch_no =#{batchNo, jdbcType=VARCHAR}
+	</delete>
+	<!--删除明细信息-->
+	<delete id="deleteTaskLoad" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		delete from td_task_load where TASK_ID =#{batchNo, jdbcType=VARCHAR}
+	</delete>
+	<delete id="deleteAprvDetail" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+			delete from tbl_aprv_chain
+			where batch_no=#{batchNo,jdbcType=VARCHAR}
+	</delete>
+	<!--删除错误信息-->
+	<delete id="deleteError" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		delete from UPLOAD_DATA_ERROR_INFO where batch_no =#{batchNo, jdbcType=VARCHAR}
+	</delete>
+	<!--查询错误信息-->
+	<select id="getErrData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+	  <if test = "proType == 01">
+	   SELECT
+	   A.LAST_MONT_CODE,
+	   A.LAST_MONT_NAME,
+		A.Mont_code,
+		A.MONT_NAME,
+		A.MATR_CODE,
+		A.MATR_NAME,
+		B.ERR_DESC,
+		B.ROW_NO
+		FROM TBL_MONT_NAME A 
+		LEFT JOIN upload_data_error_info B   ON B.BATCH_NO = A.BATCH_NO AND B.ROW_NO = A.EXCEL_NO and b.batch_no = #{batchNo, jdbcType=VARCHAR} 
+		WHERE a.BATCH_NO = #{batchNo, jdbcType=VARCHAR} 
+		AND B.ROW_NO IS NOT NULL
+		order by to_number(b.row_no) asc
+	  </if>
+	   <if test = "proType == 02">
+	   SELECT
+		A.Mont_code,
+		A.MONT_NAME,
+		A.MATR_CODE,
+		A.MATR_NAME,
+		A.FEE_CODE,
+    	A.FEE_NAME,
+		A.ORG_CODE,
+   		 A.ORG_NAME,
+		B.ERR_DESC,
+		B.ROW_NO
+		FROM TBL_APRV_CHAIN A 
+		LEFT JOIN  upload_data_error_info B  ON B.BATCH_NO = A.BATCH_NO AND B.ROW_NO = A.EXCEL_NO AND b.BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+		WHERE a.BATCH_NO = #{batchNo, jdbcType=VARCHAR} 
+		AND B.ROW_NO IS NOT NULL
+		order by to_number(b.row_no) asc
+	  </if>
+	</select>
+	<!--省行信息-->
+	<select id="getDetail" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		SELECT distinct tma.batch_no,
+				  tma.org21_code,
+				  tma.pro_type,
+				  tma.sub_type,
+				  ss.param_name as sub_type_name,
+				   NVL2(tma.CNT_STATUS,tma.CNT_STATUS,tma.EXCEL_STATUS)status,
+				   NVL2(SS2.PARAM_NAME,SS2.PARAM_NAME,SS1.PARAM_NAME) status_name,
+				  tma.inst_user,
+				  tma.inst_date,
+				  tma.inst_time,
+ 				  tma.inst_memo,				
+				  tma.data_year,
+				  tma.INST_TYPE,
+				  tma.memo,
+				  tma.source_filename
+				FROM tbl_mont_aprv tma
+				left join tb_fndwrr tf
+				on tma.org21_Code=tf.org1_Code
+				left join SYS_SELECT ss1 on ss1.PARAM_VALUE=tma.EXCEL_STATUS
+				and ss1.CATEGORY_ID='MONT_EXCEL_STATUS'
+				left join SYS_SELECT ss2 on ss2.PARAM_VALUE=tma.CNT_STATUS
+				and ss2.CATEGORY_ID='MONT_CNT_STATUS'
+				left join sys_select ss on tma.sub_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+				where tma.org21_Code=#{org21Code,jdbcType=VARCHAR}
+				 and  tma.batch_no=#{batchNo,jdbcType=VARCHAR}				   	
+	</select>
+	<!--分行可以导入哪些数据类型-->
+	<select id="getAuthList"  		parameterType="java.util.Map" resultType="java.util.Map">
+		select func_id from  
+		PF_ROLE_FUNC_RLN where role_ID=#{roleId,jdbcType=VARCHAR}
+		and func_id in 
+			  	<foreach collection="fhAuthList" item="item" index="index" open="(" close=")"  separator="," > 
+		          	#{item,jdbcType=VARCHAR}
+	          	</foreach>
+		 	
+	</select>
+	<!--copy数据-->
+	<update id="copyData" 	parameterType="String">
+		call prc_copy_DATA(#{batchNo,jdbcType=VARCHAR}	)
+	</update>
+	<!-- 校验监控指标是否维护-->
+	<select id="isExistMont" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="String">
+		select batch_no from tbl_mont_aprv where
+		data_year = #{dataYear,jdbcType=VARCHAR}
+		and pro_type = '01'
+		and sub_type = #{subType,jdbcType=VARCHAR}
+		and org21_code = #{org21Code,jdbcType=VARCHAR}
+		and status = '06'
+		
+	</select>
+	<!--copy数据-->
+	<select id="ajaxCopyExists" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="Integer">
+		SELECT COUNT(1) FROM tb_mont_name 
+		where DATA_YEAR = #{dataYear, jdbcType=VARCHAR}
+		and MONT_TYPE = #{subType, jdbcType=VARCHAR}
+		and ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		AND rownum=1
+	</select> 
+	<!--查询本年的监控指标是否存在-->
+	<select id="isExistMontThisYear" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="Integer">
+		select 
+			count(1)
+		from tb_mont_name 
+		where DATA_YEAR = to_char(sysdate,'yyyy')
+		and mont_TYPE = #{subType, jdbcType=VARCHAR}
+		and ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		and rownum=1
+	</select> 
+	<!--查询本年的审批链是否存在-->
+	<select id="isExistAprvThisYear" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="Integer">
+		SELECT COUNT(1) FROM TBL_MONT_APRV  A
+		WHERE A.PRO_TYPE = '02'
+		  AND A.org21_code = #{org21Code,jdbcType=VARCHAR}
+		  AND A.data_year = to_char(sysdate,'yyyy')
+		   AND A.SUB_TYPE=  #{subType, jdbcType=VARCHAR}
+		  AND A.CNT_STATUS IN ('C5')
+	</select> 
+	<!--去年的监控指标类型再今年是否都存在-->
+	<select id="isExistsMontType" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+			resultType="Integer">
+		 SELECT count(1) FROM TB_MONT_NAME A 
+		     	WHERE A.MONT_TYPE = #{subType, jdbcType=VARCHAR}
+		     		   AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		     		   AND A.DATA_YEAR= #{dataYear, jdbcType=VARCHAR}
+		     		   and rownum =1
+	</select>
+	<!--程序运行错误时更新错误信息-->
+	<update id="updateError" parameterType="String">
+		update tbl_mont_aprv set EXCEL_STATUS = #{status, jdbcType=VARCHAR},memo =#{memo, jdbcType=VARCHAR}
+		where batch_no = #{batchNo, jdbcType=VARCHAR}
+
+	</update>
+	<!--看是否有未完成的流程-->
+	<select id="isHaveNotOver" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+							resultType="Integer">
+		SELECT COUNT(1) FROM TBL_MONT_APRV A
+		WHERE A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  AND A.PRO_TYPE =#{proType, jdbcType=VARCHAR}
+		  AND A.SUB_TYPE=#{subType, jdbcType=VARCHAR}
+		  AND A.DATA_YEAR=#{dataYear, jdbcType=VARCHAR}
+		  AND NVL2(A.CNT_STATUS,A.CNT_STATUS,A.EXCEL_STATUS) NOT IN('E1', 'E3', 'E6', 'C5')
+		  
+		  
+	</select>
+	<!--看是否有未完成的流程-->
+	<select id="isHaveNotOverNextYear" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+							resultType="Integer">
+		SELECT COUNT(1) FROM TBL_MONT_APRV A
+		WHERE A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  AND A.PRO_TYPE =#{proType, jdbcType=VARCHAR}
+		  AND A.SUB_TYPE=#{subType, jdbcType=VARCHAR}
+		  AND A.DATA_YEAR=(#{dataYear, jdbcType=VARCHAR} + 1)
+		  AND NVL2(A.CNT_STATUS,A.CNT_STATUS,A.EXCEL_STATUS) NOT IN('E1', 'E3', 'E6', 'C5')
+		  
+		  
+	</select>
+	<!--校验是否有待勾选的合同-->
+	<select id="isHaveSplitCnt"  parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean" resultType="Integer">
+		select count(1) from tbl_mont_split a where a.batch_no=#{batchNo,jdbcType=VARCHAR} and rownum =1
+	</select>
+	<!--校验预算是否走完流程-->
+	<select id="checkBgtIsOver" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="Integer">
+		SELECT COUNT(1) FROM ERP_BUDGET_SUM_TOTAL
+		A WHERE A.BGT_YEAR =#{dataYear, jdbcType=VARCHAR}
+		AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		AND A.SUB_TYPE=#{subType, jdbcType=VARCHAR}
+		AND A.STATUS ='04' 
+	</select>
+</mapper>

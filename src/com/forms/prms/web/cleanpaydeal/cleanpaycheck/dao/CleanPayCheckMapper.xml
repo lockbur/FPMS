@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.cleanpaydeal.cleanpaycheck.dao.CleanPayCheckDao">
+	<!--查询暂收结清待复核的列表-->
+	<select id="getList" parameterType="com.forms.prms.web.cleanpaydeal.cleanpaycheck.domain.CleanPayCheckBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpaycheck.domain.CleanPayCheckBean">
+		SELECT 
+			TPC.CLEAN_PAY_ID,
+			TPC.NORMAL_PAY_ID,
+			TPC.CLEAN_AMT,
+			TPC.DATA_FLAG,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME,
+			TP.CNT_NUM,
+			TP.SUSPENSE_DATE,
+			TP.PROVIDER_CODE,
+			TP.PROVIDER_NAME,
+			TP.INVOICE_AMT,
+			TP.PAY_AMT,
+			TP.SUSPENSE_AMT,
+			TP.SUS_TOTAL_AMT
+		FROM TD_PAY_CLEAN TPC
+		LEFT JOIN TD_PAY TP ON　TPC.NORMAL_PAY_ID = TP.PAY_ID
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CLEAN_DATA_FLAG' AND SEL.PARAM_VALUE = TPC.DATA_FLAG
+		WHERE (TPC.DATA_FLAG = '02' OR TPC.DATA_FLAG='03' )
+		<if test="cleanPayId != null and '' != cleanPayId">
+			AND TPC.CLEAN_PAY_ID = #{cleanPayId ,jdbcType=VARCHAR}
+		</if>
+		<if test="payId != null and '' != payId">
+			AND TP.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		</if>
+		<if test="cntNum != null and '' != cntNum">
+			AND TP.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND TP.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND TP.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND TP.SUSPENSE_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND TP.SUSPENSE_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		ORDER BY TPC.CLEAN_PAY_ID DESC
+	</select>
+	
+	<!--更新暂收结清表的状态为待确认-->
+	<update id="Agree"
+		parameterType="com.forms.prms.web.cleanpaydeal.cleanpaycheck.domain.CleanPayCheckBean">
+		UPDATE TD_PAY_CLEAN  SET 
+		DATA_FLAG=#{dataFlag,jdbcType=VARCHAR}
+		WHERE  CLEAN_PAY_ID=#{cleanPayId,jdbcType=VARCHAR}
+		AND (DATA_FLAG='02' OR  DATA_FLAG='03')
+	</update>
+	<!--更新暂收结清表的状态为退回-->
+	<update id="Back"
+		parameterType="com.forms.prms.web.cleanpaydeal.cleanpaycheck.domain.CleanPayCheckBean">
+		UPDATE TD_PAY_CLEAN  SET 
+		DATA_FLAG=#{dataFlag,jdbcType=VARCHAR}
+		WHERE  CLEAN_PAY_ID=#{cleanPayId,jdbcType=VARCHAR}
+		AND (DATA_FLAG='02' OR DATA_FLAG='03')
+	</update>
+</mapper>		

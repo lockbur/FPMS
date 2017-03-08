@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+	
+	<!-- 配置属性文件，后续配置可以通过${var}的形式引用属性文件中的值 -->
+	<bean id="propertyConfigurer"
+		class="com.forms.platform.core.spring.init.SpringPropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:config.properties</value>
+			</list>
+		</property>
+	</bean>
+	<!-- 国际化的消息资源文件 -->
+	<bean id="messageSource" p:cacheSeconds="60"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>classpath:messages/messages</value>
+				<value>classpath:messages/exception</value>
+				<value>classpath:label/common/messages</value>
+				<value>classpath:label/role/messages</value>
+				<value>classpath:label/button/messages</value>
+				<value>classpath:label/function/messages</value>
+				<value>classpath:label/user/messages</value>
+				<value>classpath:label/sysmanagement/user/messages</value>
+				<value>classpath:label/sysmanagement/waterbook/messages</value>
+			</list>
+		</property>
+	</bean>
+	
+	<!-- 扫描通过注解配置的Bean -->
+    <context:component-scan base-package="com.forms"/>
+    <!-- 开启AOP自动代理 -->
+	<aop:aspectj-autoproxy/>
+	<!-- 控制层、服务层、数据访问层AOP配置 -->
+	<bean id="controllerAspect" class="com.forms.platform.web.base.controller.ControllerAspect"></bean>
+	<bean id="serviceAspect" class="com.forms.platform.core.base.service.ServiceAspect"></bean>
+	<bean id="daoAspect" class="com.forms.platform.core.base.dao.DaoAspect"></bean>
+	<aop:config>
+		<aop:aspect ref="controllerAspect">
+			<!-- 拦截所有标注了@RequestMapping注解的public方法 -->
+			<aop:around method="doAspect" pointcut="execution(public * com.forms..*(..)) and @annotation(org.springframework.web.bind.annotation.RequestMapping)"/>
+		</aop:aspect>
+		<aop:aspect ref="serviceAspect">
+			<!-- 拦截所有标注了@Service注解的类中的public方法 -->
+			<aop:around method="doAspect" pointcut="execution(public * com.forms..*(..)) and @target(org.springframework.stereotype.Service)"/>
+		</aop:aspect>
+		<aop:aspect ref="daoAspect">
+			<!-- 拦截所有标注了@Repository注解的类中的public方法 -->
+			<aop:around method="doAspect" pointcut="execution(public * com.forms..*(..)) and @target(org.springframework.stereotype.Repository)"/>
+		</aop:aspect>
+	</aop:config>
+    
+    <!-- 系统设置初始化的配置 -->
+    <bean class="com.forms.platform.core.config.Config">
+    	<property name="initConfigList">
+    		<list>
+    			<!-- 从数据库初始化 -->
+<!-- 				<bean class="com.forms.platform.core.init.ConfigInitFormDatabase"/> -->
+				<!-- 从属性文件初始化 -->
+<!-- 				<bean class="com.forms.platform.core.config.impl.ConfigInitFormProperties" -->
+<!-- 					p:propertiesPath="classpath:config.properties"/>  		 -->
+    		</list>
+    	</property>
+    </bean>
+    <!-- 系统日志组件配置 -->
+    <bean class="com.forms.platform.core.logger.CommonLogger">
+    	<!-- 配置产生堆栈信息的工厂类 -->
+    	<property name="stackFactory">
+    		<bean class="com.forms.platform.web.base.controller.request.RequestStackFactory"></bean>
+    	</property>
+    	<!-- 配置输出日志Bean的终端类 -->
+    	<property name="logTerminationList">
+    		<list>
+				<bean class="com.forms.platform.core.logger.log4j.LogTerminationProxy"></bean> 
+<!-- 				<bean class="com.forms.platform.core.logger.impl.LogTerminationProxy"></bean>  -->
+<!-- 				<bean class="com.forms.platform.core.logger.impl.FileLogTermination"  -->
+<!-- 					p:file="C:\info.txt" p:errorFile="C:\error.txt"></bean>  		 -->
+    		</list>	
+    	</property>
+    </bean>
+    <!-- 异常处理器配置 -->
+<!--     <bean id="FileExceptionHandler" class="com.forms.platform.core.exception.handler.impl.FileExceptionHandler" p:file="C:\exception.txt"></bean> -->
+    <bean id="JspExceptionHandler" class="com.forms.platform.web.exception.JspExceptionHandler"></bean>
+    
+    <bean id="appLocaleResolver" class="com.forms.platform.web.i18n.WebLocaleResolver"/>
+    <bean id="configLoader" class="com.forms.prms.web.common.config.ConfigLoader" factory-method="getInstance"/>
+</beans>

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.history.dao.ContractHistoryDAO">
+	<!-- 获取合同历史记录列表 -->
+	<select id="queryList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.history.domain.ContractHistory">
+		SELECT CNT.CNT_NUM,CNT.VERSION_NO,CNT.CREATE_DATE,CNT.OPER_USER,CNT.OPER_DATE,TC.DATA_FLAG,CNT.CNT_NAME,
+				CNT.PROVIDER_NAME,TF.DUTY_NAME,SS1.PARAM_NAME as dataFlagName
+		FROM TD_CNT_LOG CNT
+		INNER JOIN (SELECT CNTTEMP.CNT_NUM,MAX(CNTTEMP.VERSION_NO) AS VERSION_NO FROM TD_CNT_LOG CNTTEMP GROUP BY CNTTEMP.CNT_NUM) LS
+		ON CNT.CNT_NUM = LS.CNT_NUM AND CNT.VERSION_NO = LS.VERSION_NO
+		LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = CNT.CREATE_DEPT
+		LEFT JOIN TD_CNT TC ON TC.CNT_NUM = CNT.CNT_NUM
+		LEFT JOIN SYS_SELECT SS1 ON SS1.param_value = CNT.DATA_FLAG
+		<where>
+			<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.CNT_NUM LIKE '%' || #{con.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.CNT_TYPE = #{con.cntType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND cnt.PROVIDER_NAME LIKE '%' || #{con.providerName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.SIGN_DATE >= #{con.befDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate,jdbcType=VARCHAR} >= CNT.SIGN_DATE
+			</if>
+			<if test="con.createDept != null and '' != con.createDept">
+				AND CNT.CREATE_DEPT = #{con.createDept,jdbcType=VARCHAR}
+			</if>
+				AND (CNT.CREATE_DEPT = #{dutyCode,jdbcType=VARCHAR} OR CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}) AND SS1.category_id = 'CNT_DATE_FLAG' 
+		</where>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 获取合同详情 -->
+	<select id="getDetail" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.history.domain.ContractHistory">
+		SELECT CNT.*,WRR.duty_name as OPER_DUTY_NAME
+		,<!--TCY.jf,TCY.yf,TCY.wdjg,-->TCY.wydz,TCY.auto_bank_name,TCY.area,TCY.house_kind_id
+		,<!--TCY.wyglf,TCY.yj,TCY.begin_date,TCY.end_date,-->TCY.remark,
+		tc.PROVIDER_ADDR,
+		tc.ACT_NAME,
+		tc.BANK_INFO,
+		tc.BANK_CODE,
+		tc.BANK_AREA,
+		tc.ACT_TYPE,
+		tc.BANK_NAME,
+		tc.PAY_MODE,
+		tc.PROVIDER_TYPE
+		FROM TD_CNT_LOG CNT
+		left join td_cnt tc on cnt.cnt_num = tc.cnt_num
+		LEFT JOIN TD_CNT_TENANCY_LOG TCY ON CNT.cnt_num = TCY.cnt_num AND CNT.version_no = TCY.version_no
+		LEFT JOIN TB_FNDWRR WRR ON CNT.OPER_DUTY_CODE = WRR.duty_code
+		WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		AND CNT.version_no = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	
+	<!-- 获取合同物料列表 -->
+	<select id="getCntProj" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT DEV.*,PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,TM.mont_name
+		FROM TD_CNT_DEVICE_LOG DEV
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+		LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+		LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+		LEFT JOIN TB_MONT_NAME TM ON DEV.mont_code = TM.mont_code
+        WHERE DEV.cnt_num = #{cntNum,jdbcType=VARCHAR}
+        AND DEV.version_no = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	
+	<!-- 获取电子审批列表 -->
+	<select id="getDZSPProj" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.DzspInfo">
+		SELECT DZSP.ABCDE,DZSP.ABCDE_NUM,DZSP.ABCDE_AMT
+		,PRJ.PROJ_CR_ID,PRJ.CREATE_DATE,PRJ.PROJ_CR_NUM,PRJ.EXE_NUM,PRJ.PROJ_CR_AMT,PRJ.EXE_AMT 
+		FROM TD_CNT_DZSP_LOG DZSP 
+		LEFT JOIN TB_PROJECTCR_INFO PRJ ON PRJ.AB_CDE = DZSP.ABCDE
+        WHERE DZSP.cnt_num = #{cntNum,jdbcType=VARCHAR}
+        AND DZSP.version_no = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	
+	<select id="getMatrCode" parameterType="String" resultType="String">
+		SELECT  DISTINCT DZ.MATR_CODE FROM TD_CNT CNT INNER JOIN 
+		TD_CNT_TENANCY_DETAIL DZ ON CNT.CNT_NUM = DZ.CNT_NUM WHERE CNT.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	<!-- 获取租金递增条件列表 -->
+	<select id="getTcyDz" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.TenancyDz">
+		SELECT DZ.MATR_CODE MATR_CODE_FZ,DZ.ST_DATE FROM_DATE,DZ.ED_DATE TO_DATE,DZ.ALL_AMT CNT_AMT_TR,DZ.EXEC_AMT EXEC_AMT_TR,DZ.TAX_AMT TAX_AMT_TR 
+		FROM TD_CNT_TENANCY_DETAIL_LOG DZ
+        WHERE DZ.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+        AND DZ.VER_NO = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	<!-- 获取租金递增条件列表 -->
+	<select id="getTcyDzByMatrCode" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.TenancyDz">
+		SELECT DZ.MATR_CODE MATR_CODE_FZ,DZ.ST_DATE FROM_DATE,DZ.ED_DATE TO_DATE,DZ.ALL_AMT CNT_AMT_TR,DZ.EXEC_AMT EXEC_AMT_TR,DZ.TAX_AMT TAX_AMT_TR 
+		FROM TD_CNT_TENANCY_DETAIL_LOG DZ
+        WHERE DZ.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+        AND DZ.VER_NO = #{versionNo,jdbcType=NUMERIC}
+        AND DZ.MATR_CODE = #{matrCodeString,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取按 进度分期付款列表 -->
+	<select id="getOnSchedule" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   SUB_ID,
+    		   JDZF,
+    		   JDTJ,
+    		   JD_DATE
+		FROM TD_CNT_FKJD_LOG
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+        AND VERSION_NO = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	
+	<!-- 获取按 按日期分期付款 -->
+	<select id="getOnDate" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   SUB_ID,
+    		   RQZF,
+    		   RQTJ
+		FROM TD_CNT_FKRQ_LOG
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+        AND VERSION_NO = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	
+	<!-- 获取按条件分期付款列表 -->
+	<select id="getOnTerm" parameterType="com.forms.prms.web.contract.history.domain.ContractHistory" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   DHZF,
+    		   YSZF,
+    		   JSZF
+		FROM TD_CNT_FKTJ_LOG
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+        AND VERSION_NO = #{versionNo,jdbcType=NUMERIC}
+	</select>
+	
+	<select id="queryCntDevice" parameterType="String"
+			resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT TCF.FEE_YYYYMM,TCF.SUB_ID,TCD.FEE_DEPT,TF.DUTY_NAME AS feeDeptName,
+		       TCD.MATR_CODE,TMT.MATR_NAME AS matrName,TMT.CGL_CODE,TCD.SPECIAL,TS.SPECIAL_NAME,
+		       TCD.REFERENCE,TR.REFERENCE_NAME,TCF.CGL_CAL_AMT,TCF.CGL_FEE_AMT
+		FROM TD_CNT_FEE_LOG TCF
+		LEFT JOIN TD_CNT_DEVICE_LOG TCD
+		ON TCF.CNT_NUM = TCD.CNT_NUM AND TCF.SUB_ID = TCD.SUB_ID AND TCF.VERSION_NO = TCD.VERSION_NO
+		LEFT JOIN TB_FNDWRR TF
+		ON TCD.FEE_DEPT = TF.DUTY_CODE 
+		LEFT JOIN TB_MATR_TYPE TMT
+		ON TCD.MATR_CODE = TMT.MATR_CODE
+		LEFT JOIN TB_SPECIAL TS
+		ON TS.SPECIAL_ID = TCD.SPECIAL 
+		LEFT JOIN TB_REFERENCE TR
+		ON TCD.REFERENCE = TR.REFERENCE_ID
+		WHERE TCF.CNT_NUM = #{cntNum,jdbcType=VARCHAR} AND TCF.VERSION_NO = #{versionNo,jdbcType=NUMERIC}
+		ORDER BY TCF.FEE_YYYYMM,TCF.SUB_ID
+	</select>
+</mapper>

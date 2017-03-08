@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetplan.dao.BudgetPlanDAO">
+
+	<!-- 新增预算模板插入操作 -->
+	<insert id="addBudgetPlan" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		<selectKey keyProperty="tmpltId" resultType="String" order="BEFORE" >
+			SELECT RM_GET_COMMON_ID('BUDGETTMPLT') FROM DUAL
+		</selectKey>
+		INSERT INTO TB_BUDGET_TMPLT
+		(
+			TMPLT_ID,
+			ORG21_CODE,
+			SOURCE_FILENAME,
+			SERVER_FILE,
+			DATA_TYPE,
+			DATA_YEAR,
+			DATA_ATTR,
+			DATA_FLAG,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{tmpltId,jdbcType=VARCHAR},
+			#{org21Code,jdbcType=VARCHAR},
+			#{sourceFileName,jdbcType=VARCHAR},
+			#{serverFile,jdbcType=VARCHAR},
+			#{dataType,jdbcType=VARCHAR},
+			#{dataYear,jdbcType=VARCHAR},
+			#{dataAttr,jdbcType=VARCHAR},
+			#{dataFlag,jdbcType=VARCHAR},
+			#{instOper,jdbcType=VARCHAR},
+		 	to_char(sysdate,'yyyy-MM-dd'),
+		 	to_char(sysdate,'HH24:mi:ss')
+		)
+	</insert>
+	
+	<!-- 添加预算模板与责任中心的关联关系 -->
+	<select id="addBudgetDuty" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetTmpltDutyBean">
+		INSERT INTO TB_BUDGET_TMPLT_DUTY
+		(
+			TMPLT_ID,
+			DUTY_CODE
+		)
+		VALUES
+		(
+			#{tmpltId,jdbcType=VARCHAR},
+			#{dutyCode,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<!-- 根据条件查找符合的预算模板列表 -->
+	<select id="list" 	parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean"
+						resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		SELECT  
+        			DISTINCT
+        			#{org2Name,jdbcType=VARCHAR} ORG2_NAME ,
+					T1.TMPLT_ID			TMPLT_ID,
+					T1.DATA_TYPE		DATA_TYPE,
+					T1.DATA_YEAR		DATA_YEAR,
+					T1.DATA_ATTR		DATA_ATTR,
+					T1.SOURCE_FILENAME	SOURCE_FILENAME,
+					T1.SERVER_FILE		SERVER_FILE,
+					T3.PARAM_NAME  		DATA_ATTR_NAME,
+					T1.ORG21_CODE		ORG21_CODE,
+					T1.DATA_FLAG		DATA_FLAG
+		FROM 		TB_BUDGET_TMPLT  T1
+       
+      	LEFT JOIN
+          			SYS_SELECT  T3
+      	ON 
+      				T1.DATA_ATTR = T3.PARAM_VALUE 		
+      	AND 		T3.CATEGORY_ID = 'CNT_TYPE'
+      	<where>
+			T1.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+			<if test="dataType != null and dataType != ''">
+				AND T1.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+			</if>
+			<if test="dataYear != null and dataYear != ''">
+				AND T1.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+			</if>
+			<if test="dataAttr != null and dataAttr != ''">
+				AND T1.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY TMPLT_ID DESC
+	</select>
+	
+	<!-- 删除指定的预算模板 -->
+	<delete id="deleteBudgetPlan" parameterType="string">
+		DELETE FROM 
+			TB_BUDGET_TMPLT 
+		WHERE 	TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		AND 	DATA_FLAG	!= '04' 
+	</delete>
+	
+	<!-- 删除预算与责任中心的关联关系 -->
+	<delete id="deleteBudgetRel" parameterType="string">
+		DELETE FROM 
+			TB_BUDGET_TMPLT_DUTY
+		WHERE 	TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 删除与预算模板相关联的Excel导入数据 -->
+	<delete id="deleteBudgetDetailInfo" parameterType="string">
+		DELETE FROM 
+			TB_BUDGET_TMPLT_DETAIL
+		WHERE	TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 根据预算ID查看Budget模板的详情 -->
+	<select id="view" 	parameterType="string"
+						resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		SELECT  
+			TMPLT_ID,
+			ORG21_CODE,
+			SOURCE_FILENAME,
+			SERVER_FILE,
+			DATA_TYPE,
+			DATA_YEAR,
+			DATA_ATTR,
+			DATA_FLAG,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			COMMIT_DATE,
+			COMMIT_TIME,
+			MEMO
+		FROM 
+		TB_BUDGET_TMPLT 
+		WHERE TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取预算模板相关联的可使用责任中心List -->
+	<select id="getBudgetOrgs" 	parameterType="string" 
+								resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetTmpltDutyBean">
+		SELECT 
+			A.DUTY_CODE, 
+			B.DUTY_NAME 
+		FROM 
+      		( 
+      			SELECT 
+      				DUTY_CODE 
+      			FROM 
+      				TB_BUDGET_TMPLT_DUTY 
+      			WHERE 
+      				TMPLT_ID = #{budgetId,jdbcType=VARCHAR}
+      		)   A
+    	LEFT JOIN
+      		TB_FNDWRR   B
+    	ON
+      		B.DUTY_CODE IN A.DUTY_CODE						
+	</select>
+	
+	<!-- 更新导入Excel任务流水的状态 -->
+	<update id="updateTaskLoadStatus" 	parameterType="com.forms.prms.web.budget.budgetplan.domain.TaskLoadBean">
+		UPDATE 	TD_TASK_LOAD
+			SET DATA_FLAG 	= #{dataFlag,jdbcType=VARCHAR}
+		WHERE 	TASK_ID 	= #{taskId,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 更新预算模板的状态 -->
+	<update id="updateBudgetStatus" 	parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		UPDATE 		TB_BUDGET_TMPLT
+			SET		DATA_FLAG 	= 	#{dataFlag,jdbcType=VARCHAR}
+		WHERE 	TMPLT_ID 		= 	#{tmpltId,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 预算模板新增后的[提交]确认操作:更新模板状态和提交时间 -->
+	<update id="submitBudget" 	parameterType="string"> 
+		UPDATE TB_BUDGET_TMPLT
+			SET 	COMMIT_DATE	= to_char(sysdate,'yyyy-MM-dd'),
+					COMMIT_TIME	= to_char(sysdate,'HH24:mi:ss'),
+					DATA_FLAG	= '04'
+		WHERE 		TMPLT_ID 	= #{tmpltId,jdbcType=VARCHAR}
+			AND 	DATA_FLAG	= '03'
+	</update>
+	
+	<!-- 根据预算模板ID获取指定的预算模板 -->
+	<select id="getBudgetById" 	parameterType="string" 
+								resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		SELECT 
+			TMPLT_ID,
+			ORG21_CODE,
+			SOURCE_FILENAME,
+			SERVER_FILE,
+			DATA_TYPE,
+			DATA_YEAR,
+			DATA_ATTR,
+			DATA_FLAG,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			COMMIT_DATE,
+			COMMIT_TIME,
+			MEMO
+		FROM 
+			TB_BUDGET_TMPLT
+		WHERE
+			TMPLT_ID = #{budgetId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 将导入Excel(资产类)的数据保存到数据库中 -->
+	<insert id="insertZCTempDetail" parameterType="com.forms.prms.web.budget.budgetplan.domain.ZiChanBudgetDetailBean">
+		INSERT INTO TD_BUDGET_TMPLT_DETAIL_ZC
+		(
+			ROW_SEQ,
+			TMPLT_ID,
+			MONT_CODE,
+			PL_CODE,
+			AC_CODE,
+			MATR_AUDIT_DEPT,
+			COLUMN_ONE,
+			COLUMN_TWO,
+			MATR_CODE,
+			MATR_NAME,
+			ERROR_MEMO
+		)VALUES
+		(
+			#{rowSeq,	jdbcType=VARCHAR},
+			#{tmpltId,	jdbcType=VARCHAR},
+			#{montCode,	jdbcType=VARCHAR},
+			#{plCode,	jdbcType=VARCHAR},
+			#{acCode,	jdbcType=VARCHAR},		
+			#{matrAuditDept,jdbcType=VARCHAR},		
+			#{columnOne,jdbcType=VARCHAR},		
+			#{columnTwo,jdbcType=VARCHAR},		
+			#{matrCode,	jdbcType=VARCHAR},		
+			#{matrName,	jdbcType=VARCHAR},		
+			#{errorMemo,jdbcType=VARCHAR}	
+		)	
+	</insert>
+	
+	<!-- 将导入Excel信息保存到数据库(包括资产类和费用类) -->
+	<insert id="insertBudgetTempDetail" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetTempDetailBean">
+		INSERT INTO TB_BUDGET_TMPLT_DETAIL
+		(
+			TMPLT_ID,
+			ROW_SEQ,
+			ROW_INFO,
+			MATR_CODE
+		)
+		VALUES
+		(
+			#{tmpltId,	jdbcType=VARCHAR},
+			#{rowSeq,	jdbcType=VARCHAR},
+			#{rowInfo,	jdbcType=VARCHAR},
+			#{matrCode,	jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 指定年份责任中心的年初预算数量统计 -->
+	<select id="checkYearFirstBudgetPlan"  parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean"
+											resultType="int">
+		SELECT COUNT(1) 
+		FROM 	TB_BUDGET_TMPLT 
+		  WHERE 	ORG21_CODE 	= #{org21Code,jdbcType=VARCHAR}  
+		  AND 		DATA_YEAR 	= #{dataYear,jdbcType=VARCHAR} 
+		  AND 		DATA_TYPE 	= '0'
+	</select>
+	
+	<!-- 更新预算模板的信息 -->
+	<update id="updateBudgetPlan" 	parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		UPDATE	TB_BUDGET_TMPLT
+			SET MEMO 		= #{memo,	jdbcType=VARCHAR}
+		WHERE	TMPLT_ID 	= #{tmpltId,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 查询预算模板导入Excel头部信息 -->
+	<select id="getBudgetPlanHeaderDetail" 	parameterType="string"
+											resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetTempDetailBean">
+		SELECT  A.ROW_INFO, 
+		        DECODE(A.ROW_SEQ ,'0','物料归口部门') MATRAUDIT_DEPTNAME , 
+		        A.MATR_CODE
+		FROM    TB_BUDGET_TMPLT_DETAIL A 
+		WHERE   A.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR} 
+		AND 	A.ROW_SEQ = '0'
+	</select>
+	
+	<!-- 查询预算模板导入Excel实体详情 -->
+	<select id="getBudgetPlanBodyDetail" 	parameterType="string"
+											resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetTempDetailBean">
+		SELECT  A.ROW_INFO, 
+		        A.MATR_CODE,
+		        B.MATR_AUDIT_DEPT
+		FROM    TB_BUDGET_TMPLT_DETAIL A 
+		LEFT JOIN
+            	TB_APPROVE_CHAIN      B
+        ON A.MATR_CODE = B.MATR_CODE AND B.FEE_DEPT = #{matrAuditDept,jdbcType=VARCHAR} and b.IS_PROVINCE_BUY ='0'
+		WHERE   A.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR} 
+		AND 	A.ROW_SEQ != '0'
+		ORDER BY A.ROW_SEQ ASC
+	</select>
+	
+	<!-- 基础模板导出数据查询 -->
+	<select id="exportBasicBudgetInfo"		parameterType="string"
+											resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetTempDetailBean">
+		SELECT 
+				B.MONT_CODE , 
+				C.MONT_NAME , 
+				A.MATR_CODE , 
+				A.MATR_NAME
+		FROM 		TB_MATR_TYPE A
+		LEFT JOIN 	TB_MONT_MATR_CONTRA B
+			ON 			A.MATR_CODE = B.MATR_CODE
+		LEFT JOIN 	TB_MONT_NAME C
+			ON 			B.MONT_CODE = C.MONT_CODE
+		WHERE 	A.MATR_CODE_1CODE = #{montType,jdbcType=VARCHAR} 
+		AND		( B.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} OR B.ORG21_CODE IS NULL )
+		ORDER BY 
+				C.MONT_CODE , A.MATR_CODE   
+	</select>
+
+	<!-- 预算模板导出数据查询 -->
+	<select id="getBudgetTmpExcelExpInfo"		parameterType="string"
+												resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetTempDetailBean">
+		SELECT 		A.ROW_SEQ , 
+					A.ROW_INFO , 
+					B.MATR_AUDIT_DEPT 
+		FROM  			TB_BUDGET_TMPLT_DETAIL 	A
+		LEFT JOIN  		TB_APPROVE_CHAIN 		B
+			ON 		A.MATR_CODE = B.MATR_CODE 
+			AND 	B.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}   
+		WHERE 
+			A.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}       
+		ORDER BY A.ROW_SEQ              
+	</select>
+	
+	<!-- Ajax校验：基础模板导出数据中是否存在监控指标未维护([模板下载]中导出前的校验) -->
+	<select id="ajaxCountDisMaintainMont" 	parameterType="string"
+											resultType="int">
+		select count(*)
+  from tb_matr_type a
+ where not exists (select 1
+          from tb_mont_matr_contra b
+         WHERE a.matr_code = b.matr_code
+           and b.org21_code = #{org21Code,jdbcType=VARCHAR})
+   AND A.MATR_TYPE =  #{montType,jdbcType=VARCHAR}
+	</select>
+</mapper>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.reportmgr.importAndexport.query.dao.QueryDao">
+	<!-- 查询导出列表 -->
+	<select id="getExportTaskList" parameterType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean" 
+		resultType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean">
+			SELECT
+				T.TASK_ID, 
+				T.TASK_DESC,
+				T.DATA_FLAG,
+		       	DECODE
+		       	(	
+		       		T.DATA_FLAG,
+		            '00','待处理',
+		            '01','处理中',
+		            '02','处理失败',
+		            '03','处理完成'
+		        ) AS DATA_FLAG_NAME,
+		        CASE 
+		       		T.DATA_FLAG
+		         	WHEN 
+		         		'00' 
+		         	THEN
+		          	(	
+		          		SELECT 
+		          			TO_CHAR( COUNT(1) )
+		             	FROM TD_TASK_EXPORT 
+		            	WHERE 	DATA_FLAG IN ('00')
+		              	AND 	TASK_ID &lt;= T.TASK_ID
+		             )
+		         ELSE 
+		          '-'
+		       END AS WAIT_SEQ,
+		       T.INST_OPER,
+		       T.INST_DATE,
+		       T.INST_TIME,
+		       T.PROC_DATE,
+		       T.PROC_TIME,
+		       T.PROC_MEMO,
+		       T.DEST_FILE
+		  	FROM TD_TASK_EXPORT T
+		  	 
+		 	WHERE T.INST_OPER = #{instOper, jdbcType=VARCHAR}
+		 	<if test=" null != taskId and '' != taskId ">
+		 		AND   T.TASK_ID = #{taskId, jdbcType=VARCHAR}
+		 	</if>
+		 	<if test=" null != dataFlag and '' != dataFlag ">
+		 		AND   T.DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}
+		 	</if>
+		 	<if test=" null != instDate and '' != instDate ">
+		 		AND   T.INST_DATE = #{instDate, jdbcType=VARCHAR}
+		 	</if>
+		 	ORDER BY T.TASK_ID DESC
+	</select>
+	
+	<!-- 根据任务ID精确查找导入任务对象 -->
+	<select id="getExportTask" parameterType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean" 
+		resultType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean">
+			SELECT 
+			  TASK_ID,
+			  TASK_DESC,
+			  CONFIG_ID,
+			  DATA_FLAG,
+			  EXPORT_FILE,
+			  INST_OPER,
+			  INST_DATE,
+			  INST_TIME,
+			  DEST_FILE,
+			  PROC_DATE,
+			  PROC_TIME,
+			  PROC_MEMO
+			FROM TD_TASK_EXPORT
+			WHERE TASK_ID = #{taskId, jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getImportTaskList" 	parameterType="java.util.HashMap"
+									resultType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean">
+		SELECT
+				T.TASK_ID, 
+				T.TASK_DESC,
+				T.DATA_FLAG,
+		       	DECODE
+		       	(	
+		       		T.DATA_FLAG,
+		            '00','待处理',
+		            '01','处理中',
+		            '02','处理失败',
+		            '03','处理完成'
+		        ) AS DATA_FLAG_NAME,
+		        CASE 
+		       		T.DATA_FLAG
+		         	WHEN 
+		         		'00' 
+		         	THEN
+		          	(	
+		          		SELECT 
+		          			TO_CHAR( COUNT(1) )
+		             	FROM TD_TASK_LOAD 
+		            	WHERE 	DATA_FLAG IN ('00')
+		              	AND 	TASK_ID &lt;= T.TASK_ID
+		             )
+		         ELSE 
+		          '-'
+		       END AS WAIT_SEQ,
+		       T.INST_OPER ,
+		       T.INST_DATE,
+		       T.INST_TIME,
+		       T.PROC_DATE,
+		       T.PROC_TIME,
+		       T.PROC_MEMO,
+		       T.TASK_PARAMS,
+		  	   T.LOAD_TYPE,
+		  	   T.TASK_BATCH_NO 
+		  	FROM TD_TASK_LOAD T
+		   
+		  	<where>
+			  	<if test=" '' == queryByOrg1 || null == queryByOrg1">
+			  		AND   T.INST_OPER = #{importTask.instOper, jdbcType=VARCHAR}
+			  	</if>
+			 	<if test=" null != importTask.dataFlag and '' != importTask.dataFlag ">
+			 		AND   T.DATA_FLAG = #{importTask.dataFlag, jdbcType=VARCHAR}
+			 	</if>
+			 	<if test=" null != importTask.instDate and '' != importTask.instDate ">
+			 		AND   T.INST_DATE = #{importTask.instDate, jdbcType=VARCHAR}
+			 	</if>
+			 	<if test=" null != importTask.taskId and '' != importTask.taskId ">
+			 		AND   T.TASK_ID = #{importTask.taskId, jdbcType=VARCHAR}
+			 	</if>
+			 	<if test=" null != batchId and '' != batchId ">
+			 		AND   
+			 			 (T.TASK_ID = #{batchId, jdbcType=VARCHAR}  OR   INSTR(T.TASK_PARAMS,#{batchId, jdbcType=VARCHAR}) &gt; 1 )
+			 	</if>
+		 	</where>
+		 	ORDER BY T.TASK_ID DESC
+	</select>
+	
+	
+	<select id="getImportTask" 	parameterType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean"
+									resultType="com.forms.prms.web.reportmgr.importAndexport.query.domain.ImporExporCommonBean">
+		SELECT 
+		  T.TASK_ID,
+		  T.TASK_DESC,
+		  T.CONFIG_ID,
+		  T.DATA_FLAG,
+		  CASE 
+	       		T.DATA_FLAG
+	         	WHEN 
+	         		'00' 
+	         	THEN
+	          	(	
+	          		SELECT 
+	          			TO_CHAR( COUNT(1) )
+	             	FROM TD_TASK_LOAD 
+	            	WHERE 	DATA_FLAG IN ('00')
+	              	AND 	TASK_ID &lt;= T.TASK_ID
+	             )
+	         ELSE 
+	          '-'
+	       END AS WAIT_SEQ,
+		  T.INST_OPER,
+		  T.INST_DATE,
+		  T.INST_TIME,
+		  T.PROC_DATE,
+		  T.PROC_TIME,
+		  T.PROC_MEMO,
+		  T.TASK_PARAMS,
+		  T.LOAD_TYPE
+		FROM TD_TASK_LOAD T
+		WHERE TASK_ID = #{taskId, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 根据任务ID查找上传模板的类型 -->
+	<select id="getUploadTypeByTaskId" parameterType="String" resultType="String">
+		SELECT		PARAM_NAME
+		FROM 		SYS_SELECT SS
+		WHERE SS.CATEGORY_ID  = 'STOCK_DATAIMP_UPTYPE'
+				AND SS.PARAM_VALUE	= 
+						(
+							SELECT
+								CASE
+									WHEN #{taskId,jdbcType=VARCHAR} = UDCI.TASK_CNT_ID THEN '01'
+									WHEN #{taskId,jdbcType=VARCHAR} = UDCI.TASK_PAY_ID THEN '02'
+								END	UPLOAD_TYPE
+							FROM	UPLOAD_DATA_CONTROL_INFO UDCI
+							WHERE 
+									(#{taskId,jdbcType=VARCHAR} = UDCI.TASK_CNT_ID OR #{taskId,jdbcType=VARCHAR} = UDCI.TASK_PAY_ID)
+						)
+	</select>
+	
+	<!-- 根据任务Id查找该次导入的错误数据行数(按错误row分组统计) -->
+	<select id="getErrRowCountByTaskId" parameterType="String" resultType="Integer">
+		  SELECT COUNT(1)
+		  FROM
+		  (
+			  SELECT 
+				      COUNT(1) ERR_ROW_COUNT
+				FROM 	UPLOAD_DATA_ERROR_INFO		UDEI
+				LEFT JOIN 
+				      UPLOAD_DATA_CONTROL_INFO	UDCI
+				ON	
+				    UDEI.BATCH_NO = UDCI.BATCH_NO
+				WHERE (#{taskId,jdbcType=VARCHAR} = UDCI.TASK_CNT_ID OR #{taskId,jdbcType=VARCHAR} = UDCI.TASK_PAY_ID)
+				      AND UDEI.UPLOAD_TYPE = 
+				      (
+				           SELECT 
+				            CASE
+				              WHEN #{taskId,jdbcType=VARCHAR} = UTEMP.TASK_CNT_ID  THEN '01'
+				              WHEN #{taskId,jdbcType=VARCHAR} = UTemp.TASK_PAY_ID  THEN '02'
+				            END
+				           FROM UPLOAD_DATA_CONTROL_INFO  UTEMP
+				           WHERE (#{taskId,jdbcType=VARCHAR} = UTEMP.TASK_CNT_ID OR #{taskId,jdbcType=VARCHAR} = UTEMP.TASK_PAY_ID)
+				        )
+				GROUP BY UDEI.BATCH_NO ,UDEI.UPLOAD_TYPE ,UDEI.ROW_NO ,UDEI.DATA_TYPE
+			)
+	</select>
+	<select id="getErrRowCountByBatchNo" parameterType="String"
+			resultType="Integer">
+		select count(1) from UPLOAD_DATA_ERROR_INFO where BATCH_NO=#{taskBatchNo,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getFuncIdByFuncUri" parameterType="string" resultType="string">
+		SELECT 	FUNC_ID  FROM PF_FUNCTION 
+			WHERE URL = #{uri,jdbcType=VARCHAR}
+	</select>
+</mapper>

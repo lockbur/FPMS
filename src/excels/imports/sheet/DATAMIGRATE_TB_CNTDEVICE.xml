@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="A1" regExp="\u5408\u540c\u7269\u6599\u4fe1\u606f" formatDesc="该值应该为[合同物料信息]">bean.headInfos</mapping>
+
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u8d39\u7528\u627f\u62c5\u90e8\u95e8\u7f16\u53f7" formatDesc="该值应该为[费用承担部门编号]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u8d39\u7528\u627f\u62c5\u90e8\u95e8\u540d\u79f0" formatDesc="该值应该为[费用承担部门名称]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u7269\u6599\u7f16\u53f7" formatDesc="该值应该为[物料编号]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u7269\u6599\u540d\u79f0" formatDesc="该值应该为[物料名称]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u4e13\u9879" formatDesc="该值应该为[专项]">bean.headInfos</mapping>
+		<mapping cell="G2" regExp="\u53c2\u8003" formatDesc="该值应该为[参考]">bean.headInfos</mapping>
+		<mapping cell="H2" regExp="\u6570\u91cf" formatDesc="该值应该为[数量]">bean.headInfos</mapping>
+		<mapping cell="I2" regExp="\u5355\u4ef7\u0028\u5143\u0029" formatDesc="该值应该为[单价(元)]">bean.headInfos</mapping>
+		<mapping cell="J2" regExp="\u8bbe\u5907\u578b\u53f7" formatDesc="该值应该为[设备型号]">bean.headInfos</mapping>
+		<mapping cell="K2" regExp="\u4fdd\u4fee\u671f\u0028\u5e74\u0029" formatDesc="该值应该为[保修期(年)]">bean.headInfos</mapping>
+		<mapping cell="L2" regExp="\u5236\u9020\u5546" formatDesc="该值应该为[制造商]">bean.title</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntMatrInfoBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.cntNum</mapping>
+			<mapping row="1" col="1">detail.feeDeptId</mapping>
+			<mapping row="1" col="2">detail.feeDeptName</mapping>
+			<mapping row="1" col="3">detail.matrCode</mapping>
+			<mapping row="1" col="4">detail.matrName</mapping>
+			<mapping row="1" col="5">detail.special</mapping>
+			<mapping row="1" col="6">detail.reference</mapping>
+			<mapping row="1" col="7">detail.execNum</mapping>
+			<mapping row="1" col="8">detail.execPrice</mapping>
+			<mapping row="1" col="9">detail.deviceModelName</mapping>
+			<mapping row="1" col="10">detail.warranty</mapping>
+			<mapping row="1" col="11">detail.productor</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

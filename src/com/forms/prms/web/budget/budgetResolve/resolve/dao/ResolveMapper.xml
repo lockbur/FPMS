@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetResolve.resolve.dao.ResolveDao">
+	<select id="getResolveList" 
+	 	parameterType="com.forms.prms.web.budget.budgetResolve.resolve.domain.Resolve" 
+	 	resultType="com.forms.prms.web.budget.budgetResolve.resolve.domain.Resolve">
+		
+	</select>
+	
+	<select id="getBudgetReplyedList" 	parameterType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetReplyedBean" 
+				 						resultType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetReplyedBean">
+		SELECT 
+			T1.TMPLT_ID , 
+			T2.DATA_YEAR||' - '||DECODE(T2.DATA_ATTR,'0','资产类','1','费用类')||' - '||DECODE(T2.DATA_TYPE,'0','年初预算','1','追加预算') TMPLT_NAME , 
+			T2.DATA_YEAR , T2.DATA_TYPE , T2.DATA_ATTR , T1.MONT_CODE , 
+			T3.MONT_NAME , T1.REPLY_AMT , T1.SPLITED_AMT , T3.ORG21_CODE
+		FROM 		    TD_BUDGET_REPLY_DETAIL T1 
+		LEFT JOIN	  TB_MONT_NAME T3
+			ON T1.MONT_CODE = T3.MONT_CODE
+		LEFT JOIN 	TB_BUDGET_TMPLT T2 
+			ON 		T1.TMPLT_ID = T2.TMPLT_ID
+    	LEFT JOIN   TB_FNDWRR   T4
+      		ON T4.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		WHERE 
+			T3.ORG21_CODE = 
+			    CASE T2.DATA_ATTR 
+			      WHEN '0' THEN T4.ORG1_CODE
+			      WHEN '1' THEN T4.ORG2_CODE
+			    END
+<!-- 6-9日注释掉(因为T3表去掉了该字段)		AND  T3.DECOMPOSE_ORG = #{dutyCode} -->
+		
+		<if test="dataType != null and dataType != ''">
+			AND T2.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+		<if test="dataYear != null and dataYear != ''">
+			AND T2.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="dataAttr != null and dataAttr != ''">
+			AND T2.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+		ORDER BY TMPLT_ID DESC
+	</select>
+	
+	<!-- 查找指定模板下指定监控指标的详情 -->
+	<select id="getBudReplyByTmpAndMont" 	parameterType="string" 
+				 							resultType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetReplyedBean">
+		SELECT 
+				T1.TMPLT_ID , T1.MONT_CODE , T2.MONT_NAME , T1.REPLY_AMT , T1.SPLITED_AMT 
+		FROM 	TD_BUDGET_REPLY_DETAIL T1
+		LEFT JOIN 
+				TB_MONT_NAME T2 
+		ON T1.MONT_CODE = T2.MONT_CODE
+		WHERE 	T1.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR} 
+		AND 	T1.MONT_CODE = #{montCode,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 查询监控指标下的物料信息列表 -->
+	<select id="getMatrListByMont"  parameterType="string"
+									resultType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+		SELECT 		T1.MONT_CODE , T1.MATR_CODE , T2.MATR_NAME 
+		FROM 		TB_MONT_MATR_CONTRA T1
+		LEFT JOIN 	TB_MATR_TYPE T2 
+		ON 			T1.MATR_CODE = T2.MATR_CODE
+		WHERE 
+					MONT_CODE = #{montCode,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 新增预算分解 -->
+	<insert id="addBudgetResolve" parameterType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetResolveBean">
+		INSERT INTO TD_BUDGET_SPLIT_DETAIL
+		(
+			TMPLT_ID,
+			MONT_CODE, 
+			DUTY_CODE,
+			MATR_CODE,
+			SUM_AMT,
+			USED_AMT,
+			FREEZE_AMT,
+			SURPLUS_AMT
+		)
+		VALUES
+		(
+			#{tmpltId,jdbcType=VARCHAR},
+			#{montCode,jdbcType=VARCHAR},
+			#{dutyCode,jdbcType=VARCHAR},
+			#{matrCode,jdbcType=VARCHAR},
+			#{sumAmt,jdbcType=VARCHAR},
+			#{usedAmt,jdbcType=VARCHAR},
+			#{freezeAmt,jdbcType=VARCHAR},
+			#{surplusAmt,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<select id="getResolveDetailList" 	parameterType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetResolveBean"
+										resultType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetResolveBean">
+		SELECT 
+			T1.TMPLT_ID , T1.MONT_CODE , T1.SUM_AMT , T1.FREEZE_AMT , T1.SURPLUS_AMT ,
+			T1.DUTY_CODE , T2.DUTY_NAME , T1.MATR_CODE , T3.MATR_NAME , T1.USED_AMT 
+		FROM 		TD_BUDGET_SPLIT_DETAIL T1
+		LEFT JOIN 	TB_FNDWRR T2 
+			ON T1.DUTY_CODE = T2.DUTY_CODE
+		LEFT JOIN 	TB_MATR_TYPE T3 
+			ON T1.MATR_CODE = T3.MATR_CODE
+		WHERE 	T1.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}  
+		AND 	T1.MONT_CODE = #{montCode,jdbcType=VARCHAR} 
+	</select> 
+	
+	<delete id="deleteBudgetResolve" parameterType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetResolveBean">
+		DELETE 
+			FROM 	TD_BUDGET_SPLIT_DETAIL 
+		WHERE 	TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		AND 	MONT_CODE = #{montCode,jdbcType=VARCHAR}
+		AND 	DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		AND 	MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+	</delete>
+	
+	<update id="updateSplitedAmtInReplyTb" 	parameterType="com.forms.prms.web.budget.budgetResolve.resolve.domain.BudgetReplyedBean">
+		UPDATE TD_BUDGET_REPLY_DETAIL
+		SET SPLITED_AMT = #{splitedAmt,jdbcType=NUMERIC}
+		WHERE TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		AND MONT_CODE = #{montCode,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="testUpdateSettingParams" parameterType="java.util.HashMap">
+		UPDATE TB_BUDGET_TMPLT 
+		SET SOURCE_FILENAME = #{updateValue,jdbcType=VARCHAR} 
+		<if test="condition1 == 'true'">
+			,	INST_OPER = 'HuangQQ'
+		</if>
+		WHERE TMPLT_ID = #{budget.tmpltId,jdbcType=VARCHAR}
+	</update>
+	
+</mapper>

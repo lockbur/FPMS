@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.cleanpaydeal.cleanpay.dao.CleanPayDAO">
+	
+	<!--查询可做暂收结清的列表-->
+	<select id="cleanpayList" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT TP.*,
+		  SEL.PARAM_NAME AS DATA_FLAG_NAME
+		FROM TD_PAY TP 
+		LEFT JOIN (SELECT NORMAL_PAY_ID, SUM(CLEAN_AMT) AS TOTOL_CLEAN_AMT
+		          FROM TD_PAY_CLEAN
+		         GROUP BY NORMAL_PAY_ID
+		) CLR ON TP.PAY_ID = CLR.NORMAL_PAY_ID
+		LEFT JOIN SYS_SELECT SEL
+		ON SEL.CATEGORY_ID  = 'PAY_DATA_FLAG'
+		AND SEL.PARAM_VALUE = TP.DATA_FLAG
+		WHERE TP.INST_DUTY_CODE=#{instDutyCode,jdbcType=VARCHAR} 
+		AND TP.SUSPENSE_AMT > 0
+		AND TP.DATA_FLAG      = UPPER('F4')
+		<!--第一次做结清TD_PAY_CLEAN不存在（即没做过暂收结清的NORMAL_PAY_ID就是空）-->
+		AND (CLR.NORMAL_PAY_ID IS NULL OR (TP.SUSPENSE_AMT -  CLR.TOTOL_CLEAN_AMT) > 0)
+		<if test="normalPayId != null and '' != normalPayId">
+			AND TP.PAY_ID LIKE '%' || #{normalPayId ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="cntNum != null and '' != cntNum">
+			AND TP.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%'  
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND TP.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND TP.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND TP.PAY_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND TP.PAY_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		ORDER BY TP.PAY_ID DESC
+	</select>
+	
+	<!--根据合同号查询合同信息-->
+	<select id="constractInfo" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT 
+			CNT.CNT_NUM,
+			CNT.NORMARL_TOTAL_AMT,
+			CNT.ADVANCE_TOTAL_AMT,
+			CNT.FREEZE_TOTAL_AMT,
+			CNT.SUSPENSE_TOTAL_AMT,
+			CNT.CNT_AMT,
+			CNT.CNT_ALL_AMT,
+			CNT.ZB_AMT,
+			CNT.PROVIDER_CODE,
+			CNT.PROVIDER_NAME,
+			CNT.PROVIDER_TYPE,
+			CNT.PAY_MODE,
+			CNT.PROV_ACT_NO,
+			CNT.PROV_ACT_CURR,
+			CNT.BANK_NAME,
+			CNT.CNT_TYPE,
+			SEL.PARAM_NAME AS CNT_TYPE_NAME
+		FROM TD_CNT CNT
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CNT_TYPE' AND SEL.PARAM_VALUE = CNT.CNT_TYPE
+		WHERE CNT.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询付款信息(正常付款)-->
+	<select id="queryPayInfo" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT 
+			T.*
+		FROM TD_PAY T
+		WHERE T.PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+		AND T.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询正在结清的总金额-->
+	<select id="queryCleanAmtIng" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" resultType="string">
+		SELECT SUM(NVL(CLEAN_AMT,0)) AS CLEAN_AMT_ING_TOTAL
+		FROM TD_PAY_CLEAN TPC
+		WHERE NORMAL_PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+		AND (TPC.CLEAN_AMT_FMS = 0 or TPC.CLEAN_AMT_FMS is null)  
+		GROUP BY NORMAL_PAY_ID
+	</select>
+	
+	<!--通过付款单查暂收信息-->
+	<select id="getClenPayById" parameterType = "string"
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT *
+		FROM TD_PAY_CLEAN
+		WHERE NORMAL_PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+		ORDER BY SORT_ID DESC
+	</select>
+	
+	<!--正常付款暂收结清处理信息保存或提交-->
+	<insert id="payCleanDealSaveOrSubmit" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		INSERT INTO TD_PAY_CLEAN
+		(
+			NORMAL_PAY_ID,
+			SORT_ID,
+			CLEAN_AMT,
+			CLEAN_REASON
+		)
+		VALUES
+		(
+			#{normalPayId ,jdbcType=VARCHAR},
+			(SELECT DECODE(MAX(SORT_ID),NULL,'001',LPAD(MAX(SORT_ID)+1,3,'0')) FROM TD_PAY_CLEAN WHERE NORMAL_PAY_ID =#{normalPayId ,jdbcType=VARCHAR} ),
+			#{cleanAmt ,jdbcType=NUMERIC},
+			#{cleanReason ,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!--查询已结清列表-->
+	<select id="queryCleanedPayInfo" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT 
+			TPC.NORMAL_PAY_ID,
+			TPC.SORT_ID,
+			TPC.CLEAN_PROJECT,
+			TPC.CLEAN_AMT,
+			TPC.CLEAN_AMT_FMS,
+			TPC.CLEAN_MEMO,
+			TPC.CLEAN_REASON
+		FROM TD_PAY_CLEAN TPC
+		WHERE TPC.NORMAL_PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+		AND TPC.CLEAN_AMT_FMS > 0
+		ORDER BY TPC.SORT_ID DESC
+	</select>
+	<!--查询新增后的子序号-->
+	<select id="QuerySortId" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT sort_id
+			FROM
+			  (SELECT *
+			  FROM td_pay_clean t
+			  WHERE normal_pay_id = #{normalPayId ,jdbcType=VARCHAR}
+			  ORDER BY sort_id DESC
+			  )
+			WHERE rownum = 1
+	</select>
+	
+	<!--已结清明细查询-->
+	<select id="queryCleanedDetail" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT 
+			TPC.NORMAL_PAY_ID,
+			TPC.SORT_ID,
+			TPC.CLEAN_PROJECT,
+			TPC.CLEAN_AMT,
+			TPC.CLEAN_AMT_FMS,
+			TPC.CLEAN_MEMO,
+			TPC.CLEAN_REASON
+		FROM TD_PAY_CLEAN TPC
+		WHERE TPC.NORMAL_PAY_ID = #{normalPayId ,jdbcType=VARCHAR}
+		AND TPC.SORT_ID = #{sortId ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--生成暂收结清编号-->
+	<select id="createCleanPayId" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean"  resultType = "string">
+		SELECT 
+			TF.OU_CODE || TO_CHAR(SYSDATE, 'YYYYMMDD') || #{payFlag ,jdbcType=VARCHAR} || RM_GET_COMMON_ID('PAYID')
+		FROM TD_CNT TC
+		LEFT JOIN TB_FNDWRR  TF ON TC.PAY_DUTY_CODE  = TF.DUTY_CODE
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+</mapper>

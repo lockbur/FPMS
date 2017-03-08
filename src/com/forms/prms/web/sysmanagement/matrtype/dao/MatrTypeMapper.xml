@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.matrtype.dao.MatrTypeDAO">
+
+
+	<!-- 新增一条核算码记录  -->
+	<insert id="addPrepaidCode" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+	        INSERT INTO TB_PROPERTY_TYPE
+	             (
+	             CGL_CODE,
+				 SHORT_PREPAID_CODE,
+				 LONG_PREPAID_CODE,
+				 LONG_PREPAID_CODE_FEE
+	             )
+	         VALUES
+	            (
+	             #{cglCode,jdbcType=VARCHAR},
+	             #{shortPrepaidCode,jdbcType=VARCHAR}, 
+	             #{longPrepaidCode,jdbcType=VARCHAR},
+	             #{longPrepaidCodeFee,jdbcType=VARCHAR}
+	             )
+	</insert>
+	
+	<!-- 更新一条核算码记录  -->
+	<update id="updatePrepaidCode" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+			UPDATE TB_PROPERTY_TYPE T SET
+				T.SHORT_PREPAID_CODE = #{shortPrepaidCode,jdbcType=VARCHAR}, 
+				T.LONG_PREPAID_CODE = #{longPrepaidCode,jdbcType=VARCHAR},
+				T.LONG_PREPAID_CODE_FEE = #{longPrepaidCodeFee,jdbcType=VARCHAR}
+			WHERE T.CGL_CODE = #{cglCode,jdbcType=VARCHAR}
+	</update>
+	<!-- 查询核算码 -->
+	<select id="propertyList" parameterType="String"
+	                          resultType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+		SELECT CGL_CODE,SHORT_PREPAID_CODE,LONG_PREPAID_CODE,LONG_PREPAID_CODE_FEE
+		 FROM tb_property_type
+		 where CGL_CODE = #{cglCode, jdbcType=VARCHAR}
+	</select> 
+	
+	<!-- 查询核算码 -->
+	<select id="checkCglCode" parameterType="String"
+	                          resultType="int">
+		select count(1)
+		 from tb_matr_type t where t.matr_type = '3' and t.is_prepaid_provision = 'Y' and t.cgl_code =  #{cglCode, jdbcType=VARCHAR}
+	</select> 
+	<!-- 费用核算码选择列表 -->
+	<select id="listCglCode" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType"
+	                          resultType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+		SELECT T.CGL_CODE,T.SHORT_PREPAID_CODE,T.LONG_PREPAID_CODE,T.LONG_PREPAID_CODE_FEE
+		 FROM tb_property_type T
+		  <where>
+        	<if test="cglCode != null and cglCode != '' ">
+            	AND T.CGL_CODE LIKE '%'|| #{cglCode, jdbcType=VARCHAR}||'%'
+            </if>
+		  </where>
+		  ORDER BY T.CGL_CODE ASC
+	</select> 
+	<!-- 查询物料类别列表 -->
+	<select id="list" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType"
+	                  resultType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+		 SELECT A.MATR_CODE,
+                A.MATR_NAME,
+                A.CGL_CODE,
+                A.MATR_UNIT,
+                A.LOSS_CODE,
+                A.MATR_CODE_1CODE,
+                DECODE(A.MATR_TYPE,'1','资产','3','费用') MATR_TYPE,
+                <!-- A.PROVISION_CODE,
+                A.PREPAID_CODE, -->
+                A.IS_PUBLICITY_PAY,
+                A.MEMO
+                <!--
+                A.MATR_CODE_1CODE,
+                A.MATR_CODE_1DESC,
+                A.MATR_CODE_23CODE,
+                A.MATR_CODE_23DESC,
+                A.MATR_CODE_45CODE,
+                A.MATR_CODE_45DESC,
+                A.MATR_CODE_67CODE,
+                A.MATR_CODE_67DESC,
+                A.MATR_47DESC -->
+           FROM TB_MATR_TYPE A 
+        <where>
+        	<if test="matrCode != null and matrCode != '' ">
+            	AND A.MATR_CODE LIKE '%'|| #{matrCode, jdbcType=VARCHAR}||'%'
+            </if>
+            <if test="matrName != null and matrName != '' ">
+            	AND A.MATR_NAME LIKE '%'||#{matrName, jdbcType=VARCHAR}||'%'
+            </if>
+            <if test="cglCode != null and cglCode != '' ">
+            	AND A.CGL_CODE = #{cglCode, jdbcType=VARCHAR}
+            </if>
+            <if test="matrUnit != null and matrUnit != '' ">
+            	AND A.MATR_UNIT LIKE '%'||#{matrUnit, jdbcType=VARCHAR} ||'%'
+            </if>
+            <!--<if test="matrType != null and matrType != '' ">
+            	AND A.MATR_TYPE = #{matrType, jdbcType=VARCHAR}
+            </if>-->
+            <if test="matrType == 1">
+				AND A.MATR_TYPE = '1'
+			</if>
+			<if test="matrType == 3">
+				AND A.MATR_TYPE = '3'
+			</if>
+            <if test="matrType == 0">
+
+			</if>
+        </where>
+        ORDER BY A.MATR_CODE DESC
+	</select> 
+	
+	<!-- 查询物料类别  详情 -->
+	<select id="view" parameterType="String"
+	                  resultType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+		 SELECT A.MATR_CODE,
+		 		A.MATR_NAME,
+                A.CGL_CODE,
+                A.MATR_UNIT,
+                A.LOSS_CODE,
+                A.MATR_CODE_1CODE,
+                DECODE(MATR_TYPE,'1','资产','3','费用') MATR_TYPE,
+                <!-- A.PROVISION_CODE,
+                A.PREPAID_CODE, -->
+                <!-- 判断是否是业务宣传费 -->
+                DECODE(IS_PUBLICITY_PAY,'1','是','否') IS_PUBLICITY_PAY,
+                A.MEMO,
+                B.SHORT_PREPAID_CODE,
+                B.LONG_PREPAID_CODE,
+                B.LONG_PREPAID_CODE_FEE,
+                case when a.is_notinfee = 'Y' and matr_type = '3' then '不入库费用' 
+                     when a.is_notinfee = 'N' and matr_type = '3' then '入库费用'
+                     else '-' end
+                 as is_notinfee,
+                 case when a.is_fcwl = 'Y'  then '是' 
+                     when a.is_fcwl = 'N'  then '否'
+                     else '-' end
+                 as is_fcwl,
+                 case when a.is_order = 'Y'  then '是' 
+                     when a.is_order = 'N'  then '否'
+                     else '-' end
+                 as is_order,
+                 case when a.is_prepaid_provision = 'Y'  then '是' 
+                     when a.is_prepaid_provision = 'N'  then '否'
+                     else '-' end
+                 as is_prepaid_provision,
+                case when a.is_gdzc = 'Y' then '固定资产' 
+                     when a.is_gdzc = 'N' then '非固定资产'
+                     else '-' end
+                 as is_gdzc 
+           FROM TB_MATR_TYPE A left join tb_property_type B ON A.CGL_CODE = B.CGL_CODE
+          WHERE A.MATR_CODE = #{matrCode, jdbcType=VARCHAR}
+	</select> 
+	
+	<!-- 查找专项包物料类型Option列表 -->
+	<select id="matrTypeOption" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType"
+	                            resultType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+	 <!-- 专项包  -->                           
+	 <if test="isSpec != null and isSpec ==0 and allMontType == 0">                        
+	SELECT DISTINCT D.MONT_CODE,
+	 DECODE(D.MONT_TYPE,'11','专项包','12','省行统购资产','21','非省行统购资产','22', '非专项包费用')MONT_TYPE_NAME,
+           D.MONT_NAME,
+           B.MATR_CODE,
+           B.MATR_NAME,
+           B.CGL_CODE,
+           a.MATR_BUY_DEPT,
+           TF1.DUTY_NAME AS MATR_BUY_DEPT_NAME,
+           a.MATR_AUDIT_DEPT,
+           TF2.DUTY_NAME AS MATR_AUDIT_DEPT_NAME,
+           b.IS_NOTINFEE isNotinfee,
+           B.MATR_TYPE,
+           DECODE(B.IS_ORDER,'Y','是','N','否','') IS_ORDER
+      FROM TB_APRV_CHAIN_SPEC A 
+ LEFT JOIN TB_MATR_TYPE B 
+		ON A.MATR_CODE = B.MATR_CODE 
+ LEFT JOIN TB_MONT_NAME D 
+        ON D.MONT_CODE = A.MONT_CODE 
+ LEFT JOIN TB_FNDWRR TF1 
+ 		ON A.MATR_BUY_DEPT = TF1.DUTY_CODE
+ LEFT JOIN TB_FNDWRR TF2 
+ 		ON A.MATR_AUDIT_DEPT = TF2.DUTY_CODE
+	 WHERE A.ORG1_CODE = #{org1Code, jdbcType=VARCHAR}
+	 	AND A.DATA_YEAR = to_char(sysdate,'yyyy')
+	 	AND D.MONT_TYPE ='11'
+	   <!-- 若为费用类合同只能选择费用类物料-->
+	    <if test="cntType ==1 ">
+	            AND B.MATR_TYPE = '3'
+	             <if test="feeType == 0 or feeType == 1">
+	             	AND B.IS_PREPAID_PROVISION = 'Y'
+	             </if>
+        </if>
+       
+        <!-- 若为资产类合同只能选择资产类物料-->
+        <if test="cntType ==0  ">
+	            AND B.MATR_TYPE = '1'
+        </if>
+        <if test="matrName != null and matrName != '' ">
+            	AND B.MATR_NAME LIKE '%'||#{matrName, jdbcType=VARCHAR}||'%'
+         </if>	
+        <if test="montName != null and montName != '' ">
+            	AND D.MONT_NAME LIKE '%'||#{montName, jdbcType=VARCHAR}||'%'
+         </if>  
+         <if test="cglCode != null and cglCode != '' ">
+            	AND B.CGL_CODE = #{cglCode, jdbcType=VARCHAR}
+         </if>  
+         <if test="isOrder != null and isOrder != '' ">
+	            AND B.IS_ORDER = #{isOrder, jdbcType=VARCHAR}
+         </if>       
+	 </if>      
+	 <!-- 非专项包  -->                           
+	 <if test="isSpec != null and isSpec ==1 and allMontType == 0">  
+   SELECT distinct 
+   D.MONT_CODE,
+   DECODE(D.MONT_TYPE,'11','专项包','12','省行统购资产','21','非省行统购资产','22', '非专项包费用')MONT_TYPE_NAME,
+          D.MONT_NAME,
+          B.MATR_CODE,
+          B.MATR_NAME,
+          B.CGL_CODE,
+          a.MATR_BUY_DEPT,
+          TF1.DUTY_NAME AS MATR_BUY_DEPT_NAME,
+           a.MATR_AUDIT_DEPT,
+           TF2.DUTY_NAME AS MATR_AUDIT_DEPT_NAME,
+           b.IS_NOTINFEE isNotinfee,
+           B.MATR_TYPE,
+           DECODE(B.IS_ORDER,'Y','是','N','否','') IS_ORDER
+     FROM TB_APRV_CHAIN_NOSPEC A 
+LEFT JOIN TB_MATR_TYPE B 
+	   ON A.MATR_CODE = B.MATR_CODE 
+LEFT JOIN TB_MONT_NAME D 
+       ON D.MONT_CODE = A.MONT_CODE
+LEFT JOIN TB_FNDWRR TF1 
+ 		ON A.MATR_BUY_DEPT = TF1.DUTY_CODE
+ LEFT JOIN TB_FNDWRR TF2 
+ 		ON A.MATR_AUDIT_DEPT = TF2.DUTY_CODE
+    WHERE 
+     (A.FEE_CODE = #{feeDept, jdbcType=VARCHAR} or a.org_code = (select distinct org_code from tb_fndwrr tf where tf.duty_code =#{feeDept, jdbcType=VARCHAR} ) )
+    	AND A.DATA_YEAR = to_char(sysdate,'yyyy')
+    	 <if test="cntType == 1">
+    	 	AND D.MONT_TYPE = '22'
+    	 </if>
+    	 <!-- 若为费用类合同只能选择费用类物料-->
+	     <if test="cntType ==1">
+	            AND B.MATR_TYPE = '3'
+	            <if test="feeType == 0 or feeType == 1">
+	             	AND B.IS_PREPAID_PROVISION = 'Y'
+	             </if>
+         </if>
+         <!-- 若为资产类合同只能选择资产类物料-->
+         <if test="cntType !='' and cntType!= null and cntType ==0">
+	            AND B.MATR_TYPE = '1'
+         </if>
+    <!-- 省行统购  -->
+        <if test="isProvinceBuy !='' and isProvinceBuy!= null and isProvinceBuy == 0">
+	           AND A.APRV_TYPE = '12'
+        </if> 
+    <!-- 非省行统购  -->
+        <if test="isProvinceBuy ==1">
+                AND A.APRV_TYPE in ('21','22')
+        </if> 
+       
+        <if test="matrName != null and matrName != '' ">
+            	AND B.MATR_NAME LIKE '%'||#{matrName, jdbcType=VARCHAR}||'%'
+         </if>
+        <if test="montName != null and montName != '' ">
+            	AND D.MONT_NAME LIKE '%'||#{montName, jdbcType=VARCHAR}||'%'
+         </if>    
+         <if test="cglCode != null and cglCode != '' ">
+            	AND B.CGL_CODE = #{cglCode, jdbcType=VARCHAR} 
+         </if>
+         <if test="isOrder != null and isOrder != '' ">
+	            AND B.IS_ORDER = #{isOrder, jdbcType=VARCHAR}
+         </if>        
+	 </if>
+	  <if test="allMontType == 1">  
+	 		SELECT
+			DISTINCT 
+			UN.*,
+			TF1.DUTY_NAME AS MATR_BUY_DEPT_NAME,
+			TF2.DUTY_NAME AS MATR_AUDIT_DEPT_NAME,
+			TMT.MATR_NAME,
+			TMN.MONT_NAME,
+			DECODE(TMT.IS_ORDER,'Y','是','N','否','') IS_ORDER,
+			DECODE(TMN.MONT_TYPE,'11','专项包','12','省行统购资产','21','非省行统购资产','22', '非专项包费用')MONT_TYPE_NAME,
+			TMT.IS_NOTINFEE,
+			TMT.CGL_CODE,
+			TMT.MATR_TYPE
+			FROM (
+			SELECT
+			DISTINCT
+			A.MONT_CODE,
+			A.MATR_CODE,
+			A.MATR_BUY_DEPT,
+			A.MATR_AUDIT_DEPT
+			FROM TB_APRV_CHAIN_SPEC A
+			WHERE A.ORG1_CODE =  #{org1Code, jdbcType=VARCHAR} 
+			UNION
+			SELECT
+			TA.MONT_CODE,
+			TA.MATR_CODE,
+			TA.MATR_BUY_DEPT,
+			TA.MATR_AUDIT_DEPT
+			FROM TB_APRV_CHAIN_NOSPEC TA
+			WHERE TA.FEE_CODE =  #{feeDept, jdbcType=VARCHAR}  OR TA.ORG_CODE IN (SELECT ORG_CODE FROM TB_FNDWRR WHERE DUTY_CODE=#{feeDept, jdbcType=VARCHAR})
+			) UN
+			LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE= UN.MATR_CODE
+			LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = UN.MONT_CODE
+			LEFT JOIN TB_FNDWRR TF1 ON UN.MATR_BUY_DEPT = TF1.DUTY_CODE
+			LEFT JOIN TB_FNDWRR TF2 ON UN.MATR_AUDIT_DEPT = TF2.DUTY_CODE
+			<where>
+				<if test="montType != null and montType != '' ">
+	            	AND TMN.MONT_TYPE LIKE '%'||#{montType, jdbcType=VARCHAR}||'%'
+		         </if>
+				<if test="matrName != null and matrName != '' ">
+	            	AND TMT.MATR_NAME LIKE '%'||#{matrName, jdbcType=VARCHAR}||'%'
+		         </if>
+		        <if test="montName != null and montName != '' ">
+		            AND TMN.MONT_NAME LIKE '%'||#{montName, jdbcType=VARCHAR}||'%'
+		         </if>    
+		         <if test="cglCode != null and cglCode != '' ">
+		            AND TMT.CGL_CODE = #{cglCode, jdbcType=VARCHAR} 
+		         </if>  
+		         <if test="isOrder != null and isOrder != '' ">
+	            	AND TMT.IS_ORDER = #{isOrder, jdbcType=VARCHAR}
+         		 </if>
+         		  <if test="cntType ==1">
+			            <if test="feeType == 0 or feeType == 1">
+			             	AND TMT.IS_PREPAID_PROVISION = 'Y'
+			            </if>
+			            
+		         </if>
+	         </where>
+
+	  </if>
+	</select>
+	
+	
+	<!-- 新增物料  -->
+	<insert id="insertMatr" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType"
+			flushCache="true" statementType="PREPARED">
+	        INSERT INTO TB_MATR_TYPE
+
+	             (MATR_CODE,
+	              MATR_NAME,
+	              CGL_CODE,
+	              MATR_UNIT,
+	              LOSS_CODE,
+	              MATR_CODE_1CODE,
+	              MATR_TYPE,
+	              <!-- PROVISION_CODE,
+	              PREPAID_CODE, -->
+	              IS_PUBLICITY_PAY,
+	              MEMO,
+	              IS_NOTINFEE,
+	              IS_GDZC,
+	              IS_FCWL,
+	              IS_ORDER,
+	              IS_PREPAID_PROVISION,
+	              seq
+	              )
+	         VALUES
+	            (
+	             #{matrCode,jdbcType=VARCHAR},
+	             #{matrName,jdbcType=VARCHAR}, 
+	             #{cglCode,jdbcType=VARCHAR},
+	             #{matrUnit,jdbcType=VARCHAR},
+	             #{lossCode,jdbcType=VARCHAR},
+	             SUBSTR(#{matrCode,jdbcType=VARCHAR},1,1),
+	             #{matrType,jdbcType=VARCHAR},
+	             <!-- #{provisionCode,jdbcType=VARCHAR},
+	             #{prepaidCode,jdbcType=VARCHAR}, -->
+	             #{isPublicityPay,jdbcType=VARCHAR},
+	             #{memo,jdbcType=VARCHAR},
+	             #{isNotinfee,jdbcType=VARCHAR},
+	             #{isGDZC,jdbcType=VARCHAR},
+	             #{isFcwl,jdbcType=VARCHAR},
+	             #{isOrder,jdbcType=VARCHAR},
+	             #{isPrepaidProvision,jdbcType=VARCHAR},
+	             (select max(lpad(seq, 3,'0'))+1 from tb_matr_type)
+	             )
+	              	                  	
+	</insert>
+	<!-- 新增一条核算码记录  -->
+	<insert id="addCglCode" parameterType="com.forms.prms.web.sysmanagement.matrtype.domain.MatrType">
+	        INSERT INTO TB_PROPERTY_TYPE
+	             (
+	             CGL_CODE,
+				 SHORT_PREPAID_CODE,
+				 LONG_PREPAID_CODE
+	             )
+	         VALUES
+	            (
+	             #{cglCode,jdbcType=VARCHAR},
+	             #{shortPrepaidCode,jdbcType=VARCHAR}, 
+	             #{longPrepaidCode,jdbcType=VARCHAR}
+	             )
+	              	                  	
+	</insert>
+	
+	
+	<!--导入物料信息-->
+	<insert id="importMt" parameterType="java.util.List">
+		INSERT INTO TB_MATR_TYPE
+	             (MATR_CODE,
+	              MATR_NAME,
+	              CGL_CODE,
+	              MATR_UNIT,
+	              LOSS_CODE,
+	              MATR_CODE_1CODE,
+	              MATR_TYPE,
+	              <!-- PROVISION_CODE,
+	              PREPAID_CODE, -->
+	              IS_PUBLICITY_PAY,
+	              MEMO) (
+	 		<foreach collection="matrTypes" item="item" index="index" separator="union " > 
+				select 
+		             #{item.matrCode, jdbcType=VARCHAR},
+		             #{item.matrName, jdbcType=VARCHAR}, 
+		             #{item.cglCode, jdbcType=VARCHAR},
+		             #{item.matrUnit, jdbcType=VARCHAR},
+		             #{item.lossCode, jdbcType=VARCHAR},
+		             SUBSTR(#{item.matrCode, jdbcType=VARCHAR},1,1),
+		             #{item.matrType, jdbcType=VARCHAR},
+		             <!-- #{item.provisionCode, jdbcType=VARCHAR},
+		             #{item.prepaidCode, jdbcType=VARCHAR}, -->
+		             #{item.isPublicityPay, jdbcType=VARCHAR},
+		             #{item.memo, jdbcType=VARCHAR}
+				    from dual				    
+	  		 </foreach> 
+			
+		)
+	</insert>	
+	<!--获取物料核算码-->
+	<select id="cglList"  parameterType="String"
+	                            resultType="String">
+		select distinct a.cgl_code from tb_matr_type a order by a.cgl_code desc
+	</select>
+</mapper>

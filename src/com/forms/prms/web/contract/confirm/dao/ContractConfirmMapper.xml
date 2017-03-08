@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.confirm.dao.IContractConfirmDAO">
+	<!-- 获取待确认合同列表 -->
+	<select id="confirmList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.confirm.domain.ConfirmContract">
+		SELECT CNT.cnt_num,CNT.cnt_type,CNT.cnt_name,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.provider_name,TF.DUTY_NAME AS createDeptName
+			,SS.PARAM_NAME as cntTypeName,SS1.PARAM_NAME as dataFlagName,CNT.is_order,CNT.CNT_TAX_AMT,CNT.INST_USER,NVL2(TEMP.CNT_NUM, 'N', 'Y') AS IS_ENABLE
+		FROM TD_CNT CNT
+		LEFT JOIN (SELECT CNT_NUM FROM TD_CNT A WHERE A.INST_USER = #{instUser,jdbcType=VARCHAR}) TEMP ON TEMP.CNT_NUM = CNT.CNT_NUM
+		LEFT JOIN TB_FNDWRR TF ON CNT.create_dept = TF.DUTY_CODE
+		LEFT JOIN SYS_SELECT SS ON SS.param_value = CNT.CNT_TYPE
+		LEFT JOIN SYS_SELECT SS1 ON SS1.param_value = CNT.DATA_FLAG
+		<where>
+			<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.cnt_num LIKE '%' || #{con.cntNum, jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.cnt_type = #{con.cntType, jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND CNT.provider_name LIKE '%' || #{con.providerName, jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.sign_date >= #{con.befDate, jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate, jdbcType=VARCHAR} >= CNT.sign_date
+			</if>
+			<!-- <if test="con.createDeptName != null and '' != con.createDeptName">
+				AND TF.DUTY_NAME LIKE '%' || #{con.createDeptName} || '%'
+			</if> -->
+				AND CNT.PAY_DUTY_CODE = #{dutyCode, jdbcType=VARCHAR} AND CNT.data_flag = '12' 
+				AND SS.category_id = 'CNT_TYPE' AND SS1.category_id = 'CNT_DATE_FLAG' 
+		</where>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	<!-- 获取待确认合同详情 -->
+	<select id="getDetail" parameterType="String" resultType="com.forms.prms.web.contract.confirm.domain.ConfirmContract">
+		SELECT CNT.cnt_num,CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.stock_num,CNT.psbh,CNT.provider_tax_rate,CNT.provider_tax
+		,CNT.qbh,CNT.lxsl,CNT.lxje,CNT.fee_start_date,CNT.fee_end_date,CNT.fee_amt,CNT.pay_term,CNT.currency,CNT.zb_amt,CNT.total_num,CNT.memo
+		CNT.IS_PREPAID_PROVISION,CNT.pay_duty_code,CNT.lxlx,CNT.fee_type,CNT.fee_sub_type,CNT.provider_name,TF1.DUTY_NAME AS createDeptName,TF2.DUTY_NAME AS payDutyCodeName,
+		TIP.ID,TIP.ICMS_PKUUID
+		FROM TD_CNT CNT
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  CNT.cnt_num=TIP.ID
+		LEFT JOIN TB_FNDWRR TF1 ON CNT.CREATE_DEPT = TF1.DUTY_CODE
+		LEFT JOIN TB_FNDWRR TF2 ON CNT.PAY_DUTY_CODE = TF2.DUTY_CODE
+		WHERE CNT.cnt_num = #{cntNum, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取合同项目列表 -->
+	<select id="getCntProj" parameterType="String" resultType="com.forms.prms.web.contract.confirm.domain.ConfirmContract">
+		SELECT DEV.*,PRO.proj_name FROM TD_CNT CNT
+		INNER JOIN TD_CNT_DEVICE DEV ON CNT.cnt_num = DEV.cnt_num
+		LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+        WHERE CNT.cnt_num = #{cntNum, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 合同确认通过 -->
+	<update id="confirmPass" parameterType="String">
+		UPDATE TD_CNT TC
+		SET TC.DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}
+		WHERE TC.CNT_NUM = #{cntNum, jdbcType=VARCHAR} AND TC.DATA_FLAG = '12'
+	</update>
+	
+	<!-- 合同退回 -->
+	<update id="confirmReturn" parameterType="String">
+		UPDATE TD_CNT 
+		   SET data_flag = '11'
+		WHERE data_flag = '12' AND cnt_num = #{cntNum, jdbcType=VARCHAR} 
+	</update>
+	
+	<!-- 根据合同号获取子序列号 -->
+	<select id="getCntFeeSubIds" parameterType="String" 
+			resultType="String">
+		SELECT DISTINCT(SUB_ID) FROM TD_CNT_FEE WHERE CNT_NUM = #{cntNum, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 根据子序列号和年份获取总feeAmt -->
+	<select id="getSumFeeAmt" parameterType="com.forms.prms.web.contract.initiate.domain.CntFee" 
+			resultType="java.math.BigDecimal">
+		select sum(tcf.cgl_fee_amt) from td_cnt_fee tcf 
+		where tcf.sub_id = #{subId, jdbcType=NUMERIC} 
+		and substr(tcf.fee_yyyymm,1,4) = EXTRACT(year from sysdate) 
+		and tcf.cnt_num = #{cntNum, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 费用类合同确认：占用当年度物料预算 -->
+	<update id="updateCntDevicePay" parameterType="java.util.HashMap">
+		BEGIN
+   		<foreach collection="list" item="item" separator=";" >
+			UPDATE TD_CNT_DEVICE
+    	   	   SET PAYED_AMT = PAYED_AMT + #{item.cglFeeAmt, jdbcType=NUMERIC}
+            WHERE  CNT_NUM = #{item.cntNum, jdbcType=VARCHAR} AND SUB_ID = #{item.subId, jdbcType=NUMERIC}	               
+		</foreach>
+		;END;
+	</update>
+	
+	<!-- 费用类合同确认：占用当年度物料预算 (sql批量更新，减少数据库交互过程) -->
+	<update id="updateCntDevicePayAmt" parameterType="String">
+		update TD_CNT_DEVICE TCD  
+		  set TCD.PAYED_AMT = TCD.PAYED_AMT +
+		    (select sum(s.cgl_fee_amt) as sum_amt from 
+		        (select  td.cnt_num,td.sub_id,tf.cgl_fee_amt
+		          from td_cnt_device td
+		          left join td_cnt_fee tf
+		          on td.cnt_num = tf.cnt_num
+		          and td.sub_id = tf.sub_id
+		          and SUBSTR(TF.FEE_YYYYMM,1,4) = extract(year from sysdate)
+		          where td.cnt_num = #{cntNum, jdbcType=VARCHAR}) S
+		       where SUB_ID = TCD.SUB_ID group by S.SUB_ID) 
+		where tcd.cnt_num = #{cntNum, jdbcType=VARCHAR} 
+		and tcd.sub_id in(select sub_id from td_cnt_device where cnt_num=#{cntNum, jdbcType=VARCHAR})
+	</update>
+	
+	<!-- 获取费用受益金额不为0的最小日期 -->
+	<select id="getFeeStartDate" parameterType="String" resultType="String">
+		select min(tcf.fee_yyyymm) as minFeeDate
+		from td_cnt_fee tcf
+		where tcf.cgl_fee_amt != 0
+		     and tcf.cnt_num = #{cntNum, jdbcType=VARCHAR} 
+	</select>
+	
+	<!-- 更新合同信息：是否生成订单 -->
+	<update id="updateIsOrder" parameterType="String">
+		update td_cnt tc
+		set tc.is_order = #{isOrder, jdbcType=VARCHAR},
+			tc.is_prepaid_provision = #{isPrepaidProvision, jdbcType=VARCHAR}
+		where tc.cnt_num = #{cntNum, jdbcType=VARCHAR}
+	</update>
+	<!-- 通过合同号去设备表中找是否存在订单退回的物料 -->
+	<select id="backDevCount" parameterType="String" resultType="com.forms.prms.web.contract.confirm.domain.ConfirmContract">
+		select data_flag
+		from TD_CNT_DEVICE 
+		where DATA_FLAG='90'
+		and CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!--预提待摊的预算冻结-->
+    <select id="bgtFrozen" statementType="CALLABLE" parameterType ="java.util.Map">
+        CALL PRC_BGTFROZEN_WHEN_MANYMONTHS(  
+            <!-- #{syyyymm,jdbcType=VARCHAR,mode=IN},  
+            #{eyyyymm,jdbcType=VARCHAR,mode=IN},   -->
+            #{cntNum,jdbcType=VARCHAR,mode=IN},  
+            #{isOrder,jdbcType=VARCHAR,mode=IN},  
+            #{instUser,jdbcType=VARCHAR,mode=IN},  
+            #{instUserDutyCode,jdbcType=VARCHAR,mode=IN},  
+            #{flag,jdbcType=VARCHAR,mode=OUT},
+            #{msgInfo,jdbcType=VARCHAR,mode=OUT}
+        )
+    </select>
+	<!--预提待摊的预算冻结明细查询-->
+    <select id="queryBgtFrozenDetail"  parameterType ="string" resultType ="com.forms.prms.web.contract.confirm.domain.BudgetBean">
+        SELECT 
+        	EBSC.CNT_NUM,
+			EBSC.FEE_DEPT,
+			EBSC.MONT_CODE,
+			EBSC.MATR_CODE,
+			EBSC.REFERENCE,
+			EBSC.SPECIAL,
+			EBSC.BGT_YEAR,
+			EBSC.SC_ID,
+			EBSC.BGT_FROZEN,
+			EBSC.BGT_OVERDRAW
+        FROM ERP_BUDGET_SUM_CNT EBSC
+        WHERE EBSC.CNT_NUM =  #{cntNum,jdbcType=VARCHAR}  
+        AND EBSC.BGT_OVERDRAW != 0
+    </select>
+    
+    <!--删除预算临时数据-->
+    <delete id="deleteBgtFrozenTemp" parameterType ="string">
+    	DELETE FROM ERP_BUDGET_SUM_CNT_TEMP 
+    	WHERE CNT_NUM =  #{cntNum,jdbcType=VARCHAR}  
+    </delete>
+       <!--校验合同都勾选完了-->
+    <select id="isHaveMontSplit" parameterType ="com.forms.prms.web.contract.confirm.domain.ConfirmContract" resultType="Integer">
+	 select count(1) from td_cnt_device a   
+    where a.cnt_num = #{cntNum,jdbcType=VARCHAR}  
+    and exists(
+        select 1 from tbl_mont_name b
+        where b.matr_code = a.matr_code
+        and b.last_mont_code = nvl2(a.next_mont_code,a.next_mont_code,a.curr_mont_code)
+        group by b.last_mont_code,b.matr_code
+        having count(distinct b.mont_code)>1
+    )
+    </select>
+    <select id="isInTableMont" parameterType ="com.forms.prms.web.contract.confirm.domain.ConfirmContract" resultType="String">
+		SELECT TO_CHAR(WM_CONCAT(A.SUB_ID)) FROM TD_CNT_DEVICE A
+		  WHERE 
+		  A.CNT_NUM = #{cntNum,jdbcType=VARCHAR}  
+		  AND
+		  NOT EXISTS (
+		  		SELECT 1  FROM TB_MONT_MATR_CONTRA B LEFT JOIN TB_MONT_NAME TM ON TM.MONT_CODE = B.MONT_CODE
+                           WHERE DECODE(A.CURR_YEAR,
+			                      TO_CHAR(SYSDATE, 'YYYY'),
+			                      A.CURR_MONT_CODE,
+			                      NVL2(A.NEXT_MONT_CODE,
+			                           A.NEXT_MONT_CODE,
+			                           A.CURR_MONT_CODE)) = B.MONT_CODE
+          					AND A.MATR_CODE = B.MATR_CODE
+          					AND TM.DATA_YEAR =  TO_CHAR(SYSDATE, 'YYYY')
+          					)
+           
+           
+ 
+    </select>
+    
+    <!--比较日期-->
+    <select id="compareDate" parameterType="String" resultType="String">
+    	select 1 
+    	  from dual 
+    	 where to_char(sysdate,'yyyy-MM-dd')&lt;= #{end,jdbcType=VARCHAR}
+    </select>
+    <select id="orderList" parameterType="String" resultType="String">
+    	select ORDER_ID
+    	from TD_ORDER
+    	where CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+    	and DATA_FLAG in('08','10','11','12','13')
+    </select>
+     <select id="notOrderMatrList" parameterType="String" resultType="String">
+     	select tcd.matr_code 
+        from TD_CNT_DEVICE tcd
+        left join  TB_MATR_TYPE tmt on tcd.matr_code=tmt.MATR_CODE
+        where tmt.IS_ORDER='N'
+        and CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+    </select>
+</mapper>

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.tool.exceltool.dao.ICommonExcelDealDao">
+	
+	<select id="getLoadList" resultType="CommonExcelDealBean" >
+		<![CDATA[select A.* ,ROWNUM from (SELECT TASK_ID,TASK_DESC,CONFIG_ID,SOURCE_FNAME,SOURCE_FPATH,
+			DATA_FLAG,INST_OPER,INST_DATE,INST_TIME,PROC_DATE,PROC_TIME,PROC_MEMO,TASK_PARAMS,LOAD_TYPE,TASK_BATCH_NO
+		FROM TD_TASK_LOAD WHERE DATA_FLAG='00'
+		ORDER BY TASK_ID,PROC_DATE,PROC_TIME) A 
+    	WHERE ROWNUM <= 1]]>
+	</select>
+	
+	<select id="getExportList" resultType="CommonExcelDealBean" >
+		<![CDATA[select A.* ,ROWNUM from (SELECT TASK_ID,TASK_DESC,CONFIG_ID,
+			DATA_FLAG,INST_OPER,INST_DATE,INST_TIME,
+			DEST_FILE,PROC_DATE,PROC_TIME,PROC_MEMO,TASK_PARAMS
+		FROM TD_TASK_EXPORT WHERE DATA_FLAG='00'
+		ORDER BY TASK_ID,PROC_DATE,PROC_TIME) A 
+    	WHERE ROWNUM <= 1]]>
+	</select>
+	
+	<insert id="insertLoad" parameterType="CommonExcelDealBean">
+		INSERT INTO  TD_TASK_LOAD
+		(
+			TASK_ID,
+			TASK_DESC,
+			CONFIG_ID,
+			SOURCE_FNAME,
+			SOURCE_FPATH,
+			DATA_FLAG,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			TASK_PARAMS,
+			LOAD_TYPE,
+			TASK_BATCH_NO
+			)
+			VALUES
+			(
+			#{taskId, jdbcType=VARCHAR },
+			#{taskDesc, jdbcType=VARCHAR },
+			#{configId, jdbcType=VARCHAR},
+			#{sourceFname, jdbcType=VARCHAR },
+			#{sourceFpath, jdbcType=VARCHAR },
+			#{dataFlag, jdbcType=VARCHAR },
+			#{instOper, jdbcType=VARCHAR },
+			to_char(sysdate, 'yyyy-mm-dd'),
+			to_char(sysdate, 'HH24:MI:SS'),
+			#{taskParams, jdbcType=VARCHAR },
+			#{loadType, jdbcType=VARCHAR },
+			#{taskBatchNo, jdbcType=VARCHAR }
+		)
+	</insert>
+	
+	<insert id="insertExport" parameterType="CommonExcelDealBean">
+		INSERT INTO  TD_TASK_EXPORT
+		(
+			TASK_ID,
+			TASK_DESC,
+			CONFIG_ID,
+			DATA_FLAG,
+			DEST_FILE,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			TASK_PARAMS
+			)
+			VALUES
+			(
+			#{taskId, jdbcType=VARCHAR },
+			#{taskDesc, jdbcType=VARCHAR },
+			#{configId, jdbcType=VARCHAR},
+			#{dataFlag, jdbcType=VARCHAR },
+			#{destFile, jdbcType=VARCHAR },
+			#{instOper, jdbcType=VARCHAR },
+			to_char(sysdate, 'yyyy-mm-dd'),
+			to_char(sysdate, 'HH24:MI:SS'),
+			#{taskParams, jdbcType=VARCHAR }
+		)
+	</insert>
+	
+	<update id="updateLoadStatus" parameterType = "string">
+		UPDATE TD_TASK_LOAD
+			<set>
+				DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</set>
+		WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+			AND DATA_FLAG = '00'
+	</update>
+	
+	<update id="updateExportStatus" parameterType = "string">
+		UPDATE TD_TASK_EXPORT
+			<set>
+				DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</set>
+		WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+			AND DATA_FLAG = '00'
+	</update>
+	
+	<select id="getLoadStatus" parameterType="string" resultType="string">
+		SELECT DATA_FLAG FROM TD_TASK_LOAD
+				WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getExportStatus" parameterType="string" resultType="string">
+		SELECT DATA_FLAG FROM TD_TASK_EXPORT
+				WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取导入序列号  -->
+	<select id="getLoadTaskId" resultType="string">
+		select RM_GET_COMMON_ID('LOADTASK') from dual
+	</select>
+
+	<!-- 获取导出序列号  -->
+	<select id="getExportTaskId" resultType="string">
+		select RM_GET_COMMON_ID('EXPORTTASK') from dual
+	</select>
+	
+	<!-- 更新导入结果 -->
+	<update id="updateLoadResult" parameterType = "CommonExcelDealBean">
+		UPDATE TD_TASK_LOAD
+			<set>
+				DATA_FLAG = #{dataFlag,jdbcType=VARCHAR},
+				PROC_DATE = to_char(sysdate, 'yyyy-mm-dd'),
+				PROC_TIME = to_char(sysdate, 'HH24:MI:SS')
+			</set>
+		WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateLoadTaskProcMemo" parameterType = "CommonExcelDealBean" >
+		UPDATE TD_TASK_LOAD
+			<set>
+				PROC_MEMO = #{procMemo,jdbcType=VARCHAR}
+			</set>
+		WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 更新导出结果 -->
+	<update id="updateExportResult" parameterType = "CommonExcelDealBean">
+		UPDATE TD_TASK_EXPORT
+			<set>
+				DATA_FLAG = #{dataFlag,jdbcType=VARCHAR},
+				PROC_DATE = to_char(sysdate, 'yyyy-mm-dd'),
+				PROC_TIME = to_char(sysdate, 'HH24:MI:SS'),
+				PROC_MEMO = #{procMemo,jdbcType=VARCHAR}
+			</set>
+		WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 根据批次号获取该批次的导入错误信息 -->
+	<select id="getImportErrMsgByBatchNoAndUploadType" parameterType="string"
+				resultType="com.forms.prms.tool.exceltool.domain.UploadDataErrorInfoBean">
+		SELECT E.BATCH_NO, S1.PARAM_NAME UPLOAD_TYPE, S2.PARAM_NAME DATA_TYPE, E.ROW_NO, E.ERR_DESC
+  				FROM 	UPLOAD_DATA_ERROR_INFO E
+  		LEFT JOIN 		SYS_SELECT 		S1
+  				ON S1.CATEGORY_ID = 'STOCK_DATAIMP_UPTYPE' AND	 E.UPLOAD_TYPE = S1.PARAM_VALUE
+  		LEFT JOIN 		SYS_SELECT		S2
+  				ON S2.CATEGORY_ID = 'STOCK_DATAIMP_SHEETTYPE' AND E.DATA_TYPE = S2.PARAM_VALUE
+		WHERE 	BATCH_NO = #{array[0],jdbcType=VARCHAR}	
+		<if test="array[1] != null and array[1] != ''">
+			AND 	UPLOAD_TYPE = #{array[1],jdbcType=VARCHAR}
+		</if>
+		ORDER BY 
+			UPLOAD_TYPE , DATA_TYPE , ROW_NO
+	</select>
+	
+	<insert id="addUploadDataErrorInfo" parameterType="com.forms.prms.tool.exceltool.domain.UploadDataErrorInfoBean">
+		INSERT INTO UPLOAD_DATA_ERROR_INFO
+		(
+			BATCH_NO,
+			DATA_TYPE,
+			ROW_NO,
+			UPLOAD_TYPE,
+			ERR_DESC,
+			SECTION_TYPE
+		)
+		VALUES
+		(
+			#{batchNo,jdbcType=VARCHAR},
+			#{dataType,jdbcType=VARCHAR},
+			#{rowNo,jdbcType=VARCHAR},
+			#{uploadType,jdbcType=VARCHAR},
+			#{errDesc,jdbcType=VARCHAR},
+			#{sectionType,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<select id="getLoadTaskById" parameterType="string"
+				resultType="CommonExcelDealBean">
+		SELECT *
+		FROM TD_TASK_LOAD
+		WHERE TASK_ID = #{taskId,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getExportFileDestPathByTaskId" parameterType="string" resultType="string">
+		SELECT DEST_FILE 
+			FROM TD_TASK_EXPORT
+		WHERE TASK_ID = #{taskId , jdbcType=VARCHAR}
+	</select>
+</mapper>

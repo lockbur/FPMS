@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.tool.fileUtils.dao.ISysAttachmentDao">
+	
+	<select id="queryAll" parameterType="CommonSysAttachmentsBean" resultType="CommonSysAttachmentsBean" >
+		SELECT ATTACHMENT_ID,ATTACHMENT_TYPE,ORIGAL_FILENAME,ATTACHMENT_DESC,ATTACHMENT_SIZE,
+			UPLOAD_USER_ID,UPLOAD_DATE,UPLOAD_TIME,BUSI_ID,IS_DELETE,FILE_PATH
+		FROM SYS_ATTACHMENTS WHERE 1=1
+		<if test="attachmentId != null and '' != attachmentId">
+			AND ATTACHMENT_ID = #{attachmentId,jdbcType=VARCHAR}
+		</if>
+		<if test="busiId != null and '' != busiId">
+			AND BUSI_ID = #{busiId,jdbcType=VARCHAR}
+		</if>
+		<if test="attachmentType != null and '' != attachmentType">
+			AND ATTACHMENT_TYPE = #{attachmentType,jdbcType=VARCHAR}
+		</if>
+		<if test="isDelete != null and '' != isDelete">
+			AND IS_DELETE = #{isDelete,jdbcType=VARCHAR}
+		</if>
+		ORDER BY ATTACHMENT_TYPE,UPLOAD_DATE,UPLOAD_TIME
+	</select>
+	
+	<select id="queryAttachmentIds" parameterType="CommonSysAttachmentsBean" resultType="String">
+		SELECT ATTACHMENT_ID FROM SYS_ATTACHMENTS WHERE 1=1 
+		<if test="attachmentId != null and '' != attachmentId">
+			AND ATTACHMENT_ID = #{attachmentId,jdbcType=VARCHAR}
+		</if>
+		<if test="busiId != null and '' != busiId">
+			AND BUSI_ID = #{busiId,jdbcType=VARCHAR}
+		</if>
+		<if test="attachmentType != null and '' != attachmentType">
+			AND ATTACHMENT_TYPE = #{attachmentType,jdbcType=VARCHAR}
+		</if>
+		<if test="isDelete != null and '' != isDelete">
+			AND IS_DELETE = #{isDelete,jdbcType=VARCHAR}
+		</if>
+		ORDER BY ATTACHMENT_TYPE,UPLOAD_DATE,UPLOAD_TIME
+	</select>
+	
+	<insert id="insert" parameterType="java.util.HashMap">
+		INSERT INTO SYS_ATTACHMENTS(
+			ATTACHMENT_ID,
+			FILE_PATH,
+			ATTACHMENT_TYPE,
+			ORIGAL_FILENAME,
+			ATTACHMENT_DESC,
+			ATTACHMENT_SIZE,
+			UPLOAD_USER_ID,
+			UPLOAD_DATE,
+			UPLOAD_TIME,
+			BUSI_ID,
+			IS_DELETE
+		)  
+		<foreach collection="dataList" item="bean" open="" close="" separator="union all">
+		 select GET_SYS_ATTACHMENT_ID('PRM'),
+		  #{bean.filePath,           jdbcType=VARCHAR},
+		  #{bean.attachmentType,     jdbcType=VARCHAR},
+		  #{bean.origalFilename,     jdbcType=VARCHAR},
+		  #{bean.attachmentDesc,     jdbcType=VARCHAR},
+		  #{bean.attachmentSize,     jdbcType=VARCHAR},
+		  #{bean.uploadUserId,       jdbcType=VARCHAR},
+		  #{bean.uploadDate,         jdbcType=VARCHAR},
+		  #{bean.uploadTime,         jdbcType=VARCHAR},
+		  #{bean.busiId,             jdbcType=VARCHAR},
+		  #{bean.isDelete,           jdbcType=VARCHAR}
+		  from dual
+		</foreach>
+	</insert>
+	
+	<update id="batchUpdate" parameterType="java.util.HashMap">
+		update SYS_ATTACHMENTS set IS_DELETE = '1' 
+		where 1=1 
+		<if test="passAttachIdStr != null and '' != passAttachIdStr">
+			AND ATTACHMENT_ID IN 
+			<foreach collection="passAttachIdStr" item="attachId" open="(" close=")" separator=",">
+				#{attachId,jdbcType=VARCHAR}
+			</foreach>
+		</if>
+		<if test="noPassIdStr != null and '' != noPassIdStr">
+			AND ATTACHMENT_ID NOT IN 
+			<foreach collection="noPassIdStr" item="attachId" open="(" close=")" separator=",">
+				#{attachId,jdbcType=VARCHAR}
+			</foreach>
+		</if>
+		<if test="attachmentType != null and '' != attachmentType">
+			AND ATTACHMENT_TYPE = #{attachmentType,jdbcType=VARCHAR}
+		</if>
+		<if test="busiId != null and '' != busiId">
+			AND BUSI_ID = #{busiId,jdbcType=VARCHAR}
+		</if>
+	</update>
+	
+	<!-- 为防止文件过多造成问题，限制每次只执行500条数据 -->
+	<select id="queryListToJob" parameterType="CommonSysAttachmentsBean" resultType="CommonSysAttachmentsBean">
+		<![CDATA[
+		SELECT T.ATTACHMENT_ID,T.UPLOAD_DATE,T.FILE_PATH,T.IS_CHECKED_SWF
+		FROM SYS_ATTACHMENTS T 
+		WHERE IS_CHECKED_SWF = '0' AND FILE_PATH IS NOT NULL AND ROWNUM <500 
+		ORDER BY UPLOAD_DATE ASC 
+		]]>
+	</select>
+	
+	<update id="batchUpdateIsCheckedSWF" parameterType="java.util.HashMap">
+		update SYS_ATTACHMENTS set IS_CHECKED_SWF = '1' 
+		where 1=1 
+		<if test="attachIdStr != null and '' != attachIdStr">
+			AND ATTACHMENT_ID IN 
+			<foreach collection="attachIdStr" item="attachId" open="(" close=")" separator=",">
+				#{attachId,jdbcType=VARCHAR}
+			</foreach>
+		</if>
+	</update>
+	
+	<select id="countFileNum" resultType="Integer">
+		SELECT COUNT(1) TOTAL FROM SYS_ATTACHMENTS WHERE IS_CHECKED_SWF = '0'
+	</select>
+</mapper>

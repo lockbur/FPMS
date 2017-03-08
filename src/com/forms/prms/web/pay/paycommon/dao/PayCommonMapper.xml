@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.paycommon.dao.PayCommonDAO">
+	<!--插入SYS_WARN_PAY_INFO表-->
+	<insert id="addSysWarnPayInfo" parameterType="com.forms.prms.web.pay.paycommon.domain.PayInfo">
+		INSERT INTO SYS_WARN_PAY_INFO
+		(
+			PAY_ID,
+			DUTY_CODE,
+			FUNC_TYPE
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			#{dutyCode ,jdbcType=VARCHAR},
+			#{funcType ,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!--更新SYS_WARN_PAY_INFO表-->
+	<update id="updateSysWarnPayInfo" parameterType="com.forms.prms.web.pay.paycommon.domain.PayInfo">
+		UPDATE SYS_WARN_PAY_INFO
+		SET DUTY_CODE = #{dutyCode ,jdbcType=VARCHAR},
+			FUNC_TYPE = #{funcType ,jdbcType=VARCHAR}
+		WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--删除SYS_WARN_PAY_INFO表-->
+	<update id="delSysWarnPayInfo" parameterType="com.forms.prms.web.pay.paycommon.domain.PayInfo">
+		DELETE FROM SYS_WARN_PAY_INFO
+		WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND FUNC_TYPE = #{funcType ,jdbcType=VARCHAR}
+	</update>
+	
+	<!---->
+	<select id="getPayInfo" parameterType="string" resultType="com.forms.prms.web.pay.paycommon.domain.PayInfo">
+		SELECT T.INST_DUTY_CODE AS DUTY_CODE,TF.ORG1_CODE,T.DATA_FLAG 
+		FROM (
+			SELECT TP.PAY_ID,TP.INST_DUTY_CODE,TP.DATA_FLAG 
+			FROM TD_PAY TP
+			UNION
+			SELECT TPA.PAY_ID,TPA.INST_DUTY_CODE,TPA.DATA_FLAG 
+			FROM TD_PAY_ADVANCE TPA
+		) T
+		LEFT JOIN TB_FNDWRR TF  ON T.INST_DUTY_CODE = TF.DUTY_CODE
+		WHERE T.PAY_ID = #{payId, jdbcType = VARCHAR}
+	</select>
+	
+<!--将有费用转资产的合同未上送付款单状态改AF-->
+	<update id="updateChangePay" parameterType="String">
+		UPDATE TD_PAY A
+           SET A.DATA_FLAG   = 'AF'
+         WHERE EXISTS (
+               SELECT 1 
+                 FROM TD_CNT B
+                WHERE A.CNT_NUM = B.CNT_NUM
+                  AND A.DATA_FLAG = 'F0'   
+                  <!--资产预算类跨年 or 费用预算类转资产预算类前发起的付款单-->
+                  AND (    (B.IS_PREPAID_PROVISION = '0' AND B.BGT_TYPE = '0' AND A.INST_DATE &lt; B.BGT_CHANGE_DATE) 
+                        OR (B.BGT_TYPE = '0' AND SUBSTR(A.INST_DATE, 1, 4) &lt; &gt; TO_CHAR(SYSDATE, 'YYYY'))
+                       )
+                  AND B.ORG1_CODE = #{org1Code, jdbcType = VARCHAR}   
+               )
+	</update>
+	
+<!--变更添加到log表中-->
+	<insert id = "addChangePayLog" parameterType="String">
+		INSERT INTO TD_PAY_AUDIT_LOG
+		(PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		(
+          SELECT A.PAY_ID,
+                 NVL(MAX(TPL.INNER_NO), 0) + 1,
+                 'AF',
+                 #{operMemo, jdbcType = VARCHAR},
+                 'SYSTEM',
+                 TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+                 TO_CHAR(SYSDATE, 'HH24:MI:SS')
+            FROM TD_PAY A
+       LEFT JOIN TD_CNT B ON A.CNT_NUM = B.CNT_NUM
+       LEFT JOIN TD_PAY_AUDIT_LOG TPL ON TPL.PAY_ID = A.PAY_ID
+           WHERE A.DATA_FLAG = 'F0'   
+             <!--资产预算类跨年 or 费用预算类转资产预算类前发起的付款单-->
+             AND (    (B.IS_PREPAID_PROVISION = '0' AND B.BGT_TYPE = '0' AND A.INST_DATE &lt; B.BGT_CHANGE_DATE) 
+                   OR (B.BGT_TYPE = '0' AND SUBSTR(A.INST_DATE, 1, 4) &lt; &gt; TO_CHAR(SYSDATE, 'YYYY'))
+                  )
+             AND B.ORG1_CODE = #{org1Code, jdbcType = VARCHAR}   
+        GROUP BY A.PAY_ID
+		)
+	</insert>
+	
+	<!--批量插入SYS_WARN_PAY_INFO表-->
+	<insert id="addBatchSysWarnPayInfo" parameterType="String">
+		INSERT INTO SYS_WARN_PAY_INFO
+		(
+			PAY_ID,
+			DUTY_CODE,
+			FUNC_TYPE
+		)
+		(
+           SELECT A.PAY_ID,
+                A.INST_DUTY_CODE,
+                'P1'
+           FROM TD_PAY A
+           JOIN TD_CNT B
+             ON A.CNT_NUM = B.CNT_NUM
+          WHERE A.DATA_FLAG = 'F0'   
+          <!--资产预算类跨年 or 费用预算类转资产预算类前发起的付款单-->
+            AND (    (B.IS_PREPAID_PROVISION = '0' AND B.BGT_TYPE = '0' AND A.INST_DATE &lt;B.BGT_CHANGE_DATE) 
+                  OR (B.BGT_TYPE = '0' AND SUBSTR(A.INST_DATE, 1, 4) &lt; &gt;TO_CHAR(SYSDATE, 'YYYY'))
+                )
+            AND B.ORG1_CODE = #{org1Code, jdbcType = VARCHAR}  
+		)
+	</insert>
+</mapper>

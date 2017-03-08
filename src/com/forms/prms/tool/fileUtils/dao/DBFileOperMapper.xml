@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.tool.fileUtils.dao.DBFileOperDAO">
+	<insert id="addFile" parameterType="com.forms.prms.tool.fileUtils.domain.DBFileBean"
+		flushCache="true" statementType="PREPARED">
+		INSERT INTO SYS_FILE_INFO
+  			(
+	  			FILE_NAME,
+	  			FILE_TYPE,
+	  			FILE_CONTENT,
+	  			ADD_TIME,
+	  			REMOVE_FLAG
+  			)
+			 VALUES
+           (
+	            #{fileName,jdbcType=VARCHAR},
+	            #{fileType,jdbcType=VARCHAR},
+	            #{fileData,javaType = byte[],jdbcType = BLOB,typeHandler = org.apache.ibatis.type.BlobTypeHandler},
+			    SYSDATE,
+			    #{removeFlag,jdbcType=CHAR}
+		   )
+	</insert>
+    <resultMap type="com.forms.prms.tool.fileUtils.domain.DBFileBean" id="fileInfo">  
+        <result property="fileData" column="FILE_CONTENT" javaType="byte[]" jdbcType="BLOB" typeHandler="org.apache.ibatis.type.BlobTypeHandler" />  
+        <result  property="fileName"   column="FILE_NAME"  />
+        <result  property="fileType"   column="FILE_TYPE"  />
+    </resultMap>
+	<select id="findFile" resultMap="fileInfo"  >
+		 SELECT FILE_CONTENT,FILE_NAME,FILE_TYPE FROM SYS_FILE_INFO S WHERE S.FILE_NAME  = #{fileName, jdbcType=VARCHAR}
+	</select>
+	
+	<delete id="deleteFile"  parameterType="String">
+		DELETE FROM SYS_FILE_INFO WHERE FILE_NAME  = #{fileName, jdbcType=VARCHAR}
+	</delete>
+</mapper>

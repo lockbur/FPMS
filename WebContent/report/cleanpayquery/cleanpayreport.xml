@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2006 U (http://www.altova.com) by Administrator (SoftGroup) -->
+<report name="CleanPayQueryReport" title="暂收结清查询封面打印">
+	<tb name="cleanpay" title="暂收结清数据">
+		<fd name="normal_pay_id" title="正常付款单号" type="string" size="50"
+			encoded="false" />
+		<fd name="sort_id" title="子序列" type="string" size="30"
+			encoded="false" />
+		<fd name="pay_sort_id" title="正常付款单号加子序列" type="string" size="60"
+			encoded="false" />
+		<fd name="cnt_num" title="合同号" type="string" size="60"
+			encoded="false" />
+		<fd name="dept_name" title="部门名称" type="string" size="30"
+			encoded="false" />
+		<fd name="oper_name" title="经办人姓名" type="string" size="30"
+			encoded="false" />
+		<fd name="invoice_id" title="发票编号" type="string" size="30"
+			encoded="false" />
+		<fd name="unclean_Amt" title="未结清金额小写" type="string" size="30"
+			encoded="false" />
+		<fd name="UNCLEAN_AMT_" title="未结清金额大写" type="string" size="60"
+			encoded="false" />
+		<fd name="clean_Amt" title="结清金额小写" type="string" size="30"
+			encoded="false" />
+		<fd name="CLEAN_AMT_" title="结清金额大写" type="string" size="60"
+			encoded="false" />
+		<fd name="Amt" title="剩余暂收金额小写" type="string" size="30"
+			encoded="false" />
+		<fd name="AMT_" title="剩余暂收金额大写" type="string" size="60"
+			encoded="false" />
+		<fd name="clean_reason" title="结清原因" type="string" size="200"
+			encoded="false" />
+		<fd name="date_time" title="日期" type="string" size="20"
+			encoded="false" />		
+	</tb>
+</report>

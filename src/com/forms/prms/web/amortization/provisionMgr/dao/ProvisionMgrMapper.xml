@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.provisionMgr.dao.ProvisionDAO">
+
+	<!-- 预算经办查询列表 -->
+	<select id="listProvHandles" parameterType="java.util.HashMap" 
+			resultType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		SELECT 
+		  TPM.CNT_NUM || TPM.FEE_YYYYMM  PROVMGRID,
+		  TPM.CNT_NUM,
+		  TC.CNT_NAME,
+		  TPM.FEE_YYYYMM,
+		  TF.ORG1_CODE,
+		  DECODE(TPM.DATA_FLAG,'0','待处理','2','复核退回','') DATA_FLAG,
+		  TC.CREATE_DEPT,				<!-- 页面上选择的责任中心限定，可以是List集合 -->
+		  REPLACE(ZH_CONCAT(TTT.MATR_CODE),':',',') MATR_CODE,
+		  REPLACE(ZH_CONCAT(TTT.MONT_CODE),':',',') MONT_CODE,
+		  REPLACE(ZH_CONCAT(TTT.FEE_CGL_CODE),':',',') FEE_CGL_CODE,
+		  NVL(TAITEMP.IMPORT_STATUS,'无对应发票信息') AS IMPORT_STATUS,
+<!-- 		  REPLACE(ZH_CONCAT(TF.ORG1_CODE),':',',') ORG1_CODES, -->
+		   <!-- 判断核算码是否为 表SYS_PARAMETER中参数名称为ADV_CGLCODE广告宣传费核算码 -其中的一个，若是则预提金额显示为0，否则取正常的预提金额 -->
+		  REPLACE(ZH_CONCAT(
+		  		CASE 
+					<!--  WHEN TTT.FEE_CGL_CODE = 		暂时保留，下面一行步行则换成此行		 -->
+		  			WHEN EXISTS 				
+		  					(	
+		  						SELECT 
+		  							COLUMN_VALUE 
+		  						FROM 
+		  							TABLE(STRSPLIT(#{advCglList,jdbcType=VARCHAR},','))
+  								WHERE 
+  									COLUMN_VALUE = TTT.FEE_CGL_CODE
+  							)
+		  			THEN 0
+		  			ELSE	TTT.PROVISION_AMT
+		  		END
+		  ),':',',') PROVISION_AMT,
+		 REPLACE(ZH_CONCAT(TTT.PREPAID_AMT),':',',')  PREPAID_AMT
+		FROM TD_PROVISION_MANAGE TPM
+		LEFT JOIN TI_TRADE_TOTAL TTT 
+		LEFT JOIN TB_FNDWRR TF			<!-- 连接用于根据登录用户是否超级管理员进行判断的预提过滤(后续条件) -->
+		ON TTT.DUTY_CODE   = TF.DUTY_CODE
+		ON TTT.CNT_NUM     = TPM.CNT_NUM
+		AND TTT.FEE_YYYYMM = TPM.FEE_YYYYMM
+<!-- 		AND TTT.FNDWRR_CHANGE_FLAG = '0' -->
+		LEFT JOIN TD_CNT TC
+		ON TPM.CNT_NUM       = TC.CNT_NUM
+		LEFT JOIN 
+		  (
+		    SELECT 
+		    CNT_NUM ,
+		    TO_CHAR( 
+		    CASE
+		      WHEN REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',') IS NULL   THEN  '未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(NVL(IMPORT_STATUS,'NULL')),':',',')) ,'NULL') > 0   THEN '部分未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') > 0  THEN '失败'  
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') = 0  THEN '成功'
+		    END
+		    ) AS IMPORT_STATUS
+		    FROM TIU_AP_INVOICE GROUP BY CNT_NUM
+		   )     TAITEMP
+			ON  TAITEMP.CNT_NUM = TPM.CNT_NUM
+		WHERE 
+ 		TPM.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR}
+ 		AND  
+		(TPM.DATA_FLAG    = '0' OR TPM.DATA_FLAG     = '2')
+		<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}
+		</if>
+		<!--<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	#{provision.org1Code,jdbcType=VARCHAR} = 
+			(CASE 
+				WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '1' THEN TF.ORG1_CODE  
+				WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '2' THEN TF.ORG2_CODE 
+				WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '0' THEN TF.ORG_CODE 
+				ELSE	TF.DUTY_CODE 
+			END) 
+		</if>-->
+		<if test="provision.cntNum != null and provision.cntNum != ''">
+			AND TPM.CNT_NUM LIKE '%' || #{provision.cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="provision.dataFlag != null and provision.dataFlag != ''">
+			AND TPM.DATA_FLAG = #{provision.dataFlag,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.createDept != null and provision.createDept != ''">
+			AND TC.CREATE_DEPT IN 
+ 			<foreach collection="provision.createDeptList" item="createDeptId" open="(" close=")" separator=","> 
+ 				#{createDeptId,jdbcType=VARCHAR} 
+ 			</foreach> 
+<!--			(#{createDepts,jdbcType=VARCHAR})-->
+		</if>
+		GROUP BY  
+				  TPM.CNT_NUM,
+				  TC.CNT_NAME,
+				  TPM.FEE_YYYYMM,
+				  TF.ORG1_CODE,
+				  TPM.DATA_FLAG,
+				  TC.CREATE_DEPT,
+				  TAITEMP.IMPORT_STATUS  
+		ORDER BY TPM.DATA_FLAG DESC , TPM.CNT_NUM DESC , TPM.FEE_YYYYMM DESC
+	</select>	
+	
+	
+	<!-- 获取预提/待摊金额汇总 -->
+	<select id="getPPSumAmt" parameterType="java.util.HashMap" 
+			resultType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		SELECT  NVL(SUM(
+		  		CASE 
+		  			WHEN EXISTS 				
+		  					(	
+		  						SELECT 
+		  							COLUMN_VALUE 
+		  						FROM 
+		  							TABLE(STRSPLIT(#{advCglList,jdbcType=VARCHAR},','))
+  								WHERE 
+  									COLUMN_VALUE = TTT.FEE_CGL_CODE
+  							)
+		  			THEN 0
+		  			ELSE	TTT.PROVISION_AMT
+		  		END
+		  ),0) PROVISION_AMT_SUM,
+		  NVL(SUM(TTT.PREPAID_AMT),0) PREPAID_AMT_SUM
+		FROM TD_PROVISION_MANAGE TPM
+		LEFT JOIN TI_TRADE_TOTAL TTT 
+		LEFT JOIN TB_FNDWRR TF			<!-- 连接用于根据登录用户是否超级管理员进行判断的预提过滤(后续条件) -->
+		ON TTT.DUTY_CODE   = TF.DUTY_CODE
+		ON TTT.CNT_NUM     = TPM.CNT_NUM
+		AND TTT.FEE_YYYYMM = TPM.FEE_YYYYMM
+		LEFT JOIN TD_CNT TC
+		ON TPM.CNT_NUM       = TC.CNT_NUM
+		WHERE 
+ 		TPM.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR}
+ 		AND  
+		(TPM.DATA_FLAG    = '0' OR TPM.DATA_FLAG     = '2')
+		<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}
+		</if>
+		<!--<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	#{provision.org1Code,jdbcType=VARCHAR} = 
+			(CASE 
+				WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '1' THEN TF.ORG1_CODE  
+				WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '2' THEN TF.ORG2_CODE 
+				WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '0' THEN TF.ORG_CODE 
+				ELSE	TF.DUTY_CODE 
+			END) 
+		</if>-->
+		<if test="provision.cntNum != null and provision.cntNum != ''">
+			AND TPM.CNT_NUM LIKE '%' || #{provision.cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="provision.dataFlag != null and provision.dataFlag != ''">
+			AND TPM.DATA_FLAG = #{provision.dataFlag,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.createDept != null and provision.createDept != ''">
+			AND TC.CREATE_DEPT IN 
+ 			<foreach collection="provision.createDeptList" item="createDeptId" open="(" close=")" separator=","> 
+ 				#{createDeptId,jdbcType=VARCHAR} 
+ 			</foreach> 
+		</if>
+	</select>
+	
+	
+	
+	<!-- 预算复核列表 -->
+	<select id="listProvRechecks" 	parameterType="java.util.HashMap" 
+									resultType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		SELECT 
+			TPM.CNT_NUM || TPM.FEE_YYYYMM  PROVMGRID,
+			TPM.DATA_FLAG,
+			TPM.CNT_NUM,
+			TC.CNT_NAME,
+		  TPM.FEE_YYYYMM,
+		  TF.ORG1_CODE,
+		  TPM.PROV_FLAG,
+		  DECODE(TPM.PROV_FLAG,'0','不预提','1','预提','') PROV_FLAG2,
+		  TC.CREATE_DEPT,
+		  REPLACE(ZH_CONCAT(TTT.MATR_CODE),':',',') MATR_CODE,
+		  REPLACE(ZH_CONCAT(TTT.MONT_CODE),':',',') MONT_CODE,
+		  REPLACE(ZH_CONCAT(TTT.FEE_CGL_CODE),':',',') FEE_CGL_CODE,
+		  NVL(TAITEMP.IMPORT_STATUS,'无对应发票信息') AS IMPORT_STATUS,
+<!--		  REPLACE(ZH_CONCAT(TF.ORG1_CODE),':',',') ORG1_CODES, -->
+		   <!-- 判断核算码是否为 表SYS_PARAMETER中参数名称为ADV_CGLCODE广告宣传费核算码 -其中的一个，若是则预提金额显示为0，否则取正常的预提金额 -->
+		  REPLACE(ZH_CONCAT(
+		  		CASE 
+					<!--  WHEN TTT.FEE_CGL_CODE = 		暂时保留，下面一行步行则换成此行		 -->
+		  			WHEN EXISTS 				
+		  					(	
+		  						SELECT 
+		  							COLUMN_VALUE 
+		  						FROM 
+		  							TABLE(strsplit(#{advCglList,jdbcType=VARCHAR},','))
+  								WHERE 
+  									COLUMN_VALUE = TTT.FEE_CGL_CODE
+  							)
+		  			THEN 0
+		  			ELSE	TTT.PROVISION_AMT
+		  		END
+		  ),':',',') PROVISION_AMT,
+		  REPLACE(ZH_CONCAT(TTT.PREPAID_AMT),':',',') PREPAID_AMT,
+		  TPM.OPER_USER,
+		  TPM.CHECK_USER
+		FROM TD_PROVISION_MANAGE TPM
+		LEFT JOIN TI_TRADE_TOTAL TTT 
+		LEFT JOIN TB_FNDWRR TF
+		ON TTT.DUTY_CODE   = TF.DUTY_CODE
+		ON TTT.CNT_NUM     = TPM.CNT_NUM
+		AND TTT.FEE_YYYYMM = TPM.FEE_YYYYMM
+<!-- 		AND TTT.FNDWRR_CHANGE_FLAG = '0' -->
+		LEFT JOIN TD_CNT TC
+		ON TPM.CNT_NUM       = TC.CNT_NUM
+		LEFT JOIN 
+		  (
+		    SELECT 
+		    CNT_NUM , 
+		    TO_CHAR(
+		    CASE
+		      WHEN REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',') IS NULL   THEN  '未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(NVL(IMPORT_STATUS,'NULL')),':',',')) ,'NULL') > 0   THEN '部分未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') > 0  THEN '失败'  
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') = 0  THEN '成功'
+		    END 
+		    )AS IMPORT_STATUS
+		    FROM TIU_AP_INVOICE GROUP BY CNT_NUM
+		   )     TAITEMP
+			ON  TAITEMP.CNT_NUM = TPM.CNT_NUM
+		WHERE 
+ 		TPM.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR} AND  TPM.DATA_FLAG	= '1'
+		<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.cntNum != null and provision.cntNum != ''">
+			AND TPM.CNT_NUM LIKE '%' || #{provision.cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="provision.provFlag != null and provision.provFlag != ''">
+			AND TPM.PROV_FLAG = #{provision.provFlag,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.createDept != null and provision.createDept != ''">
+			AND TC.CREATE_DEPT IN 
+ 			<foreach collection="provision.createDeptList" item="createDeptId" open="(" close=")" separator=","> 
+ 				#{createDeptId,jdbcType=VARCHAR} 
+ 			</foreach> 
+		</if>
+		
+		GROUP BY 	TPM.CNT_NUM,
+					TC.CNT_NAME,
+					TPM.DATA_FLAG,
+					TPM.FEE_YYYYMM,
+				  	TF.ORG1_CODE,
+					TPM.PROV_FLAG,
+					TC.CREATE_DEPT, 
+					TAITEMP.IMPORT_STATUS,
+					TPM.OPER_USER,
+		            TPM.CHECK_USER 
+		ORDER BY TPM.CNT_NUM DESC , TPM.FEE_YYYYMM DESC
+	</select>
+	
+	<update id="handleSubimit" parameterType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		UPDATE TD_PROVISION_MANAGE
+			SET
+				PROV_FLAG = #{provFlag,jdbcType=VARCHAR},
+				DATA_FLAG = '1',
+				OPER_USER = #{operUser,jdbcType=VARCHAR},
+				OPER_DATE = TO_CHAR(SYSDATE , 'yyyyMMdd'),
+				OPER_TIME = TO_CHAR(SYSDATE , 'HH24miss')
+			WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+			AND	FEE_YYYYMM = #{feeYyyymm,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 通过合同号cntNum+受益年月feeYyyymm从表TD_PROVISION_MANAGE查询指定的记录 -->
+	<select id="getProvByCntAndFeeYear" parameterType="string" 
+				resultType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		SELECT * FROM TD_PROVISION_MANAGE
+		WHERE FEE_YYYYMM = #{feeYyyymm,jdbcType=VARCHAR}
+		AND CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<update id="recheckPassOrReturn" parameterType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		UPDATE TD_PROVISION_MANAGE
+			SET DATA_FLAG = #{dataFlag,jdbcType=VARCHAR},
+				CHECK_USER = #{checkUser,jdbcType=VARCHAR},
+				CHECK_DATE = TO_CHAR(SYSDATE , 'yyyyMMdd'),
+				CHECK_TIME = TO_CHAR(SYSDATE , 'HH24miss')
+			WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+			AND	FEE_YYYYMM = #{feeYyyymm,jdbcType=VARCHAR}
+			AND OPER_USER != #{checkUser,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 预提查询管理 -->
+	<select id="getProvQueryList" 	parameterType="java.util.HashMap"
+									resultType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		SELECT 
+			TPM.CNT_NUM || TPM.FEE_YYYYMM  PROVMGRID,
+			TPM.DATA_FLAG,
+			TPM.CNT_NUM,
+			TC.CNT_NAME,
+		  TPM.FEE_YYYYMM,
+		  TPM.OPER_USER,
+		  TPM.OPER_DATE,
+		  TPM.CHECK_USER,
+		  TPM.CHECK_DATE,
+		  TF.ORG1_CODE,
+		  TPM.PROV_FLAG,
+		  TC.CREATE_DEPT,
+<!-- 		  REPLACE(ZH_CONCAT(TF.ORG1_CODE),':',',') ORG1_CODES, -->
+		  REPLACE(ZH_CONCAT(TTT.MATR_CODE),':',',') MATR_CODE,
+		  REPLACE(ZH_CONCAT(TTT.MONT_CODE),':',',') MONT_CODE,
+		  REPLACE(ZH_CONCAT(TTT.FEE_CGL_CODE),':',',') FEE_CGL_CODE,
+		  NVL(TAITEMP.IMPORT_STATUS,'无对应发票信息') AS IMPORT_STATUS,
+		  <!-- 判断核算码是否为 表SYS_PARAMETER中参数名称为ADV_CGLCODE广告宣传费核算码 -其中的一个，若是则预提金额显示为0，否则取正常的预提金额 -->
+		  REPLACE(ZH_CONCAT(
+		  		CASE 
+					<!--  WHEN TTT.FEE_CGL_CODE = 		暂时保留，下面一行不行则换成此行		 -->
+		  			WHEN EXISTS 				
+		  					(	
+		  						SELECT 
+		  							COLUMN_VALUE 
+		  						FROM 
+		  							TABLE(strsplit(#{advCglList,jdbcType=VARCHAR},','))
+  								WHERE 
+  									COLUMN_VALUE = TTT.FEE_CGL_CODE
+  							)
+		  			THEN 0
+		  			ELSE	TTT.PROVISION_AMT
+		  		END
+		  ),':',',') PROVISION_AMT,
+		  REPLACE(ZH_CONCAT(TTT.PREPAID_AMT),':',',') PREPAID_AMT
+		FROM TD_PROVISION_MANAGE TPM
+		LEFT JOIN TI_TRADE_TOTAL TTT 
+		LEFT JOIN TB_FNDWRR TF
+			ON TTT.DUTY_CODE   = TF.DUTY_CODE
+			ON TTT.CNT_NUM     = TPM.CNT_NUM	AND TTT.FEE_YYYYMM = TPM.FEE_YYYYMM
+<!-- 			AND TTT.FNDWRR_CHANGE_FLAG = '0' -->
+		LEFT JOIN TD_CNT TC
+			ON TPM.CNT_NUM       = TC.CNT_NUM
+		LEFT JOIN 
+		  (
+		    SELECT 
+		    CNT_NUM ,
+		    TO_CHAR( 
+		    CASE
+		      WHEN REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',') IS NULL   THEN  '未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(NVL(IMPORT_STATUS,'NULL')),':',',')) ,'NULL') > 0   THEN '部分未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') > 0  THEN '失败'  
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') = 0  THEN '成功'
+		    END
+		    ) AS IMPORT_STATUS
+		    FROM TIU_AP_INVOICE GROUP BY CNT_NUM
+		   )     TAITEMP
+			ON  TAITEMP.CNT_NUM = TPM.CNT_NUM
+		<where>
+		<!-- 预提查询管理时，将受益年月当作一个查询过滤条件 -->
+<!--  	AND	TPM.FEE_YYYYMM = TO_CHAR(SYSDATE,'yyyymm')  -->
+		<!--AND TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}-->
+		<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}
+		</if>
+			<!--<if test="provision.org1Code != null and provision.org1Code != ''">
+				AND	#{provision.org1Code,jdbcType=VARCHAR} = 
+				(CASE 
+					WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '1' THEN TF.ORG1_CODE  
+					WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '2' THEN TF.ORG2_CODE 
+					WHEN #{provision.orgFlag,jdbcType=VARCHAR} = '0' THEN TF.ORG_CODE 
+					ELSE	TF.DUTY_CODE 
+				END) 
+			</if>-->
+			<if test="provision.feeYyyymm != null and provision.feeYyyymm != ''">
+				AND TPM.FEE_YYYYMM = #{provision.feeYyyymm,jdbcType=VARCHAR}
+			</if>
+	<!--  		AND   -->
+	<!-- 			TPM.DATA_FLAG	= '3'		只查询状态为"复核通过"的预提 -->
+			<if test="provision.dataFlag != null and provision.dataFlag != ''">
+				AND TPM.DATA_FLAG = #{provision.dataFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="provision.cntNum != null and provision.cntNum != ''">
+				AND TPM.CNT_NUM LIKE '%' || #{provision.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="provision.provFlag != null and provision.provFlag != ''">
+				AND TPM.PROV_FLAG = #{provision.provFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="provision.createDept != null and provision.createDept != ''">
+				AND TC.CREATE_DEPT IN 
+	 			<foreach collection="provision.createDeptList" item="createDeptId" open="(" close=")" separator=","> 
+	 				#{createDeptId,jdbcType=VARCHAR} 
+	 			</foreach> 
+			</if>
+		</where>
+		GROUP BY 	TPM.CNT_NUM,
+					TC.CNT_NAME,
+					TPM.DATA_FLAG,
+					TPM.FEE_YYYYMM,
+					TPM.OPER_USER,
+					TPM.OPER_DATE,
+					TPM.CHECK_USER,
+					TPM.CHECK_DATE,
+				  	TF.ORG1_CODE,
+					TPM.PROV_FLAG,
+					TC.CREATE_DEPT,
+					TAITEMP.IMPORT_STATUS 
+		ORDER BY TPM.CNT_NUM DESC , TPM.FEE_YYYYMM DESC
+	</select>
+	
+	<!-- 查询预提待摊是否完成数据生成 -->
+	<select id="getPPStatus" parameterType="String"  resultType="String">
+	    SELECT DATA_FLAG FROM TL_CGL_BATCH 
+	     WHERE FEE_YYYYMM = #{yyyymm,jdbcType=VARCHAR}
+           AND TASK_TYPE  = '1'
+           AND ORG1_CODE  =  #{org1Code,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 查询当年当月复核是否存在不通过 -->
+	<select id="getNotPass" parameterType="String" resultType="String">
+	    SELECT DISTINCT 'NOTPASS' 
+	      FROM TD_PROVISION_MANAGE P 
+	      JOIN TD_CNT C 
+	        ON P.CNT_NUM = C.CNT_NUM  
+	     WHERE P.FEE_YYYYMM =  #{targetYYYYMM,jdbcType=VARCHAR}
+	       AND P.DATA_FLAG != '3'
+	       AND C.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 更新预提状态 -->
+	<update id="updateProviFlag" parameterType="String">
+	UPDATE TI_TRADE_TOTAL T 
+	   SET T.PROVISION_FLAG = '0' 
+     WHERE T.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR}
+       AND( EXISTS (SELECT 1 FROM TD_PROVISION_MANAGE P 
+                    WHERE P.PROV_FLAG = '0' 
+                      AND P.DATA_FLAG = '3' 
+                      AND P.FEE_YYYYMM = T.FEE_YYYYMM
+                      AND P.CNT_NUM = T.CNT_NUM)
+           OR EXISTS(SELECT 1 FROM TI_TRADE_TOTAL TI 
+                      WHERE TI.FEE_YYYYMM = T.FEE_YYYYMM
+                        AND TI.CNT_NUM = T.CNT_NUM
+                        AND TI.DUTY_CODE = T.DUTY_CODE
+                        AND TI.MATR_CODE = T.MATR_CODE
+                        AND TI.MONT_CODE = T.MONT_CODE
+                        AND TI.REFERENCE = T.REFERENCE
+                        AND TI.SPECIAL = T.SPECIAL
+                        AND EXISTS (SELECT COLUMN_VALUE 
+                                      FROM TABLE(STRSPLIT(#{advCglList,jdbcType=VARCHAR},','))  
+                                     WHERE COLUMN_VALUE = TI.FEE_CGL_CODE) 
+                     )
+          )
+	</update>
+	
+	<!-- 更新下月冲销状态 -->
+	<update id="updateProviCancelFlag" parameterType="String"> 
+	UPDATE TI_TRADE_TOTAL T 
+	   SET T.PROVISION_CANCEL_FLAG = '0' 
+     WHERE T.FEE_YYYYMM = TO_CHAR(ADD_MONTHS( TO_DATE(#{targetYYYYMM,jdbcType=VARCHAR},'YYYYMM'),1),'YYYYMM')
+       AND( EXISTS (SELECT 1 FROM TD_PROVISION_MANAGE P 
+                     WHERE P.PROV_FLAG  = '0' 
+                       AND P.DATA_FLAG  = '3' 
+                       AND P.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR}
+                       AND P.CNT_NUM    = T.CNT_NUM)
+          OR EXISTS(SELECT 1 FROM TI_TRADE_TOTAL TI 
+                      WHERE TI.FEE_YYYYMM = T.FEE_YYYYMM
+                        AND TI.CNT_NUM    = T.CNT_NUM
+                        AND TI.DUTY_CODE  = T.DUTY_CODE
+                        AND TI.MATR_CODE  = T.MATR_CODE
+                        AND TI.MONT_CODE  = T.MONT_CODE
+                        AND TI.REFERENCE  = T.REFERENCE
+                        AND TI.SPECIAL    = T.SPECIAL
+                        AND EXISTS (SELECT COLUMN_VALUE 
+                                      FROM TABLE(STRSPLIT(#{advCglList,jdbcType=VARCHAR},','))  
+                                     WHERE COLUMN_VALUE = TI.FEE_CGL_CODE) 
+                     )
+           )
+	</update>
+	
+	<!-- 将年末不进行预提的物料金额记录到表TD_CNT_FEE_LACK -->
+	<insert id="addLackBgt" parameterType="String">
+     MERGE INTO TD_CNT_FEE_LACK T1 USING
+     (SELECT TI.CNT_NUM,
+             TI.DUTY_CODE,
+             TI.MONT_CODE,
+             TI.MATR_CODE,
+             TI.REFERENCE,
+             TI.SPECIAL,
+             SUBSTR(TI.FEE_YYYYMM,1,4) AS YEAR,
+             TI.PROVISION_AMT
+        FROM TI_TRADE_TOTAL TI
+   LEFT JOIN TD_CNT CNT
+          ON TI.CNT_NUM                 = CNT.CNT_NUM
+       WHERE TI.PROVISION_FLAG          = '0'
+         AND CNT.DATA_FLAG             != '32'
+         AND TI.AFTERPREPAID_REMAIN_AMT > 0
+         AND TI.FEE_YYYYMM              =  #{targetYYYYMM,jdbcType=VARCHAR}) T2
+          ON(    T1.CNT_NUM   = T2.CNT_NUM 
+             AND T1.FEE_DEPT  = T2.DUTY_CODE 
+             AND T1.MONT_CODE = T2.MONT_CODE 
+             AND T1.MATR_CODE = T2.MATR_CODE 
+             AND T1.REFERENCE = T2.REFERENCE 
+             AND T1.SPECIAL   = T2.SPECIAL 
+             AND T1.YEAR      = T2.YEAR )
+WHEN NOT MATCHED THEN
+         INSERT 
+       ( CNT_NUM,
+         FEE_DEPT,
+         MONT_CODE,
+         MATR_CODE,
+         REFERENCE,
+         SPECIAL,
+         YEAR,
+         LACK_FEE
+        )
+  VALUES
+      (T2.CNT_NUM,
+       T2.DUTY_CODE,
+       T2.MONT_CODE,
+       T2.MATR_CODE,
+       T2.REFERENCE,
+       T2.SPECIAL,
+       T2.YEAR,
+       T2.PROVISION_AMT
+       )
+	</insert>
+	
+	<!-- 查看广告宣传费的核算码 -->
+	<select id="getAdvCglList" resultType="String">
+		 SELECT PARAM_VALUE 
+		   FROM SYS_PARAMETER 
+		  WHERE PARAM_VAR_NAME='ADV_CGLCODE'
+	</select>
+	
+	<!-- 检查是否为存在回冲的二级行  -->
+	<select id="checkOrg2Ok" parameterType="String"
+	                         resultType="String">
+		SELECT DISTINCT 1 FROM DUAL 
+	     WHERE NOT EXISTS (SELECT 1 
+	                         FROM TI_TRADE_BACKWASH TTB 
+			                    LEFT JOIN TD_CNT TC ON TC.CNT_NUM = TTB.CNT_NUM
+			                    LEFT JOIN TB_FNDWRR TF ON TC.CREATE_DEPT = TF.DUTY_CODE
+	                        WHERE TTB.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR}
+	                          AND TTB.DATA_FLAG = '0'
+	                          AND TF.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+	                        )
+	</select>
+	
+	<!-- 当预提经办/预提复核(退回)时，更新SYS_WARN_PREPRO_INF表中的FUNC_TYPE -->
+	<update id="updateProvFuncTypeInSysWarn" parameterType="string">
+		UPDATE SYS_WARN_PREPRO_INF
+				SET FUNC_TYPE = #{funcType,jdbcType=VARCHAR} 
+			WHERE 		TARGET_NUM = #{cntNum,jdbcType=VARCHAR} 
+					AND	ORG_CODE = #{org1Code,jdbcType=VARCHAR} 
+	</update>
+	
+	<!-- 当预提复核(通过)时，删除SYS_WARN_PREPRO_INF表中的记录 -->
+	<delete id="deleteProvFuncTypeInSysWarn" parameterType="string">
+		DELETE SYS_WARN_PREPRO_INF
+			WHERE 		TARGET_NUM = #{cntNum,jdbcType=VARCHAR} 
+					AND	ORG_CODE = #{org1Code,jdbcType=VARCHAR}
+	</delete>
+	
+	
+	<!-- 获取下载总数 -->
+	<select id="getDownloadCount" parameterType="java.util.HashMap" resultType="String">
+		select count(1) from ( SELECT 
+		  TPM.CNT_NUM 
+		FROM TD_PROVISION_MANAGE TPM
+		LEFT JOIN TI_TRADE_TOTAL TTT 
+		LEFT JOIN TB_FNDWRR TF
+		ON TTT.DUTY_CODE   = TF.DUTY_CODE
+		ON TTT.CNT_NUM     = TPM.CNT_NUM
+		AND TTT.FEE_YYYYMM = TPM.FEE_YYYYMM
+		LEFT JOIN TD_CNT TC
+		ON TPM.CNT_NUM       = TC.CNT_NUM
+		LEFT JOIN 
+		  (
+		    SELECT 
+		    CNT_NUM ,
+		    TO_CHAR( 
+		    CASE
+		      WHEN REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',') IS NULL   THEN  '未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(NVL(IMPORT_STATUS,'NULL')),':',',')) ,'NULL') > 0   THEN '部分未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') > 0  THEN '失败'  
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') = 0  THEN '成功'
+		    END
+		    ) AS IMPORT_STATUS
+		    FROM TIU_AP_INVOICE GROUP BY CNT_NUM
+		   )     TAITEMP
+			ON  TAITEMP.CNT_NUM = TPM.CNT_NUM
+		WHERE 
+ 		TPM.FEE_YYYYMM = #{targetYYYYMM,jdbcType=VARCHAR}
+ 		AND  
+		(TPM.DATA_FLAG    = '0' OR TPM.DATA_FLAG     = '2')
+		<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.cntNum != null and provision.cntNum != ''">
+			AND TPM.CNT_NUM LIKE '%' || #{provision.cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="provision.dataFlag != null and provision.dataFlag != ''">
+			AND TPM.DATA_FLAG = #{provision.dataFlag,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.createDept != null and provision.createDept != ''">
+			AND TC.CREATE_DEPT IN 
+ 			<foreach collection="provision.createDeptList" item="createDeptId" open="(" close=")" separator=","> 
+ 				#{createDeptId,jdbcType=VARCHAR} 
+ 			</foreach> 
+		</if>
+		GROUP BY  
+				  TPM.CNT_NUM,
+				  TC.CNT_NAME,
+				  TPM.FEE_YYYYMM,
+				  TF.ORG1_CODE,
+				  TPM.DATA_FLAG,
+				  TC.CREATE_DEPT,
+				  TAITEMP.IMPORT_STATUS  
+		ORDER BY TPM.DATA_FLAG DESC , TPM.CNT_NUM DESC , TPM.FEE_YYYYMM DESC)
+	</select>
+	
+	<!-- 获取下载总数 -->
+	<select id="queryDownloadList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.amortization.provisionMgr.domain.ProvisionBean">
+		select * from ( SELECT 
+		  TPM.CNT_NUM || TPM.FEE_YYYYMM  PROVMGRID,
+		  TPM.CNT_NUM,
+		  TC.CNT_NAME,
+		  TPM.FEE_YYYYMM,
+		  TF.ORG1_CODE,
+		  DECODE(TPM.DATA_FLAG,'0','待处理','2','复核退回','') DATA_FLAG,
+		  TC.CREATE_DEPT,			
+		  REPLACE(ZH_CONCAT(TTT.MATR_CODE),':',',') MATR_CODE,
+		  REPLACE(ZH_CONCAT(TTT.MONT_CODE),':',',') MONT_CODE,
+		  REPLACE(ZH_CONCAT(TTT.FEE_CGL_CODE),':',',') FEE_CGL_CODE,
+		  NVL(TAITEMP.IMPORT_STATUS,'无对应发票信息') AS IMPORT_STATUS,
+		  REPLACE(ZH_CONCAT(
+		  		CASE 
+		  			WHEN EXISTS 				
+		  					(	
+		  						SELECT 
+		  							COLUMN_VALUE 
+		  						FROM 
+		  							TABLE(STRSPLIT(#{advCglList,jdbcType=VARCHAR},','))
+  								WHERE 
+  									COLUMN_VALUE = TTT.FEE_CGL_CODE
+  							)
+		  			THEN 0
+		  			ELSE	TTT.PROVISION_AMT
+		  		END
+		  ),':',',') PROVISION_AMT,
+		 REPLACE(ZH_CONCAT(TTT.PREPAID_AMT),':',',') PREPAID_AMT
+		FROM TD_PROVISION_MANAGE TPM
+		LEFT JOIN TI_TRADE_TOTAL TTT 
+		LEFT JOIN TB_FNDWRR TF			
+		ON TTT.DUTY_CODE   = TF.DUTY_CODE
+		ON TTT.CNT_NUM     = TPM.CNT_NUM
+		AND TTT.FEE_YYYYMM = TPM.FEE_YYYYMM
+		LEFT JOIN TD_CNT TC
+		ON TPM.CNT_NUM       = TC.CNT_NUM
+		LEFT JOIN 
+		  (
+		    SELECT 
+		    CNT_NUM ,
+		    TO_CHAR( 
+		    CASE
+		      WHEN REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',') IS NULL   THEN  '未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(NVL(IMPORT_STATUS,'NULL')),':',',')) ,'NULL') > 0   THEN '部分未返回'
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') > 0  THEN '失败'  
+		      WHEN INSTR(UPPER(REPLACE(ZH_CONCAT(IMPORT_STATUS),':',',')) ,'E') = 0  THEN '成功'
+		    END
+		    ) AS IMPORT_STATUS
+		    FROM TIU_AP_INVOICE GROUP BY CNT_NUM
+		   )     TAITEMP
+			ON  TAITEMP.CNT_NUM = TPM.CNT_NUM
+		WHERE 
+ 		TPM.FEE_YYYYMM =  #{targetYYYYMM,jdbcType=VARCHAR}
+ 		AND  
+		(TPM.DATA_FLAG    = '0' OR TPM.DATA_FLAG     = '2')
+		<if test="provision.org1Code != null and provision.org1Code != ''">
+			AND	TF.ORG1_CODE = #{provision.org1Code,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.cntNum != null and provision.cntNum != ''">
+			AND TPM.CNT_NUM LIKE '%' || #{provision.cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="provision.dataFlag != null and provision.dataFlag != ''">
+			AND TPM.DATA_FLAG = #{provision.dataFlag,jdbcType=VARCHAR}
+		</if>
+		<if test="provision.createDept != null and provision.createDept != ''">
+			AND TC.CREATE_DEPT IN 
+ 			<foreach collection="provision.createDeptList" item="createDeptId" open="(" close=")" separator=","> 
+ 				#{createDeptId,jdbcType=VARCHAR} 
+ 			</foreach> 
+		</if>
+		GROUP BY  
+				  TPM.CNT_NUM,
+				  TC.CNT_NAME,
+				  TPM.FEE_YYYYMM,
+				  TF.ORG1_CODE,
+				  TPM.DATA_FLAG,
+				  TC.CREATE_DEPT,
+				  TAITEMP.IMPORT_STATUS  
+		ORDER BY TPM.DATA_FLAG DESC , TPM.CNT_NUM DESC , TPM.FEE_YYYYMM DESC ) 
+		<where>
+			Rownum &gt; #{start}
+			AND Rownum &lt;=  #{end}
+		</where>
+	</select>
+	
+	<!--获取当前省份预提待摊处理中的任务年月-->
+	<select id="getYYYYMM" parameterType="String" resultType="String">
+		SELECT nvl(MAX(T.FEE_YYYYMM),'')
+          FROM TL_CGL_BATCH T
+         WHERE T.ORG1_CODE =  #{org1Code,jdbcType=VARCHAR}
+           AND T.DATA_FLAG = '00'
+           AND T.TASK_TYPE = '1'
+	</select>
+	
+	
+</mapper>

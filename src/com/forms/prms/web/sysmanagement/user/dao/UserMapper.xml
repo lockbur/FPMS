@@ -1,0 +1,762 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.user.dao.IUserDAO">
+	<!-- 插入用户基本信息 -->
+	<insert id="insertUser" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo"
+		flushCache="true" statementType="PREPARED">
+		INSERT INTO sys_user
+		  (user_id,
+		   user_name,
+		   duty_code,
+		   duty_name,
+		   password,
+		   phone_number,
+		   notes_id,
+		   first_add_user_id,
+		   first_add_date,
+		   first_add_time,
+		   user_type,
+		   is_super_admin,
+		   is_buyer,
+		   ORG_CODE,
+		   ORG_NAME,
+		   ORG1_CODE,
+		   ORG1_NAME,
+		   ORG2_CODE,
+		   ORG2_NAME,
+		   OU_CODE,
+		   OU_NAME,
+		   PWD_FAIL_TIMES
+		   )
+		 
+		  ( select 
+		  #{userId,jdbcType=VARCHAR},
+		   #{userName,jdbcType=VARCHAR},
+		   #{dutyCode,jdbcType=VARCHAR},
+		   #{dutyName,jdbcType=VARCHAR},
+		   #{password,jdbcType=VARCHAR},
+		   #{phoneNumber,jdbcType=VARCHAR},
+		   #{notesId,jdbcType=VARCHAR},
+		   #{firstAddUserId,jdbcType=VARCHAR},
+		   #{firstAddDate,jdbcType=VARCHAR},
+		   #{firstAddTime,jdbcType=VARCHAR},
+		   #{userType,jdbcType=VARCHAR},
+		   #{isSuperAdmin,jdbcType=VARCHAR},
+		   #{isBuyer,jdbcType=VARCHAR},
+		   	ORG_CODE,
+		    ORG_NAME,
+		    ORG1_CODE,
+		    ORG1_NAME,
+		    ORG2_CODE,
+		    ORG2_NAME,
+		    OU_CODE,
+		    OU_NAME,
+		    0
+		    from tb_fndwrr
+		    where duty_code =  #{dutyCode,jdbcType=VARCHAR}
+		   )
+	</insert>
+	<!-- 插入用户角色信息 -->
+	<insert id="insertRole" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		INSERT INTO PF_USER_ROLE_RLN(user_id, role_id) VALUES(#{userId,jdbcType=VARCHAR}, #{roleId,jdbcType=VARCHAR})
+	</insert>
+	<!-- 修改 -->
+	<update id="updateUserInfo" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		  UPDATE SYS_USER A
+			     SET (
+			         A.PHONE_NUMBER,
+			         A.NOTES_ID,
+			         A.LAST_MODIFY_USER_ID,
+			         A.LAST_MODIFY_DATE,
+			         A.LAST_MODIFY_TIME,
+			         A.IS_SUPER_ADMIN,
+			         A.IS_BUYER,
+			         A.DUTY_CODE,
+			         A.DUTY_NAME,
+			         A.ORG_CODE,
+			         A.ORG_NAME,
+			         A.OU_cODE,
+			         A.OU_NAME,
+			         A.ORG2_CODE,
+			         A.ORG2_NAME,
+			         A.ORG1_CODE,
+			         A.ORG1_NAME
+			         
+			     )=(
+			         SELECT
+			         #{phoneNumber,     jdbcType=VARCHAR   },
+			         #{notesId,       jdbcType=VARCHAR   },
+			         #{lastModifyUserId,jdbcType=VARCHAR   },
+			         TO_CHAR(SYSDATE,'YYYY-MM-DD'),
+			         TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+			         #{isSuperAdmin,    jdbcType=VARCHAR   },
+			         #{isBuyer,    jdbcType=VARCHAR   },
+			         #{dutyCode,    jdbcType=VARCHAR   },
+			         nvl(B.DUTY_NAME,A.DUTY_NAME),
+			         nvl(B.ORG_CODE,A.ORG_CODE),
+			         nvl(B.ORG_NAME,A.ORG_NAME),
+			         nvl(B.OU_CODE,A.OU_CODE),
+			         nvl(B.OU_NAME,A.OU_NAME),
+			         nvl(B.ORG2_CODE,A.ORG2_CODE),
+			         nvl(B.ORG2_NAME,A.ORG2_NAME),
+			         nvl(B.ORG1_CODE,A.ORG1_CODE),
+			         nvl(B.ORG1_NAME,A.ORG1_NAME)
+			         FROM DUAL LEFT JOIN  TB_FNDWRR B ON B.DUTY_CODE = #{dutyCode,    jdbcType=VARCHAR   }
+			     )
+			     WHERE A.USER_ID =#{userId,jdbcType=VARCHAR}
+	</update>
+	<!-- 修改离职日期 -->
+	<update id="updateLeaveDate" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		update sys_user 
+			set leave_date=to_char(sysdate,'yyyymmdd')
+			where user_id=#{userId,jdbcType=VARCHAR}
+	</update>
+	<!-- 根据员工号删除角色信息 -->
+	<delete id="delRoleById" parameterType="String">
+		DELETE FROM pf_user_role_rln WHERE user_id = #{userId,jdbcType=VARCHAR}
+	</delete>
+	<!-- 获取角色列表 -->
+	<select id="getRoleList" parameterType="String" resultType="java.util.HashMap">
+		SELECT role_id, role_name,role_level FROM sys_role 
+		<where>
+			<if test="withoutRoleIds != null and '' != withoutRoleIds">
+				AND role_id not in (${withoutRoleIds})
+			</if>
+		</where>
+	</select>
+	<!--获取全局角色列表-->
+	<select id="getAllRoleList" parameterType="String" resultType="java.util.HashMap">
+		SELECT role_id, role_name,role_level FROM sys_role where role_level='02'
+		<where>
+			<if test="withoutRoleIds != null and '' != withoutRoleIds">
+				AND role_id not in (${withoutRoleIds})
+			</if>
+		</where>
+	</select>
+	<!-- 获取用户列表 -->
+	<select id="getUserList" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" 
+		resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+			SELECT u.user_id,
+			       u.user_name,
+			       u.user_type,
+			       u.duty_code,
+			       u.duty_name,
+			       DECODE(U.STATUS,
+			              '0',
+			              '未入司',
+			              '1',
+			              '试用期',
+			              '2',
+			              '在岗工作',
+			              '3',
+			              '离职',
+			              '4',
+			              '退休',
+			              '5',
+			              '内退',
+			              '6',
+			              '离休',
+			              '7',
+			              '待岗',
+			              '8',
+			              '外派',
+			              '9',
+			              '退职',
+			              '10',
+			              '亲属随任',
+			              '11',
+			              '借用',
+			              '12',
+			              '脱钩',
+			              '13',
+			              '挂职',
+			              '') STATUS_NAME,
+			       		b.role_name,
+			       		u.org_code,
+			       		u.org_name,
+			       		u.ou_code,
+			       		decode(u.IS_SUPER_ADMIN,'1','是','否') isSuperAdmin,
+			       		decode(u.IS_BUYER,'Y','是','否')isBuyer
+			  FROM SYS_USER U
+			  left join (select pr.user_id,
+                    zh_concat(sr.role_name) as role_name
+               from pf_user_role_rln pr, sys_role sr
+              where pr.role_id = sr.role_id
+              group by pr.user_id) b on u.user_id = b.user_id  
+		
+			<!--非超级管理员  -->
+			<if test="isSuperAdmin ==0 ">
+				WHERE U.ORG2_CODE = #{org21Code,jdbcType=VARCHAR}
+			</if>
+			<!--省行超级管理员  -->
+			<if test="isSuperAdmin ==1 and org1Code!='A0001'">
+				WHERE U.ORG1_CODE =  #{org21Code,jdbcType=VARCHAR}
+			</if>
+			<!--A00001超级管理员  -->
+			<if test="org1Code=='A0001' and isSuperAdmin ==1 ">
+				WHERE 1= 1
+			</if>
+				<if test="userId != null and '' != userId and 'null' != userId ">
+				    AND U.USER_ID = #{userId,jdbcType=VARCHAR}
+			    </if>
+			    
+				<if test="userName != null and '' != userName and 'null' != userName">
+					AND U.USER_NAME LIKE '%' || #{userName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="dutyCode != null and '' != dutyCode and 'null' != dutyCode">
+					AND u.DUTY_CODE =#{dutyCode,jdbcType=VARCHAR}
+				</if>
+				<if test="dutyName != null and '' != dutyName and 'null' != dutyName">
+					AND u.DUTY_NAME LIKE '%' || #{dutyName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="orgCode != null and '' != orgCode and 'null' != orgCode">
+					AND u.ORG_CODE =#{orgCode,jdbcType=VARCHAR}
+				</if>
+				<if test="orgName != null and '' != orgName and 'null' != orgName">
+					AND u.ORG_NAME LIKE '%' || #{orgName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="ouCode != null and '' != ouCode and 'null' != ouCode">
+					AND u.OU_CODE =#{ouCode,jdbcType=VARCHAR}
+				</if>
+				<if test="isSuper != null and '' != isSuper and 'null' != isSuper">
+					AND u.IS_SUPER_ADMIN =#{isSuper,jdbcType=VARCHAR}
+				</if>
+				<if test="isBuyer != null and '' != isBuyer and 'null' != isBuyer">
+					AND u.IS_BUYER =#{isBuyer,jdbcType=VARCHAR}
+				</if>
+				<if test="userType == 1">
+					AND U.USER_TYPE = 1
+				</if>
+				<if test="userType == 2">
+					AND U.USER_TYPE = 2
+			   </if>
+			    <if test="roleId != null and '' != roleId and 'null' != roleId">
+				    AND EXISTS(
+				    	SELECT 1 FROM PF_USER_ROLE_RLN PUR WHERE PUR.USER_iD = U.USER_ID
+				    	AND PUR.ROLE_ID = #{roleId,jdbcType=VARCHAR}
+				    )
+			    </if>
+			    <if test="haveRole ==1 ">
+				 AND EXISTS(
+				 	SELECT 1 FROM PF_USER_ROLE_RLN PU WHERE PU.USER_iD = U.USER_ID
+				 )
+				</if>
+				<if test="haveRole ==2 ">
+				 AND NOT EXISTS(
+				 	SELECT 1 FROM PF_USER_ROLE_RLN PU WHERE PU.USER_iD = U.USER_ID
+				 )
+				</if>
+	</select>
+	
+	<!-- 获取用户列表 -->
+	<select id="getExportUserList" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" 
+		resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+			SELECT u.user_id,
+			       u.user_name,
+			       u.user_type,
+			       u.duty_code,
+			       u.duty_name,
+			       DECODE(U.STATUS,
+			              '0',
+			              '未入司',
+			              '1',
+			              '试用期',
+			              '2',
+			              '在岗工作',
+			              '3',
+			              '离职',
+			              '4',
+			              '退休',
+			              '5',
+			              '内退',
+			              '6',
+			              '离休',
+			              '7',
+			              '待岗',
+			              '8',
+			              '外派',
+			              '9',
+			              '退职',
+			              '10',
+			              '亲属随任',
+			              '11',
+			              '借用',
+			              '12',
+			              '脱钩',
+			              '13',
+			              '挂职',
+			              '') STATUS_NAME,
+			       		sr.role_name,
+			       		u.org_code,
+			       		u.org_name,
+			       		u.ou_code,
+			       		decode(u.IS_SUPER_ADMIN,'1','是','否') isSuperAdmin,
+			       		decode(u.IS_BUYER,'Y','是','否')isBuyer
+			  FROM SYS_USER U
+			  left join pf_user_role_rln pr on pr.user_id = u.user_id
+			  left join sys_role sr on pr.role_id = sr.role_id
+			  		
+			<!--非超级管理员  -->
+			<if test="isSuperAdmin ==0 ">
+				WHERE U.ORG2_CODE = #{org21Code,jdbcType=VARCHAR}
+			</if>
+			<!--省行超级管理员  -->
+			<if test="isSuperAdmin ==1 and org1Code!='A0001'">
+				WHERE U.ORG1_CODE =  #{org21Code,jdbcType=VARCHAR}
+			</if>
+			<!--A00001超级管理员  -->
+			<if test="org1Code=='A0001' and isSuperAdmin ==1 ">
+				WHERE 1= 1
+			</if>
+				<if test="userId != null and '' != userId and 'null' != userId ">
+				    AND U.USER_ID = #{userId,jdbcType=VARCHAR}
+			    </if>
+			    
+				<if test="userName != null and '' != userName and 'null' != userName">
+					AND U.USER_NAME LIKE '%' || #{userName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="dutyCode != null and '' != dutyCode and 'null' != dutyCode">
+					AND u.DUTY_CODE =#{dutyCode,jdbcType=VARCHAR}
+				</if>
+				<if test="dutyName != null and '' != dutyName and 'null' != dutyName">
+					AND u.DUTY_NAME LIKE '%' || #{dutyName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="orgCode != null and '' != orgCode and 'null' != orgCode">
+					AND u.ORG_CODE =#{orgCode,jdbcType=VARCHAR}
+				</if>
+				<if test="orgName != null and '' != orgName and 'null' != orgName">
+					AND u.ORG_NAME LIKE '%' || #{orgName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="ouCode != null and '' != ouCode and 'null' != ouCode">
+					AND u.OU_CODE =#{ouCode,jdbcType=VARCHAR}
+				</if>
+				<if test="isSuper != null and '' != isSuper and 'null' != isSuper">
+					AND u.IS_SUPER_ADMIN =#{isSuper,jdbcType=VARCHAR}
+				</if>
+				<if test="isBuyer != null and '' != isBuyer and 'null' != isBuyer">
+					AND u.IS_BUYER =#{isBuyer,jdbcType=VARCHAR}
+				</if>
+				<if test="userType == 1">
+					AND U.USER_TYPE = 1
+				</if>
+				<if test="userType == 2">
+					AND U.USER_TYPE = 2
+			   </if>
+			    <if test="roleId != null and '' != roleId and 'null' != roleId">
+				    AND EXISTS(
+				    	SELECT 1 FROM PF_USER_ROLE_RLN PUR WHERE PUR.USER_iD = U.USER_ID
+				    	AND PUR.ROLE_ID = #{roleId,jdbcType=VARCHAR}
+				    )
+			    </if>
+			    <if test="haveRole ==1 ">
+				 AND EXISTS(
+				 	SELECT 1 FROM PF_USER_ROLE_RLN PU WHERE PU.USER_iD = U.USER_ID
+				 )
+				</if>
+				<if test="haveRole ==2 ">
+				 AND NOT EXISTS(
+				 	SELECT 1 FROM PF_USER_ROLE_RLN PU WHERE PU.USER_iD = U.USER_ID
+				 )
+				</if>
+	</select>
+	
+	
+	<!-- 获取用户基本信息 -->
+	<select id="getBaseInfo" parameterType="String" resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		SELECT S.USER_ID,S.PWD_FAIL_TIMES,S.DUTY_CODE, S.IS_SUPER_ADMIN, S.USER_NAME, S.PHONE_NUMBER, S.IS_BUYER,
+               S.NOTES_ID,  S.USER_TYPE,S.ORG1_CODE,S.ORG_CODE,S.ORG_NAME,S.DUTY_NAME,S.OU_CODE,S.OU_NAME,S.STATUS,S.IS_YG,
+		       DECODE(S.STATUS,
+		              '0', '未入司',
+		              '1', '试用期',
+		              '2', '在岗工作',
+		              '3', '离职',
+		              '4', '退休',
+		              '5', '内退',
+		              '6', '离休',
+		              '7', '待岗',
+		              '8', '外派',
+		              '9', '退职',
+		              '10', '亲属随任',
+		              '11', '借用',
+		              '12', '脱钩',
+		              '13', '挂职',
+		              '') STATUS_NAME,
+		       DECODE(S.IS_BUYER,'Y','是','0','否')IS_BUYER
+		FROM SYS_USER S 
+		WHERE USER_ID = #{userId,jdbcType=VARCHAR}
+	</select>
+	<!-- 获取用户角色信息 -->
+	<select id="getRoleInfo" parameterType="String" resultType="String">
+		SELECT zh_CONCAT(role_id) FROM pf_user_role_rln WHERE user_id = #{userId} GROUP BY user_id
+	</select>
+	<!-- 获取用户头像信息 -->
+    <resultMap type="com.forms.prms.web.sysmanagement.user.domain.UserInfo" id="imgInfo">  
+        <result property="imgData" column="LOGO_IMG" javaType="byte[]" jdbcType="BLOB" typeHandler="org.apache.ibatis.type.BlobTypeHandler" />  
+    </resultMap>
+	<select id="getImgInfo" resultMap="imgInfo">
+		SELECT logo_img FROM sys_user WHERE user_id = #{userId, jdbcType=VARCHAR}
+	</select>
+	
+	<select id="selAllUserId" resultType="String">
+		SELECT t.user_id from sys_user t 
+	</select>
+	
+	<insert id="insertUserBatch" parameterType="java.util.List">
+		insert into sys_user
+		  (USER_ID,USER_NAME,PHONE_NUMBER,NOTES_ID,USER_TYPE,PASSWORD,FIRST_ADD_USER_ID,FIRST_ADD_DATE,FIRST_ADD_TIME)
+		(
+		<foreach collection="batch" item="item" index="index" separator="union all">
+			select 
+			#{item.userId, jdbcType = VARCHAR },#{item.userName, jdbcType = VARCHAR},
+			#{item.phoneNumber, jdbcType = VARCHAR}
+			,#{item.notesId, jdbcType = VARCHAR},
+			#{item.userType, jdbcType = VARCHAR},
+			#{item.password, jdbcType = VARCHAR}
+			,#{item.firstAddUserId, jdbcType = VARCHAR},
+			#{item.firstAddDate, jdbcType = VARCHAR},
+			#{item.firstAddTime, jdbcType = VARCHAR}
+			from dual
+		</foreach>
+		)
+	</insert>
+	
+	<insert id="insertUserRoleBatch" parameterType="java.util.List">
+		insert into pf_user_role_rln
+		  (USER_ID,ROLE_ID)
+		(
+		<foreach collection="batch" item="item" index="index" separator="union all">
+			select 
+			#{item.userId, jdbcType = VARCHAR },#{item.roleId, jdbcType = VARCHAR}
+			from dual
+		</foreach>
+		)
+	</insert>
+	<!-- 获取在线用户列表 -->
+	<select id="getOnLineUserList" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" 
+		resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		SELECT OU.* ,U.ORG_NAME,U.DUTY_NAME,U.USER_NAME
+		FROM SYS_USER_ONLINE OU LEFT JOIN SYS_USER U ON U.USER_ID = OU.USER_ID  
+		<!--非超级管理员  -->
+		<if test="isSuper ==0">
+			LEFT JOIN TB_FNDWRR TF ON U.DUTY_CODE=TF.DUTY_CODE
+			where TF.ORG2_CODE=#{org21Code,jdbcType=VARCHAR}
+		</if>
+		<!--超级管理员  -->
+		<if test="isSuper ==1">
+			LEFT JOIN TB_FNDWRR TF ON U.DUTY_CODE=TF.DUTY_CODE
+			where TF.ORG1_CODE=#{org21Code,jdbcType=VARCHAR}
+		</if>
+		<if test="userId != null and '' != userId">
+			AND OU.user_id = #{userId,jdbcType=VARCHAR}
+		</if>
+		<if test="userName != null and '' != userName">
+			AND u.user_name LIKE '%' || #{userName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="dutyCode != null and '' != dutyCode">
+			AND u.DUTY_CODE =#{dutyCode,jdbcType=VARCHAR}
+		</if>
+	</select>
+	<!--删除在线用户信息-->
+	<delete id="deleteOnlineUserList" parameterType="string">
+		DELETE FROM SYS_USER_ONLINE OU
+		WHERE OU.USER_ID in 
+		<foreach collection="delIdLst" item="delId" open="(" close=")" separator=",">#{delId,jdbcType=VARCHAR}</foreach>
+	</delete>
+	<!--得到要删除的在线用户信息-->
+	<select id="getQuitUserList" parameterType="string" resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		SELECT OU.SESSION_ID,OU.USER_ID FROM SYS_USER_ONLINE OU
+		WHERE OU.USER_ID in 
+		<foreach collection="delIdLst" item="delId" open="(" close=")" separator=",">#{delId,jdbcType=VARCHAR}</foreach>
+	</select>
+	<!--得到要删除的在线用户信息-->
+	<select id="getOnlineUser" parameterType="string" resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		SELECT OU.SESSION_ID,OU.USER_ID FROM SYS_USER_ONLINE OU
+		WHERE OU.USER_ID = #{userId,jdbcType=VARCHAR}
+	</select>
+	<!--删除在线用户信息-->
+	<delete id="deleteOnlineUser" parameterType="string">
+		DELETE FROM SYS_USER_ONLINE OU
+		WHERE OU.USER_ID  = #{userId,jdbcType=VARCHAR}
+	</delete>
+	<select id="getPasswordById" parameterType="String" resultType="String">
+		SELECT PASSWORD FROM SYS_USER
+		WHERE user_id = #{userId,jdbcType=VARCHAR}
+	</select>
+	<!--得到此用户修改的密码在修改历史表中的条数-->
+	<select id="checkPasswordCount" parameterType="String" resultType="String">
+		SELECT COUNT(*) FROM SYS_USER_PWD
+		WHERE USER_ID=#{userId,jdbcType=VARCHAR}
+		AND PWD=#{passwordEqual,jdbcType=VARCHAR}
+	</select>
+	<!--更新用户密码信息-->
+	<update id="updateUser"
+		parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		UPDATE SYS_USER  SET 
+		PASSWORD=#{password,jdbcType=VARCHAR},
+		PWD_CHANGE_DATE=to_char(SYSDATE,'yyyy-MM-dd'),
+		LAST_MODIFY_DATE=to_char(SYSDATE, 'yyyy-MM-dd'),
+  		LAST_MODIFY_TIME=to_char(SYSDATE, 'HH:mm:ss'),
+  		LAST_MODIFY_USER_ID=#{userId,jdbcType=VARCHAR},
+  		PWD_FAIL_TIMES='0',
+  		PWD_ERR_DATE = null
+		WHERE USER_ID=#{userId,jdbcType=VARCHAR}
+	</update>
+	<!--向密码使用历史表中加入一条记录-->
+	<insert id="insertUserPwd" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		insert into SYS_USER_PWD(
+		 USER_ID,
+		 PWD
+		 )values(
+		 #{userId,jdbcType=VARCHAR},
+		 #{pwd,jdbcType=VARCHAR}
+		 )
+	</insert>
+	<!--个人中心 简单的修改资料	-->	
+	<update id="simpleUpdate" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		UPDATE SYS_USER T
+		   SET 	
+		       	T.PHONE_NUMBER   		= #{phoneNumber,  	 jdbcType=VARCHAR   },
+		       	<!-- <if test="imgData != null">
+			       	T.LOGO_IMG   		= #{imgData,  		
+			       		javaType = byte[],
+		   				jdbcType = BLOB,
+		   				typeHandler = org.apache.ibatis.type.BlobTypeHandler   },
+		       	</if> -->
+		       	T.NOTES_ID				= #{notesId,  		 jdbcType=VARCHAR   }
+		 WHERE  t.user_id = #{userId,jdbcType=VARCHAR}
+	</update> 
+	<!--初始化密码-->
+	<update id="initPwd"  parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		update sys_user set password = #{password,jdbcType=VARCHAR},
+						    PWD_CHANGE_DATE='',
+						    PWD_FAIL_TIMES='0'
+		where user_id = #{userId,jdbcType=VARCHAR}
+	</update>		
+	<update id="lock"  parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		update sys_user set PWD_FAIL_TIMES='0',PWD_ERR_DATE=NULL
+		where user_id = #{userId,jdbcType=VARCHAR}
+	</update>
+	<!--获取用户密保信息-->
+	<select id="getUserPwdProtectInfo" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" 
+			resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		SELECT SUP.QUESTION_SEQ AS SEQ,
+		SUP.QUESTION_ANSWER AS ANSWER,
+		SUP.QUESTION_ID AS ID
+		FROM SYS_USER_QUES_PWD SUP
+		WHERE SUP.USER_ID = #{userId,jdbcType=VARCHAR}
+	</select>
+	<delete id="pwdProtectDelete" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		delete FROM SYS_USER_QUES_PWD SUP
+		WHERE SUP.USER_ID  = #{userId,jdbcType=VARCHAR}
+	</delete>
+	
+	<insert id="pwdProtectSet" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		INSERT INTO SYS_USER_QUES_PWD
+			(USER_ID,
+			 QUESTION_SEQ,
+			 QUESTION_ANSWER,
+			 QUESTION_ID
+			 )
+		<foreach collection="pwdQuestionList" item="item" index="index" separator="union all">
+			SELECT 
+				   #{userId,jdbcType=VARCHAR},
+				   #{item.questionSeq,jdbcType=VARCHAR},
+				   #{item.questionAnswer,jdbcType=VARCHAR},
+				   #{item.questionId,jdbcType=VARCHAR}
+		      FROM DUAL
+		</foreach>
+	</insert>
+	<!--修改电话和邮箱-->	
+	<update id="editInfo" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+		update sys_user 
+		   set notes_id=#{notesId,jdbcType=VARCHAR}
+		 where user_id=#{userId,jdbcType=VARCHAR} 	   
+	</update>
+	<!--查询用户所选责任中心一级行-->
+	<select id="checkOrg1Code" parameterType="String" resultType="String">
+		SELECT org1_Code from tb_fndwrr where duty_Code=#{dutyCode,jdbcType=VARCHAR}
+	</select>
+	<!--查询用户是否为超级管理员-->
+	<select id="isSuperAdmin" parameterType="String" resultType="String">
+		SELECT 
+			IS_SUPER_ADMIN
+		FROM sys_user
+		where user_id=#{userId,jdbcType=VARCHAR}
+	</select>
+	<select id="selectRole" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" 
+			resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo">
+			SELECT 
+			A.ROLE_ID,
+			A.ROLE_NAME,
+			A.ROLE_LEVEL,
+			DECODE(A.ROLE_LEVEL,'01','总行','02','全局') ROLE_LEVEL_NAME
+			FROM SYS_ROLE A 
+			<where>
+				<if test ="isSuperAdmin != 1 and org1Code =='A0001'">
+					AND A.ROLE_LEVEL ='02'
+				</if>
+				<if test ="org1Code !='A0001'">
+					AND A.ROLE_LEVEL ='02'
+				</if>
+				<if test="roleName != null and '' != roleName">
+					AND A.ROLE_NAME LIKE '%' || #{roleName,jdbcType=VARCHAR} || '%'
+				</if>
+				<if test="roleLevel != null and '' != roleLevel">
+					AND A.ROLE_LEVEL =#{roleLevel,jdbcType=VARCHAR}
+				</if>
+			</where>
+		
+	</select>
+	
+	<!-- 获取下载列表 -->
+	<select id="userRoleList" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" 
+			resultType="com.forms.prms.web.sysmanagement.user.domain.UserInfo" >
+		SELECT T.ORG1_NAME,
+		T.ORG1_CODE,
+		T.ORG2_NAME,
+		T.ORG2_CODE,
+		T.OU_NAME,
+		T.OU_CODE,
+		T.DUTY_NAME,
+		T.DUTY_CODE,
+		T.USER_ID,
+		T.USER_NAME,
+		decode(T.IS_SUPER_ADMIN,'1','是','否') AS IS_SUPER_ADMIN,
+		T.LAST_MODIFY_USER_ID,
+		T.LAST_MODIFY_DATE||' '||T.LAST_MODIFY_TIME AS LAST_MODIFY_DATE,
+		R.ROLE_ID,
+		Y.ROLE_NAME 
+		FROM SYS_USER T 
+		LEFT JOIN PF_USER_ROLE_RLN R ON T.USER_ID = R.USER_ID
+		LEFT JOIN SYS_ROLE Y ON R.ROLE_ID = Y.ROLE_ID 
+		<!--非超级管理员  -->
+		<if test="isSuperAdmin ==0 ">
+			WHERE T.ORG2_CODE = #{org21Code,jdbcType=VARCHAR}
+		</if>
+		<!--省行超级管理员  -->
+		<if test="isSuperAdmin ==1">
+			WHERE T.ORG1_CODE =  #{org21Code,jdbcType=VARCHAR}
+		</if>
+		AND T.user_id != 'forms'
+		<if test="flag =='01'.toString()">
+			AND R.ROLE_ID is not null
+		</if>
+		ORDER BY T.USER_ID
+		
+	</select>
+	
+	<!--得到主键最大值-->
+	<select id="getId" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+							resultType="String">
+		SELECT 'UR'||#{org21Code, jdbcType=VARCHAR}||to_char(sysdate, 'yyyymmdd')||RM_GET_COMMON_ID('BATCHNOSEQ') FROM dual
+	</select>
+	
+	<!--插入汇总信息-->
+	<insert id="addData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		INSERT INTO TL_USER_INFO_HEADER(
+			batch_no,
+			source_filename,
+			actual_filepath,
+			excel_status,
+			org1_code,
+  			inst_user,
+  			inst_date,
+ 			inst_time,
+			memo
+		)values(
+			#{batchNo, jdbcType=VARCHAR},
+			#{sourceFilename, jdbcType=VARCHAR},
+			#{path, jdbcType=VARCHAR},
+			#{excelStatus, jdbcType=VARCHAR},
+			#{org21Code, jdbcType=VARCHAR},
+			#{instUser, jdbcType=VARCHAR},
+			to_char(sysdate, 'YYYY-MM-DD'),
+            to_char(sysdate, 'HH24:MI:SS'),
+            #{instMemo, jdbcType=VARCHAR}
+		)
+	</insert>
+	<select id="userRoleRlnList" parameterType="com.forms.prms.web.sysmanagement.user.domain.UserInfo"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+	SELECT  T.BATCH_NO,
+			T.SOURCE_FILENAME,
+			T.EXCEL_STATUS,
+			T.ORG1_CODE ORG21_CODE,
+			T.INST_USER,
+			T.INST_DATE,
+			SS1.PARAM_NAME STATUS_NAME,
+			T.INST_TIME,
+			T.MEMO
+			FROM TL_USER_INFO_HEADER T
+			LEFT JOIN SYS_SELECT SS1
+			ON SS1.PARAM_VALUE = T.EXCEL_STATUS
+			AND SS1.CATEGORY_ID = 'URRLN_EXCEL_STATUS'
+	WHERE T.ORG1_CODE = #{org21Code,jdbcType=VARCHAR}
+	ORDER BY T.INST_DATE DESC,INST_TIME DESC		
+	</select>	
+
+	<!--删除汇总信息-->
+	<delete id="deleteBatch" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		delete from TL_USER_INFO_HEADER where batch_no =#{batchNo, jdbcType=VARCHAR}
+	</delete>
+	<!--删除明细信息-->
+	<delete id="deleteDetail" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		delete from TL_USER_INFO_DETAIL where batch_no =#{batchNo, jdbcType=VARCHAR}
+	</delete>
+	<!--提交明细信息-->
+	<update id="submitUserRoleRln" parameterType="String">
+		CALL PRC_USERINFO_VALID_OR_COMMIT(#{batchNo, jdbcType=VARCHAR},#{isCheck, jdbcType=VARCHAR},#{userId, jdbcType=VARCHAR})
+	</update>
+	
+	
+	<select id="getPath" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		SELECT T.*,T.ACTUAL_FILEPATH AS PATH FROM TL_USER_INFO_HEADER T WHERE T.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getDetail" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		SELECT  T.BATCH_NO,
+			T.SOURCE_FILENAME,
+			T.EXCEL_STATUS,
+			T.ORG1_CODE ORG21_CODE,
+			T.INST_USER,
+			T.INST_DATE,
+			SS1.PARAM_NAME STATUS_NAME,
+			T.INST_TIME,
+			T.MEMO
+			FROM TL_USER_INFO_HEADER T
+			LEFT JOIN SYS_SELECT SS1
+			ON SS1.PARAM_VALUE = T.EXCEL_STATUS
+			AND SS1.CATEGORY_ID = 'URRLN_EXCEL_STATUS'
+			WHERE T.ORG1_CODE = #{org21Code,jdbcType=VARCHAR}
+			AND  T.BATCH_NO=#{batchNo,jdbcType=VARCHAR}				   	
+	</select>
+	
+	<!--查询错误信息-->
+	<select id="getErrData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+	                 resultType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean">
+		 SELECT
+		    A.BATCH_NO,
+		    to_char(to_number(A.SEQ)+1)  AS ROW_NO,
+		    A.USER_ID,
+		    A.ROLE_ID,
+		    A.ROLE_NAME,
+		    DECODE(A.IS_ADMIN,'1','是','0','否',A.IS_ADMIN) AS IS_ADMIN,
+		    A.FLAG,
+		    A.MEMO
+		    FROM TL_USER_INFO_DETAIL A 
+   		 WHERE A.BATCH_NO = #{batchNo,jdbcType=VARCHAR}  
+   		 AND A.FLAG = '0'
+   		 ORDER BY to_number(A.SEQ)  ASC
+	</select>
+	
+	<!--看是否有未提交的数据-->
+	<select id="isHaveNotOver" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.ImportBean"
+							resultType="Integer">
+		SELECT COUNT(1) 
+		FROM TL_USER_INFO_HEADER T 
+		WHERE T.EXCEL_STATUS = 'E4' 
+		AND T.ORG1_CODE = #{org21Code,jdbcType=VARCHAR}
+	</select>
+</mapper>

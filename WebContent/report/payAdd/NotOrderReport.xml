@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2006 U (http://www.altova.com) by Administrator (SoftGroup) -->
+<report name="NotOrderPayAddReport" title="付款新增正常付款非订单类合同封面打印">
+	<tb name="pay" title="付款数据">
+		<fd name="invoice_id" title="业务编号" type="string" size="30"
+			encoded="false" />
+		<fd name="pay_id" title="扫描编号" type="string" size="30"
+			encoded="false" />
+		<fd name="dept_id" title="部门ID" type="string" size="30"
+			encoded="false" />
+		<fd name="dept_name" title="部门名称" type="string" size="30"
+			encoded="false" />     
+		<fd name="dept_id_name" title="部门ID及名称" type="string" size="40"
+			encoded="false" />     
+		<fd name="oper_id" title="经办人ID" type="string" size="30"
+			eencoded="false" />
+		<fd name="oper_name" title="经办人姓名" type="string" size="30"
+			encoded="false" />
+		<fd name="oper_id_name" title="经办人ID及姓名" type="string" size="30"
+			encoded="false" />
+		<fd name="cnt_num" title="合同编号" type="string" size="60"
+			encoded="false" />
+		<fd name="provider_name" title="供应商名称" type="string" size="150"
+			encncoded="false" />
+		<fd name="invoice_amt" title="发票总金额小写" type="string" size="30"
+			encoded="false" />
+		<fd name="invoice_amt_" title="发票总金额大写" type="string" size="60"
+			oded="false" />
+		<fd name="pay_amt" title="付款金额小写" type="string" size="30"
+			encoded="false" />
+		<fd name="pay_amt_" title="付款金额大写" type="string" size="60"
+			oded="false" />
+		<fd name="prov_act_no" title="供应商账号" type="string" size="30"
+			encoded="false" />
+		<fd name="bank_name_prov_act_no" title="供应商开户行及账号" type="string" size="180"
+			encoded="false" />
+		<fd name="attachment_num" title="附件张数" type="string" size="30"
+			encoded="false" />
+		<fd name="attachment_type_name" title="附件" type="string" size="250"
+			encoded="false" />
+		<fd name="date_time" title="日期" type="string" size="20"
+			encoded="false" />
+		<fd name="invoice_memo" title="发票说明" type="string" size="1000"
+			encoded="false" />
+		
+	</tb>
+	<tb name="cglCodeAmt" title="核算码汇总金额数据">
+		<fd name="cgl_code_amt" title="核算码汇总金额" type="string" size="700"
+			encoded="false" />
+	</tb>
+</report>

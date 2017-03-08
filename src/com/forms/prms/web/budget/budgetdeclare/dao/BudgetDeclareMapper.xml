@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetdeclare.dao.BudgetDeclareDAO">
+
+	<!-- 新增预算申报的模板查询 (状态必须为03可申报状态；责任中心必须为当前登录网点；所属二级机构必须为当前网点所属二级机构)-->
+	<select id="queryTemp" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean" 
+			resultType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean">
+		select distinct A.*,
+                A.DATA_YEAR || ' - ' || D.PARAM_NAME || ' - ' ||
+                case A.DATA_TYPE
+                  when '0' then
+                   '年初预算'
+                  when '1' then
+                   '追加预算'
+                end TMPLT_NAME,
+                #{org2Name, jdbcType = VARCHAR} org2Name
+		  from TB_BUDGET_TMPLT A
+		 
+		  left join SYS_SELECT D
+		    on D.PARAM_VALUE = A.DATA_ATTR
+		       and D.CATEGORY_ID = 'CNT_TYPE'
+		 where 
+		       A.ORG21_CODE = #{org21Code, jdbcType = VARCHAR}
+		      --已提交状态
+		       and A.DATA_FLAG = '04'
+		       --只查询列出当前登录者可用于申报操作的模板列表
+		       and exists
+				 (select 1
+				          from TB_BUDGET_TMPLT_DUTY C
+				         where C.DUTY_CODE = #{dutyCode, jdbcType = VARCHAR}
+				               and C.TMPLT_ID = A.TMPLT_ID)
+			   --不包含已经进行申报操作的年初预算(0),因为年初预算只能存在一个，申报之后即不允许再进行申报
+		       and not exists (select 1
+				          from TD_BUDGET_WRITE_HEADER H
+				         where H.TMPLT_ID = A.TMPLT_ID
+				               and A.DATA_TYPE = '0'
+				               and H.DUTY_CODE = #{dutyCode, jdbcType = VARCHAR})
+		<if test="dataYear != null and dataYear != ''">
+			AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="dataAttr != null and dataAttr != ''">
+			AND A.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+		<if test="dataType != null and dataType != ''">
+			AND A.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+	</select>
+	
+	<!-- 根据条件查找符合的预算模板列表 -->
+	<select id="queryTempById" 	parameterType="string"
+						resultType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean">
+		SELECT  
+					T1.TMPLT_ID			TMPLT_ID,
+					T1.DATA_TYPE		DATA_TYPE,
+					T1.DATA_YEAR		DATA_YEAR,
+					T1.DATA_ATTR		DATA_ATTR,
+					T1.SOURCE_FILENAME	SOURCE_FILENAME,
+					T1.SERVER_FILE		SERVER_FILE,
+					T1.ORG21_CODE		ORG21_CODE,
+					T1.DATA_FLAG		DATA_FLAG
+		FROM 		TB_BUDGET_TMPLT  T1
+		WHERE 	TMPLT_ID = #{tempId,jdbcType=VARCHAR}
+	</select>
+	
+	
+	<!-- 写TD_BUDGET_WRITE_HEADER表 -->
+	<insert id="insertBudgetWriteHeader" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean">
+		insert into TD_BUDGET_WRITE_HEADER
+		  (TMPLT_ID,
+		   DUTY_CODE,
+		   SOURCE_FILENAME,
+		   SERVER_FILE,
+		   DATA_FLAG,
+		   INST_OPER,
+		   INST_DATE,
+		   INST_TIME)
+		values
+		  (
+		  #{tmpltId,	jdbcType=VARCHAR},
+		   #{dutyCode,	jdbcType=VARCHAR},
+		   #{sourceFilename,	jdbcType=VARCHAR},
+		   #{serverFile,	jdbcType=VARCHAR},
+		   '00',
+		   #{instOper,	jdbcType=VARCHAR},
+		   to_char(sysdate,'yyyy-MM-dd'),
+		   to_char(sysdate,'hh24:mi:ss')
+		  )
+	</insert>
+	
+	<!-- 更新预算导入汇总表 -->
+	<update id="updateBudgetWriteHeader" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean">
+		update TD_BUDGET_WRITE_HEADER T
+		   set T.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+		   <if test="memo != null and memo != ''">
+		       ,MEMO        = #{memo,jdbcType=VARCHAR}
+		   </if>
+		 where T.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		       and T.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 查询待处理导入任务情况 -->
+	<select id="getTaskSummary" parameterType="string"
+						resultType="com.forms.prms.web.budget.budgetdeclare.domain.ExcelImportTaskSummaryBean">
+		select count(1) TOTAL_CNT,
+		       sum(DECODE(TASK_ID, #{taskId,jdbcType=VARCHAR}, RK, 0)) TASK_RANK
+		  from (select RANK() OVER(order by TASK_ID) RK, T.*
+		          from TD_TASK_LOAD T
+		         where DATA_FLAG = '00')
+	</select>
+	
+	<!-- 写TD_BUDGET_WRITE_DETAIL表 -->
+	<insert id="insertFeeBudgetDetail" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean">
+		insert into TD_BUDGET_WRITE_DETAIL
+		  (TMPLT_ID,
+		   DUTY_CODE,
+		   ROW_SEQ,
+		   IN_AMT,
+		   IN_MEMO)
+		  select T.TMPLT_ID,
+		   #{dutyCode,jdbcType=VARCHAR} DUTY_CODE,
+		    T.ROW_SEQ, M.IN_AMT, M.IN_MEMO
+		    from TB_BUDGET_TMPLT_DETAIL T
+		    join (
+		    
+		    <foreach collection="feeList" item="bean" open="" close="" separator="union all">
+		    select 
+		                 #{bean.rowSeq,jdbcType=VARCHAR} as ROW_SEQ,
+		                 #{bean.budgetAmount,jdbcType=VARCHAR} as IN_AMT,
+		                 #{bean.memoDesr,jdbcType=VARCHAR} as IN_MEMO
+		            from DUAL
+		    </foreach>       
+		            ) M
+		      on  T. ROW_SEQ = M.ROW_SEQ
+		   where T.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		         and T.ROW_SEQ > 0
+	</insert>
+	
+	<!-- 写TD_BUDGET_WRITE_DETAIL表 -->
+	<insert id="insertAssetBudgetDetail" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.BudgetDeclareBean">
+		insert into TD_BUDGET_WRITE_DETAIL
+		  (TMPLT_ID,
+		   DUTY_CODE,
+		   ROW_SEQ,
+		   IN_AMT,
+		   IN_MEMO,
+		   IN_NOUSE_CNT,
+		   IN_NEED_CNT)
+		  select T.TMPLT_ID,
+		   #{dutyCode,jdbcType=VARCHAR} DUTY_CODE,
+		    T.ROW_SEQ, M.IN_AMT, M.IN_MEMO,M.IN_NOUSE_CNT,M.IN_NEED_CNT
+		    from TB_BUDGET_TMPLT_DETAIL T
+		    join (
+		    
+		    <foreach collection="assetList" item="bean" open="" close="" separator="union all">
+		    select 
+		                 #{bean.rowSeq,jdbcType=VARCHAR} as ROW_SEQ,
+		                 #{bean.budgetAmount,jdbcType=VARCHAR} as IN_AMT,
+		                 #{bean.memoDescr,jdbcType=VARCHAR} as IN_MEMO,
+		                 #{bean.scrapNum,jdbcType=VARCHAR} as IN_NOUSE_CNT,
+		                 #{bean.demandNum,jdbcType=VARCHAR} as IN_NEED_CNT
+		            from DUAL
+		    </foreach>       
+		            ) M
+		      on  T. ROW_SEQ = M.ROW_SEQ
+		   where T.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		         and T.ROW_SEQ > 0
+	</insert>
+	
+	
+	
+	<!-- 获取已立项未签订合同项目列表 -->
+	<select id="getUnsignContList" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.StockBudgetBean" 
+			resultType="com.forms.prms.web.budget.budgetdeclare.domain.StockBudgetBean">
+		  with temp_table as
+		   (select a.proj_id,
+		           a.proj_name,
+		           a.budget_amt,
+		           b.cnt_num,
+		           c.cnt_amt,
+		           b.fee_dept,
+		           b.matr_code,
+		           b.exec_amt
+		      from td_project a, td_cnt_device b, td_cnt c
+		     where ((a.scope = '0' and a.org1_code = #{org1Code,jdbcType=VARCHAR}) or exists
+		            (select 1
+		               from td_project_dept b
+		              where b.proj_id = a.proj_id
+		                and b.duty_code = #{dutyCode,jdbcType=VARCHAR}
+		                ))
+		       and a.proj_id = b.proj_id
+		       and b.cnt_num = c.cnt_num)
+		  select a.proj_id,
+		         a.proj_name,
+		         a.budget_amt,
+		         a.cnt_num,
+		         a.cnt_amt,
+		         nvl(c.duty_name, a.fee_dept) as duty_name,
+		         nvl(b.matr_name, a.matr_code) as matr_name,
+       			 a.exec_amt,
+		         d.amt
+		    from temp_table a
+		    left join tb_matr_type b
+		      on a.matr_code = b.matr_code
+		    left join tb_fndwrr c
+		      on a.fee_dept = c.duty_code
+		    join (select proj_id, budget_amt - sum(exec_amt) as amt
+		            from temp_table
+		           group by proj_id, budget_amt) d
+		      on a.proj_id = d.proj_id
+		<where>
+			<if test="projId != null and projId != ''">
+				and a.proj_id like '%' || #{projId,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="cntNum != null and cntNum != ''">
+				and a.cnt_num like '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+		</where>
+		   order by a.proj_id, a.cnt_num
+	</select>
+	
+	<!-- 获取已签合同未执行完毕项目列表 -->
+	<select id="getUnexecuteList" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.StockBudgetBean" 
+			resultType="com.forms.prms.web.budget.budgetdeclare.domain.StockBudgetBean">
+		WITH T1 AS (SELECT A.PROJ_ID,
+		                   A.PROJ_NAME,
+		                   A.BUDGET_AMT,
+		                   B.CNT_NUM,
+		                   C.CNT_AMT,
+		                   B.FEE_DEPT,
+		                   B.MATR_CODE,
+		                   NVL(NORMARL_TOTAL_AMT, 0) + NVL(ADVANCE_TOTAL_AMT, 0) AS CONFIRMED_AMT
+		              FROM TD_PROJECT A, TD_CNT_DEVICE B, TD_CNT C
+		             WHERE ((A.SCOPE = '0' AND A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}) OR EXISTS
+		                    (SELECT 1
+		                       FROM TD_PROJECT_DEPT B
+		                      WHERE B.PROJ_ID = A.PROJ_ID
+		                        AND B.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}))
+		               AND A.PROJ_ID = B.PROJ_ID
+		               AND B.CNT_NUM = C.CNT_NUM)
+		SELECT T1.PROJ_ID,
+		       T1.CNT_NUM,
+		       T1.CNT_AMT,
+		       T1.FEE_DEPT AS DUTY_CODE,
+		       NVL(T4.DUTY_NAME, T1.FEE_DEPT) AS DUTY_NAME,
+		       T1.MATR_CODE,
+		       NVL(T5.MATR_NAME, T1.MATR_CODE) AS MATR_NAME,
+		       T2.SUM_CONFIRMED_AMT,
+		       NVL2(T3.CONFIRM_AMT, '已确认', '未确认') AS CONFIRM_STATE,
+		       T3.CONFIRM_AMT AS NEED_CONFIRM_AMT,
+		       NVL2(T6.TMPLT_ID,1,0) HAS_TEMPLATE
+		  FROM T1
+		  LEFT JOIN (SELECT PROJ_ID,
+		                    CNT_NUM,
+		                    CNT_AMT,
+		                    FEE_DEPT,
+		                    MATR_CODE,
+		                    SUM(CONFIRMED_AMT) AS SUM_CONFIRMED_AMT
+		               FROM T1
+		              GROUP BY PROJ_ID, CNT_NUM, CNT_AMT, FEE_DEPT, MATR_CODE
+		            ) T2 ON T1.PROJ_ID = T2.PROJ_ID 
+		                AND T1.CNT_NUM = T2.CNT_NUM
+		                AND T1.FEE_DEPT = T2.FEE_DEPT
+		                AND T1.MATR_CODE = T2.MATR_CODE
+		  LEFT JOIN TD_BUDGET_OLD_CONFIRM T3 ON T1.PROJ_ID = T3.PROJ_ID
+		                                    AND T1.CNT_NUM = T3.CNT_NUM
+		                                    AND T1.FEE_DEPT = T3.FEE_DEPT
+		                                    AND T1.MATR_CODE = T3.MATR_CODE
+		  LEFT JOIN TB_FNDWRR T4 ON T1.FEE_DEPT = T4.DUTY_CODE
+		  LEFT JOIN TB_MATR_TYPE T5 ON T1.MATR_CODE = T5.MATR_CODE
+		  LEFT JOIN (SELECT T1.TMPLT_ID, T1.DATA_ATTR
+		               FROM TB_BUDGET_TMPLT T1
+		              WHERE T1.DATA_YEAR = TO_CHAR(SYSDATE, 'yyyy')
+		                AND T1.DATA_TYPE = '0'
+		                AND T1.DATA_FLAG = '04'
+		            ) T6 ON T6.DATA_ATTR = DECODE(SUBSTR(T1.MATR_CODE,1,1),'1','0','3','1','')
+		<where>
+			<if test="projId != null and projId != ''">
+				and t1.proj_id like '%' || #{projId,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="cntNum != null and cntNum != ''">
+				and t1.cnt_num like '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="confirmState != null and confirmState != ''">
+				and nvl2(t3.confirm_amt,'已确认','未确认') = #{confirmState,jdbcType=VARCHAR}
+			</if>
+		</where>
+		 ORDER BY T1.PROJ_ID, T1.CNT_NUM, T1.FEE_DEPT
+	</select>
+	
+	<!-- 添加预算申报-存量预算确认结果表记录 -->
+	<insert id="confirmBudget" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.StockBudgetBean">
+		INSERT INTO TD_BUDGET_OLD_CONFIRM T
+		  (PROJ_ID,
+		   CNT_NUM,
+		   FEE_DEPT,
+		   MATR_CODE,
+		   CONFIRM_AMT,
+		   CONFIRM_OPER,
+		   CONFIRM_DATE,
+		   CONFIRM_TIME)
+		VALUES
+		  (#{projId,jdbcType=VARCHAR},
+		   #{cntNum,jdbcType=VARCHAR},
+		   #{dutyCode,jdbcType=VARCHAR},
+		   #{matrCode,jdbcType=VARCHAR},
+		   #{needConfirmAmt,jdbcType=NUMERIC},
+		   #{confirmOper,jdbcType=VARCHAR},
+		   TO_CHAR(SYSDATE, 'yyyy-MM-dd'),
+		   TO_CHAR(SYSDATE, 'hh24:mi:ss'))
+	</insert>
+	
+	<!-- 添加预算初审表记录 -->
+	<insert id="addFirstAudit" parameterType="com.forms.prms.web.budget.budgetdeclare.domain.StockBudgetBean">
+		MERGE INTO TD_BUDGET_FIRST_AUDIT T
+		USING (SELECT (SELECT A.TMPLT_ID
+		                 FROM TB_BUDGET_TMPLT A
+		                WHERE A.DATA_YEAR = TO_CHAR(SYSDATE, 'yyyy')
+		                  AND A.DATA_TYPE = '0'
+		                  AND A.DATA_FLAG = '04'
+		                  AND A.DATA_ATTR = 
+		                      DECODE(SUBSTR(#{matrCode,jdbcType=VARCHAR}, 1, 1), '1', '0', '3', '1', '')) TMPLT_ID,
+		              (SELECT B.MATR_AUDIT_DEPT
+		                 FROM TB_APPROVE_CHAIN B
+		                WHERE B.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+		                  AND B.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		                  AND B.IS_PROVINCE_BUY = '0') DUTY_CODE,
+		              #{matrCode,jdbcType=VARCHAR} MATR_CODE
+		         FROM DUAL) C
+		ON (T.TMPLT_ID = C.TMPLT_ID AND T.DUTY_CODE = C.DUTY_CODE AND T.MATR_CODE = C.MATR_CODE)
+		WHEN MATCHED THEN
+		  UPDATE SET T.OLD_AMT = T.OLD_AMT + #{needConfirmAmt,jdbcType=NUMERIC}
+		WHEN NOT MATCHED THEN
+		  INSERT
+		    (TMPLT_ID, DUTY_CODE, MATR_CODE, OLD_AMT, AUDIT_FLAG)
+		  VALUES
+		    (C.TMPLT_ID, C.DUTY_CODE, C.MATR_CODE, #{needConfirmAmt,jdbcType=NUMERIC}, '00')
+	</insert>
+
+</mapper>

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+		<mapping cell="A1" regExp="\u5408\u540c\u57fa\u7840\u4fe1\u606f" formatDesc="该值应该为[合同基础信息]">bean.headInfos</mapping>
+		<mapping cell="AF1" regExp="\u623f\u5c4b\u79df\u8d41\u4fe1\u606f" formatDesc="该值应该为[房屋租赁信息]">bean.headInfos</mapping>
+	
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u5408\u540c\u4e8b\u9879" formatDesc="该值应该为[合同事项]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u4ed8\u6b3e\u8d23\u4efb\u4e2d\u5fc3\u7f16\u53f7" formatDesc="该值应该为[付款责任中心编号]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u8d23\u4efb\u4e2d\u5fc3\u540d\u79f0" formatDesc="该值应该为[责任中心名称]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u7b7e\u8ba2\u65e5\u671f" formatDesc="该值应该为[签订日期]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u4f9b\u5e94\u5546\u540d\u79f0" formatDesc="该值应该为[供应商名称]">bean.headInfos</mapping>
+		<mapping cell="G2" regExp="\u4f9b\u5e94\u5546\u94f6\u884c\u8d26\u53f7" formatDesc="该值应该为[供应商银行账号]">bean.headInfos</mapping>
+		<mapping cell="H2" regExp="\u4f9b\u5e94\u5546\u8d26\u6237\u5e01\u522b" formatDesc="该值应该为[供应商账户币别]">bean.headInfos</mapping>
+		<mapping cell="I2" regExp="\u5408\u540c\u91d1\u989d[\s]" formatDesc="该值应该为[合同金额]">bean.headInfos</mapping>
+		<mapping cell="J2" regExp="\u5408\u540c\u8d28\u4fdd\u91d1\u0028\u0025\u0029" formatDesc="该值应该为[合同质保金(%)]">bean.headInfos</mapping>
+		<mapping cell="K2" regExp="\u5ba1\u6279\u91d1\u989d[\s]" formatDesc="该值应该为[审批金额]">bean.headInfos</mapping>
+		<mapping cell="L2" regExp="\u5ba1\u6279\u6570\u91cf" formatDesc="该值应该为[审批数量]">bean.headInfos</mapping>
+		<mapping cell="M2" regExp="\u5408\u540c\u7c7b\u578b" formatDesc="该值应该为[合同类型 ]">bean.headInfos</mapping>
+		<mapping cell="N2" regExp="\u662f\u5426\u4e13\u9879\u5305" formatDesc="该值应该为[是否专项包]">bean.headInfos</mapping>
+		<mapping cell="O2" regExp="\u7701\u884c\u7edf\u8d2d\u9879\u76ee" formatDesc="该值应该为[省行统购项目]">bean.headInfos</mapping>
+		<mapping cell="P2" regExp="\u8d39\u7528\u7c7b\u578b" formatDesc="该值应该为[费用类型]">bean.headInfos</mapping>
+		<mapping cell="Q2" regExp="\u8d39\u7528\u5b50\u7c7b\u578b" formatDesc="该值应该为[费用子类型]">bean.headInfos</mapping>
+		<mapping cell="R2" regExp="\u5408\u540c\u53d7\u76ca\u8d77\u59cb\u65e5\u671f" formatDesc="该值应该为[合同受益起始日期]">bean.headInfos</mapping>
+		<mapping cell="S2" regExp="\u5408\u540c\u53d7\u76ca\u7ec8\u6b62\u65e5\u671f" formatDesc="该值应该为[合同受益终止日期]">bean.headInfos</mapping>
+		<mapping cell="T2" regExp="\u662f\u5426\u8ba2\u5355" formatDesc="该值应该为[是否订单]">bean.headInfos</mapping>
+		<mapping cell="U2" regExp="\u5408\u540c\u91d1\u989d\u786e\u5b9a\u90e8\u5206" formatDesc="该值应该为[合同金额确定部分]">bean.headInfos</mapping>
+		<mapping cell="V2" regExp="\u5408\u540c\u91d1\u989d\u7ea6\u5b9a\u7f5a\u91d1" formatDesc="该值应该为[合同金额约定罚金]">bean.headInfos</mapping>
+		<mapping cell="W2" regExp="\u96c6\u91c7\u7f16\u53f7" formatDesc="该值应该为[集采编号]">bean.headInfos</mapping>
+		<mapping cell="X2" regExp="\u8bc4\u5ba1\u7f16\u53f7" formatDesc="该值应该为[评审编号]">bean.headInfos</mapping>
+		<mapping cell="Y2" regExp="\u5ba1\u6279\u7c7b\u522b" formatDesc="该值应该为[审批类别]">bean.headInfos</mapping>
+		<mapping cell="Z2" regExp="\u589e\u503c\u7a0e\u7387" formatDesc="该值应该为[增值税率 ]">bean.headInfos</mapping>
+		<mapping cell="AA2" regExp="\u589e\u503c\u7a0e\u91d1" formatDesc="该值应该为[增值税金]">bean.headInfos</mapping>
+		<mapping cell="AB2" regExp="\u5173\u8054\u5408\u540c\u53f7" formatDesc="该值应该为[关联合同号]">bean.headInfos</mapping>
+		<mapping cell="AC2" regExp="\u5408\u540c\u4ed8\u6b3e\u6761\u4ef6" formatDesc="该值应该为[合同付款条件]">bean.headInfos</mapping>
+		<mapping cell="AD2" regExp="\u5206\u671f\u4ed8\u6b3e\u7c7b\u578b" formatDesc="该值应该为[分期付款类型]">bean.headInfos</mapping>
+		<mapping cell="AE2" regExp="\u5408\u540c\u5907\u6ce8" formatDesc="该值应该为[合同备注]">bean.headInfos</mapping>
+		<mapping cell="AF2" regExp="\u7532\u65b9\u540d\u79f0" formatDesc="该值应该为[甲方名称]">bean.headInfos</mapping>
+		<mapping cell="AG2" regExp="\u4e59\u65b9\u7f16\u53f7" formatDesc="该值应该为[乙方编号]">bean.headInfos</mapping>
+		<mapping cell="AH2" regExp="\u4e59\u65b9\u540d\u79f0" formatDesc="该值应该为[乙方名称]">bean.headInfos</mapping>
+		<mapping cell="AI2" regExp="\u5730\u5740\u0028\u8bf4\u660e\u0029" formatDesc="该值应该为[地址(说明)]">bean.headInfos</mapping>
+		<mapping cell="AJ2" regExp="\u7f51\u70b9\u673a\u6784\u7f16\u53f7" formatDesc="该值应该为[网点机构编号]">bean.headInfos</mapping>
+		<mapping cell="AK2" regExp="\u7f51\u70b9\u673a\u6784\u540d\u79f0" formatDesc="该值应该为[网点机构名称]">bean.headInfos</mapping>
+		<mapping cell="AL2" regExp="\u81ea\u52a9\u94f6\u884c\u540d\u79f0" formatDesc="该值应该为[自助银行名称]">bean.headInfos</mapping>
+		<mapping cell="AM2" regExp="\u79df\u8d41\u9762\u79ef\u0028\u6570\u91cf\u0029" formatDesc="该值应该为[租赁面积(数量)]">bean.headInfos</mapping>
+		<mapping cell="AN2" regExp="\u623f\u4ea7\u0028\u9879\u76ee\u0029\u6027\u8d28" formatDesc="该值应该为[房产(项目)性质]">bean.headInfos</mapping>
+		<mapping cell="AO2" regExp="\u7ba1\u7406\u8d39\u53ca\u5176\u4ed6" formatDesc="该值应该为[管理费及其他]">bean.headInfos</mapping>
+		<mapping cell="AP2" regExp="\u62bc\u91d1" formatDesc="该值应该为[押金]">bean.headInfos</mapping>
+		<mapping cell="AQ2" regExp="\u6267\u884c\u5f00\u59cb\u65e5\u671f" formatDesc="该值应该为[执行开始日期]">bean.headInfos</mapping>
+		<mapping cell="AR2" regExp="\u6267\u884c\u7ed3\u675f\u65e5\u671f" formatDesc="该值应该为[执行结束日期]">bean.headInfos</mapping>
+		<mapping cell="AS2" regExp="\u623f\u79df\u5907\u6ce8" formatDesc="该值应该为[房租备注]">bean.title</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntInfoBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" nullAllowed="false" maxLength="80">detail.cntNum</mapping>
+			<mapping row="1" col="1" maxLength="100">detail.cntName</mapping>
+			<mapping row="1" col="2" >detail.payDutyCode</mapping>
+			<mapping row="1" col="3" maxLength="100">detail.payDutyName</mapping>
+<!-- 		<mapping row="1" col="4">detail.providerCode</mapping> -->
+			<mapping row="1" col="4" >detail.signDate</mapping>
+			<mapping row="1" col="5" maxLength="100">detail.providerName</mapping>
+			<mapping row="1" col="6" maxLength="19">detail.provActNo</mapping>		<!-- 供应商账号 -->
+			<mapping row="1" col="7" >detail.provActCurr</mapping>
+			<mapping row="1" col="8" regExp="\d{1,18}">detail.cntAmt</mapping>
+			<mapping row="1" col="9" >detail.zbAmt</mapping>
+			<mapping row="1" col="10" regExp="\d{1,18}">detail.lxje</mapping>
+			<mapping row="1" col="11" regExp="\d{1,10}">detail.lxsl</mapping>
+			<mapping row="1" col="12" maxLength="20">detail.cntType</mapping>
+			<mapping row="1" col="13" >detail.isSpec</mapping>
+			<mapping row="1" col="14" >detail.isProvinceBuy</mapping>
+			<mapping row="1" col="15" >detail.feeType</mapping>
+			<mapping row="1" col="16" >detail.feeSubType</mapping>
+			<mapping row="1" col="17" >detail.feeStartDate</mapping>
+			<mapping row="1" col="18" >detail.feeEndDate</mapping>
+			<mapping row="1" col="19" >detail.isOrder</mapping>
+			<mapping row="1" col="20" regExp="\d{1,18}">detail.feeAmt</mapping>
+			<mapping row="1" col="21" regExp="\d{1,18}">detail.feePenalty</mapping>
+			<mapping row="1" col="22" maxLength="100">detail.stockNum</mapping>
+			<mapping row="1" col="23" maxLength="400">detail.psbh</mapping>
+			<mapping row="1" col="24" >detail.lxlx</mapping>
+			<mapping row="1" col="25" >detail.providerTaxRate</mapping>
+			<mapping row="1" col="26" regExp="\d{1,18}">detail.providerTax</mapping>
+			<mapping row="1" col="27" maxLength="80">detail.cntNumRelated</mapping>
+			<mapping row="1" col="28" >detail.payTerm</mapping>
+			<mapping row="1" col="29" >detail.stageType</mapping>
+			<mapping row="1" col="30" maxLength="2000">detail.memo</mapping>
+			<mapping row="1" col="31" maxLength="100">detail.jf</mapping>
+			<mapping row="1" col="32" maxLength="80">detail.yfId</mapping>
+			<mapping row="1" col="33" maxLength="100">detail.yf</mapping>
+			<mapping row="1" col="34" maxLength="1000">detail.wydz</mapping>
+			<mapping row="1" col="35" regExp="\d{5,5}">detail.wdjgId</mapping>
+			<mapping row="1" col="36" maxLength="200">detail.wdjgName</mapping>
+			<mapping row="1" col="37" maxLength="1000">detail.autoBankName</mapping>
+			<mapping row="1" col="38" regExp="\d{1,18}">detail.area</mapping>
+			<mapping row="1" col="39" >detail.houseKindId</mapping>
+			<mapping row="1" col="40" regExp="\d{1,18}">detail.wyglf</mapping>
+			<mapping row="1" col="41" regExp="\d{1,18}">detail.yj</mapping>
+			<mapping row="1" col="42" >detail.beginDate</mapping>
+			<mapping row="1" col="43" >detail.endDate</mapping>
+			<mapping row="1" col="44" maxLength="2000">detail.fzRemark</mapping>		<!-- 房租备注 -->
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

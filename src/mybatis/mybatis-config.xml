@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+	<settings>
+		<!-- Java属性与数据库字段采用驼峰式对应 -->
+		<setting name="mapUnderscoreToCamelCase" value="true" />
+		<!-- 字段映射采用复合规则，有配置的使用配置映射，未配置的采用默认映射 -->
+		<setting name="autoMappingBehavior" value="FULL" />
+		<setting name="safeResultHandlerEnabled" value="false"/>
+		<setting name="useColumnLabel" value="true"/>
+		<setting name="logImpl" value="com.forms.platform.core.logger.log4j.MybatisLog"/>
+	</settings>
+	 <typeAliases>   
+       <typeAlias alias="sqlAdapter" type="com.forms.prms.web.export.exportPage.SqlAdapter" />
+    </typeAliases> 
+	<typeHandlers>
+		<typeHandler handler="com.forms.platform.core.mybatis.typehandler.BooleanTypeHandler"/>
+		<typeHandler handler="com.forms.platform.core.mybatis.typehandler.String2NumberHandler"/>
+		<typeHandler handler="com.forms.platform.core.mybatis.typehandler.ClobTypeHandler" javaType="String" jdbcType="LONGVARCHAR"/>
+	</typeHandlers>
+	<plugins>
+		<!-- 分页插件 -->
+		<plugin interceptor="com.forms.platform.core.mybatis.page.PageInterceptor"/>
+	</plugins>
+</configuration>

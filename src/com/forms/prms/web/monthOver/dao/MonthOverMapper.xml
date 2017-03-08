@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.monthOver.dao.MonthOverDao">
+	<!--查询月结列表 -->
+	<select id='list' parameterType="com.forms.prms.web.monthOver.domain.MonthOverBean"
+		resultType="com.forms.prms.web.monthOver.domain.MonthOverBean">
+			select  id,
+			   org1_code,
+			   data_flag,
+			   inst_oper,
+			   inst_date,
+			   inst_time
+		from   td_month_over
+	   where  org1_code = #{org1Code,jdbcType=VARCHAR}
+			   order by inst_date desc ,inst_time desc ,to_number(id) desc
+			   
+	</select>
+	
+	<!--查询最大月结状态-->
+	<select id='getMaxDataFlag' parameterType="String" 
+		resultType="com.forms.prms.web.monthOver.domain.MonthOverBean">
+			select  data_flag
+		    from    td_month_over
+            where   id=(select max(to_number(id)) 
+                          from td_month_over 
+                         where org1_code = #{org1Code,jdbcType=VARCHAR} )
+              and org1_code = #{org1Code,jdbcType=VARCHAR} 
+	</select>	
+	
+	<!--新增月结状态-->
+	<insert id='change' parameterType="com.forms.prms.web.monthOver.domain.MonthOverBean">
+		   insert into td_month_over(
+			id,
+			DATA_FLAG,
+			inst_oper,
+			inst_date,
+			INST_TIME,
+			org1_code
+			)
+			values(
+			(SELECT NVL(MAX(to_number(id)),0)+1 FROM td_month_over),
+			 #{dataFlag,jdbcType=CHAR},
+			 #{instOper,jdbcType=VARCHAR},
+			 to_char(sysdate, 'yyyy-MM-dd'),
+			 to_char(sysdate, 'HH24:mi:ss'),
+			 #{org1Code,jdbcType=VARCHAR} 
+			)
+	</insert>
+	<!--新增一条非月结数据-->
+	<insert id='insert' parameterType="com.forms.prms.web.monthOver.domain.MonthOverBean">	
+			insert into td_month_over(
+			id,
+			data_flag,
+			inst_oper,
+			inst_date,
+			inst_time,
+			org1_code
+			)
+			values(
+			(SELECT NVL(MAX(to_number(id)),0)+1 FROM td_month_over),
+			 #{dataFlag,jdbcType=CHAR},
+			 #{instOper,jdbcType=VARCHAR},
+			 to_char(sysdate, 'yyyy-MM-dd'),
+			 to_char(sysdate, 'HH24:mi:ss'),
+			 #{org1Code,jdbcType=VARCHAR} 
+			)
+	</insert>
+	
+	<!--校验冲销任务状态-->
+	<select id="ajaxCheckProvision" parameterType="String" resultType="String">
+		SELECT distinct 1
+          FROM TL_CGL_BATCH T
+         WHERE T.TASK_TYPE  = '0'
+           AND DATA_FLAG   != '02'
+           AND T.FEE_YYYYMM = TO_CHAR(SYSDATE,'YYYYMM')
+           AND T.ORG1_CODE  = #{org1Code,jdbcType=VARCHAR} 
+	</select>
+	
+	<!--校验当月前预提待摊任务状态-->
+	<select id="ajaxCheckPP" parameterType="String" resultType="String">
+		SELECT distinct 1
+          FROM TL_CGL_BATCH T
+         WHERE T.TASK_TYPE  = '1'
+           AND DATA_FLAG not in( '04','02')
+           AND T.ORG1_CODE  = #{org1Code,jdbcType=VARCHAR} 
+	</select>
+	
+	<!--查看全国省行月结状态-->
+	<select id="getAllMonthOverFlag" parameterType="com.forms.prms.web.monthOver.domain.MonthOverBean" 
+		resultType="com.forms.prms.web.monthOver.domain.MonthOverBean">
+		<if test="taskType != null and '' != taskType">
+			SELECT A.ORG1_CODE,F.ORG1_NAME,
+				NVL(B.FEE_YYYYMM, #{month ,jdbcType=VARCHAR}) AS MONTH,
+				DECODE(NVL(B.TASK_TYPE,#{taskType ,jdbcType=VARCHAR}), '1', '待摊预提', '0', '预提冲销')  AS TASK_NAME,
+				NVL(SS.PARAM_NAME, '未产生') AS DATA_FLAG,
+				B.TRADE_DATE || ' ' || B.TRADE_TIME AS INST_DATE
+			
+				FROM ((SELECT COLUMN_VALUE AS ORG1_CODE
+			           FROM TABLE(STRSPLIT((SELECT T.PARAM_VALUE
+			                                 FROM SYS_PARAMETER T
+			                                WHERE T.PARAM_VAR_NAME = 'OPEN_ORG1CODE'),
+			                               ',')))) A
+			
+				LEFT JOIN TL_CGL_BATCH B
+				ON A.ORG1_CODE = B.ORG1_CODE
+				AND B.FEE_YYYYMM = #{month ,jdbcType=VARCHAR}
+				AND B.TASK_TYPE = #{taskType ,jdbcType=VARCHAR}
+				
+				LEFT JOIN SYS_SELECT SS
+				ON SS.CATEGORY_ID = 'FMSCGL_DATA_FLAG'
+				AND SS.PARAM_VALUE = B.DATA_FLAG
+				LEFT JOIN (SELECT DISTINCT ORG1_CODE, ORG1_NAME FROM TB_FNDWRR) F
+				ON A.ORG1_CODE = F.ORG1_CODE
+				
+				<where>
+					<if test="org1Code != null and '' != org1Code">
+						AND A.ORG1_CODE = #{org1Code ,jdbcType=VARCHAR}
+					</if>
+					<if test="dataFlag != null and '' != dataFlag">
+						AND B.DATA_FLAG = #{dataFlag ,jdbcType=VARCHAR}
+					</if>
+				</where>
+			ORDER BY A.ORG1_CODE
+		</if>
+		
+		<if test="taskType == null or taskType == '' ">
+		 	SELECT TMP.ORG1_CODE,
+		       F.ORG1_NAME,
+		       TMP.MONTH,
+		       DECODE(TMP.TASK_TYPE, '1', '待摊预提', '0', '预提冲销') AS TASK_NAME,
+		       NVL(SS.PARAM_NAME, '未产生') AS DATA_FLAG,
+		       TMP.INST_DATE
+		  	FROM (SELECT A.ORG1_CODE,
+		               #{month ,jdbcType=VARCHAR} AS MONTH,
+		               NVL(B.TASK_TYPE, '1') AS TASK_TYPE,
+		               B.DATA_FLAG,
+		               B.TRADE_DATE || ' ' || B.TRADE_TIME AS INST_DATE
+		          FROM ((SELECT COLUMN_VALUE AS ORG1_CODE
+		                   FROM TABLE(STRSPLIT((SELECT T.PARAM_VALUE
+		                                         FROM SYS_PARAMETER T
+		                                        WHERE T.PARAM_VAR_NAME =
+		                                              'OPEN_ORG1CODE'),
+		                                       ',')))) A
+		          LEFT JOIN TL_CGL_BATCH B
+		            ON A.ORG1_CODE = B.ORG1_CODE
+		           AND B.FEE_YYYYMM = #{month ,jdbcType=VARCHAR}
+		           AND B.TASK_TYPE = '1'
+		           
+		        UNION
+		        
+					SELECT A.ORG1_CODE,
+		               #{month ,jdbcType=VARCHAR} AS MONTH,
+		               NVL(B.TASK_TYPE, '0') AS TASK_TYPE,
+		               B.DATA_FLAG,
+		               B.TRADE_DATE || ' ' || B.TRADE_TIME AS INST_DATE
+		        
+		          FROM ((SELECT COLUMN_VALUE AS ORG1_CODE
+		                   FROM TABLE(STRSPLIT((SELECT T.PARAM_VALUE
+		                                         FROM SYS_PARAMETER T
+		                                        WHERE T.PARAM_VAR_NAME =
+		                                              'OPEN_ORG1CODE'),
+		                                       ',')))) A
+		          LEFT JOIN TL_CGL_BATCH B
+		            ON A.ORG1_CODE = B.ORG1_CODE
+		           AND B.FEE_YYYYMM = #{month ,jdbcType=VARCHAR}
+		           AND B.TASK_TYPE = '0') TMP
+	
+			  LEFT JOIN SYS_SELECT SS
+			    ON SS.CATEGORY_ID = 'FMSCGL_DATA_FLAG'
+			   AND SS.PARAM_VALUE = TMP.DATA_FLAG
+			  LEFT JOIN (SELECT DISTINCT ORG1_CODE, ORG1_NAME FROM TB_FNDWRR) F
+			    ON TMP.ORG1_CODE = F.ORG1_CODE
+				    
+		    <where>
+				<if test="org1Code != null and '' != org1Code">
+					AND TMP.ORG1_CODE = #{org1Code ,jdbcType=VARCHAR}
+				</if>
+				<if test="dataFlag != null and '' != dataFlag">
+					AND TMP.DATA_FLAG = #{dataFlag ,jdbcType=VARCHAR}
+				</if>
+			</where>
+			ORDER BY TMP.ORG1_CODE,TMP.TASK_TYPE
+		</if>
+	</select>
+	
+	<select id="checkOpenOrg1" parameterType="String" resultType="String">
+  SELECT 'exists'
+    FROM TABLE(STRSPLIT((SELECT T.PARAM_VALUE
+                          FROM SYS_PARAMETER T
+                         WHERE T.PARAM_VAR_NAME = 'OPEN_ORG1CODE'),
+                        ',')) T	
+    WHERE T.COLUMN_VALUE = #{org1Code ,jdbcType=VARCHAR}
+	</select>
+
+</mapper>

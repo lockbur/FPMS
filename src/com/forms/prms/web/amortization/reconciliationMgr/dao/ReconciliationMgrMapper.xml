@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.reconciliationMgr.dao.ReconciliationMgrDAO">
+
+	<!-- AP发票及付款对账信息查询 -->
+	<select id="getApReconlieInfo"	parameterType="com.forms.prms.web.amortization.reconciliationMgr.domain.ApReconlieBean" 
+	  								resultType="com.forms.prms.web.amortization.reconciliationMgr.domain.ApReconlieBean">
+	    select * from (
+		SELECT 
+       		 CNT_NUM,
+	         PAY_ID,
+	         SENDVALUE,
+	         UPLOAD_DATE,
+	         CHECKVALUE,
+	         case
+	           when check_pay_id is null then
+	            '未返回'
+	           when (IMPORT_STATUS = 'E' or IMPORT_STATUS = 'I') then
+	            '校验失败'
+	           when instr(sendvalue, checkvalue) > 0 then
+	            '返回一致'
+	           when instr(sendvalue, checkvalue) = 0 then
+	            '返回不一致'
+	           else
+	            ''
+	         end as checkresult,
+	         checkdowndate,
+	         invoicevalue,
+	         case
+	           when invoice_pay_id is null then
+	            '未返回'
+	           when instr(sendvalue, invoicevalue) > 0 then
+	            '返回一致'
+	           when instr(sendvalue, invoicevalue) = 0 then
+	            '返回不一致'
+	           else
+	            ''
+	         end as invoiceresult,
+	         invdate,
+	         decode(upper(INVOICE_CANCEL_STATE), 'Y', '取消', 'N', '成功', '') as invoice_state,
+	         paydate,
+	         decode(upper(PAY_CANCEL_STATE), 'Y', '取消', 'N', '成功', '') as pay_state,
+	         org1_code
+    from (select a.CNT_NUM,
+                 a.PAY_ID,
+                 '发票类型:' || a.INVOICE_TYPE || '$$发票编号:' || a.INVOICE_NO ||
+                  '$$发票金额:' || a.INVOICE_AMT ||
+                 '$$本次付款金额:' || a.PAY_AMT || '$$暂付金额:' || a.SUSPENSE_AMT ||
+                 '$$核销金额:' || a.CANCEL_AMT as sendvalue,
+                 e.UPLOAD_DATE,
+                 B.PAY_ID AS CHECK_PAY_ID,
+                 '发票类型:' || b.INVOICE_TYPE || '$$发票编号:' || b.INVOICE_NO ||
+                 '$$发票金额:' || b.INVOICE_AMT ||
+                 '$$本次付款金额:' || b.PAY_AMT || '$$暂付金额:' || b.SUSPENSE_AMT ||
+                 '$$核销金额:' || B.CANCEL_AMT as checkvalue,
+                 f.DOWNLOAD_DATE checkdowndate,
+                 '发票类型:' || c.INVOICE_TYPE || '$$发票编号:' || c.INVOICE_NO ||
+                 '$$发票金额:' || c.INVOICE_AMT as invoicevalue,
+                 g.DOWNLOAD_DATE invdate, 
+                 c.PAY_ID as invoice_pay_id,
+                 c.INVOICE_CANCEL_STATE,
+                 h.DOWNLOAD_DATE paydate,
+                 d.PAY_CANCEL_STATE,
+                 a.IMPORT_STATUS,
+                 cnt.org1_code
+            from (select distinct BATCH_NO,
+                                  CNT_NUM,
+                                  PAY_ID,
+                                  INVOICE_TYPE,
+                                  INVOICE_NO,
+                                  INVOICE_AMT,
+                                  PAY_AMT,
+                                  SUSPENSE_AMT,
+                                  nvl(CANCEL_AMT,0) CANCEL_AMT,
+                                  IMPORT_STATUS 
+                    from tiu_ap_invoice) a 
+                    left join td_cnt cnt on a.cnt_num=cnt.cnt_num
+            left join (select distinct BATCH_NO,
+                                      CNT_NUM,
+                                      PAY_ID,
+                                      INVOICE_TYPE,
+                                      INVOICE_NO,
+                                      INVOICE_AMT,
+                                      PAY_AMT,
+                                      SUSPENSE_AMT,
+                                      nvl(CANCEL_AMT,0) CANCEL_AMT,
+                                      IMPORT_STATUS
+                        from tiu_ap_invoice_check) b on a.PAY_ID = b.PAY_ID and a.IMPORT_STATUS = b.IMPORT_STATUS
+            left join (select distinct BATCH_NO,
+                             PAY_ID,
+                             INVOICE_TYPE,
+                             INVOICE_NO,
+                             INVOICE_AMT,
+                             INVOICE_CANCEL_STATE
+                        from tid_ap_invoice) c on a.PAY_ID = c.PAY_ID and a.IMPORT_STATUS = 'S'
+            left join (select BATCH_NO, PAY_ID, PAY_CANCEL_STATE
+                        FROM TID_AP_PAY) D ON A.PAY_ID = D.PAY_ID
+            left join (select BATCH_NO, UPLOAD_DATE||' '||UPLOAD_TIME AS UPLOAD_DATE from TI_UPLOAD) e on a.BATCH_NO =
+                                                                         E.BATCH_NO
+            left join (select BATCH_NO, DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE from TI_UPLOAD) f on b.BATCH_NO =
+                                                                           F.BATCH_NO
+            left join (select BATCH_NO, DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE from TI_DOWNLOAD) g on c.BATCH_NO =
+                                                                             G.BATCH_NO
+            LEFT JOIN (SELECT BATCH_NO, DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE FROM TI_DOWNLOAD) H ON D.BATCH_NO =
+                                                                             H.BATCH_NO)  Temp ) restab 
+       <where>
+       	   <if test="org1Code != null and org1Code != ''">
+	       		AND restab.org1_code = #{org1Code,jdbcType=VARCHAR}
+	       </if>
+	       <if test="cntNum != null and cntNum != ''">
+	       		AND restab.CNT_NUM LIKE '%' || #{cntNum, jdbcType=VARCHAR} || '%'
+	       </if>
+	       <if test="payId != null and payId != ''">
+	       		AND restab.PAY_ID LIKE '%' || #{payId,jdbcType=VARCHAR} || '%' 
+	       </if>
+	       <if test="checkResult != null and checkResult != ''">
+	       		AND restab.checkresult = #{checkResult,jdbcType=VARCHAR}
+	       </if>
+	       <if test="apResult != null and apResult != ''">
+	       		AND restab.invoiceresult = #{apResult,jdbcType=VARCHAR}
+	       </if>
+       </where>
+       ORDER BY  restab.CNT_NUM , restab.PAY_ID
+	</select>
+	
+	<!-- GL经费总账对账信息查询 -->
+	<select id="getGlAccountReconlieInfo"	parameterType="com.forms.prms.web.amortization.reconciliationMgr.domain.GlAccountReconciliationBean"
+	 										resultType="com.forms.prms.web.amortization.reconciliationMgr.domain.GlAccountReconciliationBean">
+	   SELECT * FROM 
+	   (SELECT 
+		   cnt_num,
+	       voucher_name,
+	       sendvalue,
+	       UPLOAD_DATE,
+	       checkvalue,
+	       checkdowndate,
+	       case
+	         when check_trade_no is null then
+	          '未返回'
+	         when (IMPORT_STATUS = 'E' or IMPORT_STATUS = 'I') then
+	          '校验失败'
+	         when instr(sendvalue, checkvalue) > 0 then
+	          '返回一致'
+	         when instr(sendvalue, checkvalue) = 0 then
+	          '返回不一致'
+	         else
+	          ''
+	       end as checkresult,
+	       glvalue,
+	       gldate,
+	       case
+	         when gl_trade_no is null then
+	          '未返回'
+	         when instr(sendvalue, glvalue) > 0 then
+	          '返回一致'
+	         when instr(sendvalue, glvalue) = 0 then
+	          '返回不一致'
+	         else
+	          ''
+	       end as glresult,
+	       org1_code
+	  from (select a.cgl_trade_no,
+	               a.cnt_num,
+	               a.voucher_name,
+	               a.IMPORT_STATUS,
+	               '机构代码:' || a.ORG_CODE || '$$责任中心代码:' || a.DUTY_CODE || '$$' ||
+	               a.CGL_CODE || '$$参考:' || a.REFERENCE || '$$专项:' || a.SPECIAL ||
+	               '$$发生额:' || a.amt as sendvalue,
+	               d.UPLOAD_DATE,
+	               '机构代码:' || b.ORG_CODE || '$$责任中心代码:' || b.DUTY_CODE || '$$' ||
+	               decode(b.cgl_trade_no,
+	                      null,
+	                      '借方核算码:$$贷方核算码:',
+	                      b.CGL_CODE) || '$$参考:' || b.REFERENCE || '$$专项:' ||
+	               b.SPECIAL || '$$发生额:' || b.amt as checkvalue,
+	               e.DOWNLOAD_DATE checkdowndate,
+	               '机构代码:' || c.ORG_CODE || '$$责任中心代码:' || c.DUTY_CODE || '$$' ||
+	               decode(c.cgl_trade_no,
+	                      null,
+	                      '借方核算码:$$贷方核算码:',
+	                      c.CGL_CODE) || '$$参考:' || c.REFERENCE || '$$专项:' ||
+	               c.SPECIAL || '$$发生额:' || c.amt as glvalue,
+	               f.DOWNLOAD_DATE gldate,
+	               b.cgl_trade_no as check_trade_no,
+	               c.cgl_trade_no as gl_trade_no,
+	               cnt.org1_code
+	          from (select BATCH_NO,
+	                       CGL_TRADE_NO,
+	                       CNT_NUM,
+	                       VOUCHER_NAME,
+	                       IMPORT_STATUS,
+	                       ORG_CODE,
+	                       DUTY_CODE,
+	                       REFERENCE,
+	                       SPECIAL,
+	                       amt,
+	                       replace(to_char(WM_CONCAT(decode(dcflag,
+	                                                '0',
+	                                                '贷方核算码:',
+	                                                '1',
+	                                                '借方核算码:',
+	                                                '') || CGL_CODE)),
+	                               ',',
+	                               '$$') as CGL_CODE
+	                  from (select BATCH_NO,
+	                               CGL_TRADE_NO,
+	                               CGL_CODE,
+	                               CNT_NUM,
+	                               VOUCHER_NAME,
+	                               IMPORT_STATUS,
+	                               ORG_CODE,
+	                               DUTY_CODE,
+	                               REFERENCE,
+	                               SPECIAL,
+	                               case
+	                                 when DEBIT_AMT = 0.00 then
+	                                  '0'
+	                                 when CREDIT_AMT = 0.00 then
+	                                  '1'
+	                                 else
+	                                  ''
+	                               end as dcflag,
+	                               case
+	                                 when DEBIT_AMT = 0.00 then
+	                                  CREDIT_AMT
+	                                 when CREDIT_AMT = 0.00 then
+	                                  DEBIT_AMT
+	                                 else
+	                                  0.00
+	                               end as amt
+	                          from tiu_account
+	                         where IMPORT_STATUS = 'S'
+	                         order by debit_amt desc)
+	                 group by BATCH_NO,
+	                          CGL_TRADE_NO,
+	                          CNT_NUM,
+	                          VOUCHER_NAME,
+	                          IMPORT_STATUS,
+	                          ORG_CODE,
+	                          DUTY_CODE,
+	                          REFERENCE,
+	                          SPECIAL,
+	                          amt) a
+	          left join td_cnt cnt on a.cnt_num=cnt.cnt_num
+	          left join (select BATCH_NO,
+	                           CGL_TRADE_NO,
+	                           ORG_CODE,
+	                           DUTY_CODE,
+	                           REFERENCE,
+	                           SPECIAL,
+	                           amt,
+	                           replace(to_char(WM_CONCAT(decode(dcflag,
+	                                                    '0',
+	                                                    '贷方核算码:',
+	                                                    '1',
+	                                                    '借方核算码:',
+	                                                    '') || CGL_CODE)),
+	                                   ',',
+	                                   '$$') as CGL_CODE
+	                      from (select BATCH_NO,
+	                                   CGL_TRADE_NO,
+	                                   CGL_CODE,
+	                                   ORG_CODE,
+	                                   DUTY_CODE,
+	                                   REFERENCE,
+	                                   SPECIAL,
+	                                   case
+	                                     when DEBIT_AMT = 0.00 then
+	                                      '0'
+	                                     when CREDIT_AMT = 0.00 then
+	                                      '1'
+	                                     else
+	                                      ''
+	                                   end as dcflag,
+	                                   case
+	                                     when DEBIT_AMT = 0.00 then
+	                                      CREDIT_AMT
+	                                     when CREDIT_AMT = 0.00 then
+	                                      DEBIT_AMT
+	                                     else
+	                                      0.00
+	                                   end as amt
+	                              from tiu_account_check
+	                             order by debit_amt desc)
+	                     group by BATCH_NO,
+	                              CGL_TRADE_NO,
+	                              ORG_CODE,
+	                              DUTY_CODE,
+	                              REFERENCE,
+	                              SPECIAL,
+	                              amt) b on a.cgl_trade_no = b.cgl_trade_no
+	                                    --and a.cgl_code = b.cgl_code
+	          left join (select BATCH_NO,
+	                           CGL_TRADE_NO,
+	                           ORG_CODE,
+	                           DUTY_CODE,
+	                           REFERENCE,
+	                           SPECIAL,
+	                           amt,
+	                           replace(to_char(WM_CONCAT(decode(dcflag,
+	                                                    '0',
+	                                                    '贷方核算码:',
+	                                                    '1',
+	                                                    '借方核算码:',
+	                                                    '') || CGL_CODE)),
+	                                   ',',
+	                                   '$$') as CGL_CODE
+	                      from (select BATCH_NO,
+	                                   CGL_TRADE_NO,
+	                                   CGL_CODE,
+	                                   ORG_CODE,
+	                                   DUTY_CODE,
+	                                   REFERENCE,
+	                                   SPECIAL,
+	                                   case
+	                                     when DEBIT_AMT = 0.00 then
+	                                      '0'
+	                                     when CREDIT_AMT = 0.00 then
+	                                      '1'
+	                                     else
+	                                      ''
+	                                   end as dcflag,
+	                                   case
+	                                     when DEBIT_AMT = 0.00 then
+	                                      CREDIT_AMT
+	                                     when CREDIT_AMT = 0.00 then
+	                                      DEBIT_AMT
+	                                     else
+	                                      0.00
+	                                   end as amt
+	                              from tid_account order by credit_amt)
+	                     group by BATCH_NO,
+	                              CGL_TRADE_NO,
+	                              ORG_CODE,
+	                              DUTY_CODE,
+	                              REFERENCE,
+	                              SPECIAL,
+	                              amt) c on a.cgl_trade_no = c.cgl_trade_no
+	                                --    AND A.CGL_CODE = C.CGL_CODE
+	          left join (select BATCH_NO, UPLOAD_DATE||' '||UPLOAD_TIME AS UPLOAD_DATE from TI_UPLOAD) d 
+	          				on a.BATCH_NO = D.BATCH_NO
+	          left join (select BATCH_NO, DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE from TI_UPLOAD) e 
+	          				on b.BATCH_NO = E.BATCH_NO
+	          LEFT JOIN (SELECT BATCH_NO, DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE FROM TI_DOWNLOAD) F 
+	          				ON C.BATCH_NO = f.BATCH_NO)
+	    )	RESULTTAB
+	   <where>
+	       <if test="org1Code != null and org1Code != ''">
+	       		AND RESULTTAB.org1_code = #{org1Code,jdbcType=VARCHAR}
+	       </if>
+	       <if test="cntNum != null and cntNum != ''">
+	       		AND RESULTTAB.CNT_NUM LIKE '%' || #{cntNum, jdbcType=VARCHAR} || '%'
+	       </if>
+	       <if test="checkResult != null and checkResult != ''">
+	       		AND RESULTTAB.CHECKRESULT = #{checkResult,jdbcType=VARCHAR}
+	       </if>
+	       <if test="glResult != null and glResult != ''">
+	       		AND RESULTTAB.glresult = #{glResult,jdbcType=VARCHAR}
+	       </if>
+       </where>
+       ORDER BY RESULTTAB.CNT_NUM
+	</select>
+	
+	<!-- 3.PO采购订单对账信息 -->
+	<select id="getPoOrderReconlieInfo"		parameterType="com.forms.prms.web.amortization.reconciliationMgr.domain.PoOrderReconlieBean"
+										 	resultType="com.forms.prms.web.amortization.reconciliationMgr.domain.PoOrderReconlieBean">
+       select * from (										 	
+		SELECT 
+		   CNT_NUM,
+	       ORDER_ID,
+	       ROW_SEQNO,
+	       sendvalue,
+	       upload_date,
+	       checkvalue,
+	       case
+	         when check_order_id is null then
+	          '未返回'
+	         when (IMPORT_STATUS = 'E' or IMPORT_STATUS = 'I') then
+	          '校验失败'
+	         when instr(sendvalue, checkvalue) > 0 then
+	          '返回一致'
+	         when instr(sendvalue, checkvalue) = 0 then
+	          '返回不一致'
+	         else
+	          ''
+	       end as checkresult,
+	       checkdate,
+	       ordervalue,
+	       case
+	         when fmsreturn_order_id is null then
+	          '未返回'
+	         when instr(sendvalue, ordervalue) > 0 then
+	          '返回一致'
+	         when instr(sendvalue, ordervalue) = 0 then
+	          '返回不一致'
+	         else
+	          ''
+	       end as orderresult,orderdate,
+	       org1_code 
+	  from (select a.CNT_NUM,
+	               a.ORDER_ID,
+	               a.ROW_SEQNO,
+	               a.IMPORT_STATUS,
+	               '供应商名称:' || a.PROVIDER_NAME || '$$物料编码:' || a.MATR_CODE ||
+	               '$$数量:' || a.AMOUNT || '$$单价:' || a.PRICE as sendvalue,
+	               d.upload_date,
+	               '供应商名称:' || b.PROVIDER_NAME || '$$物料编码:' || b.MATR_CODE ||
+	               '$$数量:' || b.AMOUNT || '$$单价:' || b.PRICE as checkvalue,
+	               e.download_date as checkdate,
+	               '供应商名称:' || c.PROVIDER_NAME || '$$物料编码:' || c.MATR_CODE ||
+	               '$$数量:' || c.AMOUNT || '$$单价:' || c.PRICE as ordervalue,
+	               f.download_date as orderdate,
+	               b.order_id as check_order_id,
+	               c.order_id fmsreturn_order_id,
+	               cnt.org1_code
+	          from (SELECT BATCH_NO,
+	                       CNT_NUM,
+	                       ORDER_ID,
+	                       ROW_SEQNO,
+	                       PROVIDER_NAME,
+	                       MATR_CODE,
+	                       AMOUNT,
+	                       PRICE,
+	                       IMPORT_STATUS
+	                  FROM tiu_order) a
+	          left join td_cnt cnt on a.cnt_num=cnt.cnt_num
+	          left join (SELECT BATCH_NO,
+	                           ORDER_ID,
+	                           ROW_SEQNO,
+	                           PROVIDER_NAME,
+	                           MATR_CODE,
+	                           AMOUNT,
+	                           PRICE
+	                      FROM tiu_order_check) b on a.order_id = b.order_id
+	                                             and a.row_seqno = b.row_seqno
+	          left join (SELECT BATCH_NO,
+	                           ORDER_ID,
+	                           ROW_SEQNO,
+	                           PROVIDER_NAME,
+	                           MATR_CODE,
+	                           AMOUNT,
+	                           PRICE
+	                      FROM tid_order) c on a.order_id = c.order_id
+	                                       and a.row_seqno = c.row_seqno
+	          left join (select BATCH_NO,
+	                                     UPLOAD_DATE || ' ' || UPLOAD_TIME AS UPLOAD_DATE
+	                                from TI_UPLOAD) d on a.BATCH_NO = d.BATCH_NO
+	          left join (select BATCH_NO,
+	                           DOWNLOAD_DATE || ' ' || DOWNLOAD_TIME AS DOWNLOAD_DATE
+	                      from TI_UPLOAD) e on b.BATCH_NO = e.BATCH_NO
+	          left join (select BATCH_NO,
+	                           DOWNLOAD_DATE || ' ' || DOWNLOAD_TIME AS DOWNLOAD_DATE
+	                      from TI_DOWNLOAD) f on c.BATCH_NO = f.BATCH_NO)	Temp ) restab
+	   <where>
+	   	   <if test="org1Code != null and org1Code != ''">
+	       		AND restab.org1_code = #{org1Code,jdbcType=VARCHAR}
+	       </if>
+	       <if test="cntNum != null and cntNum != ''">
+	       		AND restab.CNT_NUM LIKE '%' || #{cntNum, jdbcType=VARCHAR} || '%'
+	       </if>
+	       <if test="orderId != null and orderId != ''">
+	       		AND restab.ORDER_ID LIKE '%' || #{orderId,jdbcType=VARCHAR} || '%'
+	       </if>
+	       <if test="checkResult != null and checkResult != ''">
+	       		AND restab.checkresult = #{checkResult,jdbcType=VARCHAR}
+	       </if>
+	       <if test="orderResult != null and orderResult != ''">
+	       		AND restab.orderresult = #{orderResult,jdbcType=VARCHAR}
+	       </if>
+       </where>
+       ORDER BY restab.CNT_NUM , restab.ORDER_ID
+	</select>
+	
+	<!-- 4.预付款核销对账信息 -->
+	<select id="getAdvanceReconlieInfo"		parameterType="com.forms.prms.web.amortization.reconciliationMgr.domain.AdvanceReconlieBean"
+											resultType="com.forms.prms.web.amortization.reconciliationMgr.domain.AdvanceReconlieBean">
+	        select * from (
+			SELECT CNT_NUM,PAY_ID,SENDVALUE,SENDTIME,CHECKVALUE,
+			        CASE
+			          WHEN  CHECKCANCELINVOICENO IS NULL THEN '未返回'
+			          WHEN  (IMPORT_STATUS = 'E' OR IMPORT_STATUS = 'I') THEN '校验失败'
+			          WHEN  INSTR(SENDVALUE , CHECKVALUE) > 0 THEN  '返回一致'
+			          WHEN  INSTR(SENDVALUE , CHECKVALUE) = 0 THEN  '返回不一致'
+			        END AS  CHECKRESULT,
+			        CHECKTIME,INVOICEVALUE,
+			        CASE
+			          WHEN  CHECKINVOICEPAYID IS NULL THEN '未返回'
+			          WHEN  INSTR(INVOICECOMPAREVALUE , INVOICEVALUE) > 0 THEN  '返回一致'
+			          WHEN  INSTR(INVOICECOMPAREVALUE , INVOICEVALUE) = 0 THEN  '返回不一致'
+			        END AS INVOICERESULT,
+			        INVOICETIME,INVOICE_STATE,
+			        org1_code
+			FROM
+			(      SELECT 
+			        TD.CNT_NUM , 
+			        TD.PAY_ID , 
+			        '发票编号：'||TA.INVOICE_NO||'$$供应商名称：'||TA.PROVIDER_NAME||'$$核销预付款金额：'||TA.ADVANCE_CANCEL_AMT  AS SENDVALUE,
+			        '发票编号：'||TA.INVOICE_NO||'$$供应商名称：'||TA.PROVIDER_NAME  AS INVOICECOMPAREVALUE,
+			        TE.UPLOAD_DATE  AS  SENDTIME ,
+			        '发票编号：'||TB.INVOICE_NO||'$$供应商名称：'||TB.PROVIDER_NAME||'$$核销预付款金额：'||TB.ADVANCE_CANCEL_AMT AS CHECKVALUE,
+			        TB.CANCEL_INVOICE_NO AS CHECKCANCELINVOICENO,
+			        TA.IMPORT_STATUS,
+			        TF.DOWNLOAD_DATE  AS CHECKTIME,
+			        '发票编号：'||TC.INVOICE_NO||'$$供应商名称：'||TC.PROVIDER_NAME  AS INVOICEVALUE,
+			        TC.PAY_ID AS CHECKINVOICEPAYID,
+			        TG.DOWNLOAD_DATE  AS INVOICETIME,
+			        DECODE(UPPER(TC.INVOICE_CANCEL_STATE),'Y','取消','N','成功','') AS INVOICE_STATE,
+			        cnt.org1_code
+			        FROM
+			      
+			            --a表 TIU_PAY_CANCEL
+			            (SELECT 
+			                BATCH_NO,
+			                INVOICE_NO,         --发票编号
+			                CANCEL_INVOICE_NO,  --预付款核销发票编号
+			                PROVIDER_NAME,      --供应商名称
+			                SUM(NVL(ADVANCE_CANCEL_AMT,'0')) ADVANCE_CANCEL_AMT,
+			                IMPORT_STATUS
+			                --ADVANCE_CANCEL_AMT
+			            FROM TIU_PAY_CANCEL
+			            GROUP BY BATCH_NO, INVOICE_NO, CANCEL_INVOICE_NO , PROVIDER_NAME,IMPORT_STATUS)  TA
+			      
+			            LEFT JOIN 
+			            --b表 TIU_AP_INVOICE_CHECK
+			            (SELECT 
+			                BATCH_NO,
+			                INVOICE_NO,         --发票编号
+			                CANCEL_INVOICE_NO,  --预付款核销发票编号
+			                PROVIDER_NAME,      --供应商名称
+			                SUM(NVL(ADVANCE_CANCEL_AMT,'0')) ADVANCE_CANCEL_AMT
+			            FROM TIU_AP_INVOICE_CHECK
+			            GROUP BY BATCH_NO, INVOICE_NO, CANCEL_INVOICE_NO , PROVIDER_NAME)  TB
+			            ON  TA.INVOICE_NO = TB.INVOICE_NO   AND TA.CANCEL_INVOICE_NO = TB.CANCEL_INVOICE_NO
+			      
+			            LEFT JOIN
+			            --d表  TD_PAY表，用于取合同编号和付款ID号
+			            (SELECT 
+			                PAY_ID, 
+			                CNT_NUM,
+			                INVOICE_ID
+			            FROM TD_PAY)  TD
+			            ON TA.INVOICE_NO = TD.INVOICE_ID
+			      		left join td_cnt cnt on TD.CNT_NUM=cnt.cnt_num
+			            LEFT JOIN
+			            --c表  TID_AP_INVOICE
+			            (SELECT DISTINCT BATCH_NO,
+			                  --INVOICE_TYPE,
+			                  INVOICE_NO,
+			                  PAY_ID,
+			                  --INVOICE_AMT,
+			                  PROVIDER_NAME,
+			                  CANCEL_INVOICE_ID,
+			                  INVOICE_CANCEL_STATE
+			                FROM TID_AP_INVOICE)    TC
+			            ON  TA.INVOICE_NO = TC.INVOICE_NO   AND TA.CANCEL_INVOICE_NO = TC.CANCEL_INVOICE_ID
+			      
+			      
+			            LEFT JOIN
+			              (SELECT BATCH_NO, UPLOAD_DATE||' '||UPLOAD_TIME AS UPLOAD_DATE FROM TI_UPLOAD
+			              ) TE
+			            ON TA.BATCH_NO = TE.BATCH_NO
+			            LEFT JOIN
+			              (SELECT BATCH_NO,DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE FROM TI_UPLOAD
+			              ) TF
+			            ON TB.BATCH_NO = TF.BATCH_NO
+			            LEFT JOIN
+			              (SELECT BATCH_NO,DOWNLOAD_DATE||' '||DOWNLOAD_TIME AS DOWNLOAD_DATE FROM TI_DOWNLOAD
+			              ) TG
+			            ON TC.BATCH_NO = TG.BATCH_NO
+			)     TEMP ) restab
+			<where>
+			   <if test="org1Code != null and org1Code != ''">
+		       		AND restab.org1_code = #{org1Code,jdbcType=VARCHAR}
+		       </if>
+		       <if test="cntNum != null and cntNum != ''">
+		       		AND restab.CNT_NUM  LIKE '%' || #{cntNum, jdbcType=VARCHAR} || '%'
+		       </if>
+		       <if test="payId != null and payId != ''">
+		       		AND restab.PAY_ID LIKE '%' || #{payId,jdbcType=VARCHAR} || '%'
+		       </if>
+		       <if test="checkResult != null and checkResult != ''">
+		       		AND restab.CHECKRESULT = #{checkResult,jdbcType=VARCHAR}
+		       </if>
+		       <if test="invoiceResult != null and invoiceResult != ''">
+		       		AND restab.INVOICERESULT = #{invoiceResult,jdbcType=VARCHAR}
+		       </if>
+		    </where>
+			ORDER BY restab.CNT_NUM ,restab.PAY_ID
+	
+	</select>
+</mapper>

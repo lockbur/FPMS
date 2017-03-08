@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.projectcrinfo.dao.IProjectcrInfoDAO">
+	<!-- 保存或更新电子审批信息 -->
+	<insert id="saveProjectcrInfo" parameterType="com.forms.prms.web.sysmanagement.projectcrinfo.domain.ProjectcrInfo">
+		MERGE INTO TB_PROJECTCR_INFO PROJ USING (
+        	SELECT #{abCde, jdbcType=VARCHAR} AB_CDE,
+			       #{projCrId, jdbcType=VARCHAR} PROJ_CR_ID,
+			       #{createDate, jdbcType=VARCHAR} CREATE_DATE,
+			       #{projCrAmt, jdbcType=NUMERIC} PROJ_CR_AMT,
+			       #{projCrNum, jdbcType=NUMERIC} PROJ_CR_NUM
+			  FROM DUAL
+		) P
+		  ON (PROJ.AB_CDE = P.AB_CDE)
+        WHEN MATCHED THEN
+			 UPDATE SET PROJ.PROJ_CR_ID  = P.PROJ_CR_ID,
+			            PROJ.CREATE_DATE = P.CREATE_DATE,
+			            PROJ.PROJ_CR_AMT = P.PROJ_CR_AMT,
+			            PROJ.PROJ_CR_NUM = P.PROJ_CR_NUM
+		WHEN NOT MATCHED THEN
+			INSERT(AB_CDE, PROJ_CR_ID, CREATE_DATE, PROJ_CR_AMT, PROJ_CR_NUM)
+     		VALUES (P.AB_CDE, P.PROJ_CR_ID, P.CREATE_DATE, P.PROJ_CR_AMT, P.PROJ_CR_NUM)
+   	</insert>
+   	
+   	<!-- 查询电子审批信息列表 -->
+   	<select id="selectProjectcrInfoList" parameterType="com.forms.prms.web.sysmanagement.projectcrinfo.domain.ProjectcrInfo" 
+   										 resultType="com.forms.prms.web.sysmanagement.projectcrinfo.domain.ProjectcrInfo">
+		SELECT AB_CDE,
+		       PROJ_CR_ID,
+		       CREATE_DATE,
+		       PROJ_CR_AMT,
+		       PROJ_CR_NUM,
+		       STATUS,
+		       EXE_AMT,
+		       EXE_NUM
+		  FROM TB_PROJECTCR_INFO 
+		 <where>
+			<if test="abCde != null and abCde != ''">
+				AND AB_CDE = #{abCde,jdbcType=VARCHAR}
+			</if>
+			<if test="projCrId != null and projCrId != ''">
+				AND PROJ_CR_ID LIKE '%' || #{projCrId,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="startDate != null and startDate != ''">
+				AND CREATE_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND CREATE_DATE &lt;= #{endDate,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+</mapper>

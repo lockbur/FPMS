@@ -1,0 +1,53 @@
+LOAD DATA 
+    CHARACTERSET ZHS16GBK 
+    TRUNCATE INTO TABLE TID_ORDER_TMP
+    WHEN (1:3)<>'|||' 
+    FIELDS TERMINATED BY ' | ' 
+    TRAILING NULLCOLS
+(
+	SEQ_NO                      "trim(:SEQ_NO)",
+	FILLER_2                    FILLER,
+	FILLER_3                    FILLER,
+	PO_NUMBER                   "trim(:PO_NUMBER)",
+	FILLER_5                    FILLER,
+	ORDER_ID                    "trim(:ORDER_ID)",
+	FILLER_7                    FILLER,
+	PROVIDER_CODE               "trim(:PROVIDER_CODE)",
+	PROVIDER_NAME               "trim(:PROVIDER_NAME)",
+	PROVIDER_ADDR_CODE          "trim(:PROVIDER_ADDR_CODE)",
+	PROVIDER_ADDR_NAME          "trim(:PROVIDER_ADDR_NAME)",
+	FILLER_12                   FILLER,
+	FILLER_13                   FILLER,
+	FILLER_14                   FILLER,
+	ORDER_USER                  "trim(:ORDER_USER)",
+	FILLER_16                   FILLER,
+	STATUS                      "trim(:STATUS)",
+	ROW_SEQNO                   "trim(:ROW_SEQNO)",
+	FILLER_19                   FILLER,
+	MATR_CODE                   "trim(:MATR_CODE)",
+	FILLER_21                   FILLER,
+	FILLER_22                   FILLER,
+	FILLER_23                   FILLER,
+	AMOUNT                      "trim(:AMOUNT)",
+	PRICE                       "trim(:PRICE)",
+	FILLER_26                   FILLER,
+	STOCK_NUM                   "trim(:STOCK_NUM)",
+	FILLER_28                   FILLER,
+	FILLER_29                   FILLER,
+	CNT_NUM                     "trim(:CNT_NUM)",
+	FILLER_31                   FILLER,
+	FILLER_32                   FILLER,
+	FILLER_33                   FILLER,
+	FILLER_34                   FILLER,
+	FILLER_35                   FILLER,
+	FILLER_36                   FILLER,
+	FILLER_37                   FILLER,
+	FILLER_38                   FILLER,
+	FILLER_39                   FILLER,
+	FILLER_40                   FILLER,
+	FILLER_41                   FILLER,
+	FILLER_42                   FILLER,
+	FILLER_43                   FILLER,
+	FILLER_44                   FILLER,
+	FILLER_45                   FILLER
+)

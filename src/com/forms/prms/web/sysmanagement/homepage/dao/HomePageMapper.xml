@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.sysmanagement.homepage.dao.HomePageDao">
+
+	<update id="updateOperWarnAdd" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.OperWarnBean">
+	  	 UPDATE SYS_WARN_COUNT_INFO SOW
+	   			SET SOW.OPER_NUM + 1
+	 			WHERE SOW.DUTY_CODE =  #{dutyCode, jdbcType=VARCHAR}
+	   			AND SOW.FUNC_TYPE =  #{functype, jdbcType=VARCHAR}
+    </update>
+    <update id="updateOperWarnLess" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.OperWarnBean">
+		UPDATE SYS_WARN_COUNT_INFO SOW
+	   			SET SOW.OPER_NUM - 1
+	 			WHERE SOW.DUTY_CODE =  #{dutyCode, jdbcType=VARCHAR}
+	   			AND SOW.FUNC_TYPE =  #{functype, jdbcType=VARCHAR} 	 
+    </update>
+    
+    <select id="queryOperWarnList" parameterType="HashMap" resultType="com.forms.prms.web.sysmanagement.homepage.domain.OperWarnBean">
+		 SELECT T.DUTY_CODE, T.FUNC_TYPE, T.OPER_NUM 
+              FROM SYS_WARN_COUNT_INFO T	
+     		  JOIN PF_ROLE_FUNC_RLN   R ON R.FUNC_ID = T.FUNC_ID
+     		  WHERE T.DUTY_CODE in (#{dutyCode, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+     		  AND  R.ROLE_ID in
+		      <foreach collection="roleIds" item="roleid" index="index" open="(" close=")"  separator="," > 
+          		#{roleid,jdbcType=VARCHAR}
+          	  </foreach>
+
+		
+	</select>
+	
+	
+	<select id="queryUserDesktopList" parameterType="string" resultType="com.forms.prms.web.sysmanagement.homepage.domain.UserDesktopBean">
+		SELECT SD.USER_ID, SD.FUNC_MEMO, SD.ADD_TIME,SD.FUNC_ID, SD.ICON_NAME,PF.FUNC_NAME, PF.URL||'?VISIT_FUNC_ID='||PF.FUNC_ID AS FUNC_URL
+  				FROM SYS_USER_DESKTOP_INFO SD
+  				LEFT JOIN PF_FUNCTION PF ON SD.FUNC_ID = PF.FUNC_ID
+ 				WHERE SD.USER_ID = #{userId, jdbcType = VARCHAR}
+ 				ORDER BY SD.ADD_TIME ASC
+	</select>
+
+	
+	<insert id="addUserDesktop" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.UserDesktopBean">
+		insert into SYS_USER_DESKTOP_INFO 
+		(
+		USER_ID,
+		FUNC_ID,
+		ICON_NAME,
+		FUNC_MEMO,
+		ADD_TIME
+		) 
+		values (
+		#{userId, jdbcType=VARCHAR},
+		#{funcId, jdbcType=VARCHAR},
+		#{iconName, jdbcType=VARCHAR},
+		#{funcMemo, jdbcType=VARCHAR},
+		SYSDATE
+		)
+	</insert>
+	
+	<select id="getDesktopInfo" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.UserDesktopBean" resultType="com.forms.prms.web.sysmanagement.homepage.domain.UserDesktopBean">
+		select * from SYS_USER_DESKTOP_INFO where FUNC_ID = #{funcId, jdbcType=VARCHAR} and USER_ID = #{userId, jdbcType=VARCHAR}
+	</select>
+	
+	<delete id="delUserDesktop" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.UserDesktopBean">
+		delete from SYS_USER_DESKTOP_INFO where FUNC_ID = #{funcId, jdbcType=VARCHAR} and USER_ID = #{userId, jdbcType=VARCHAR}
+	</delete>
+	
+	<update id="updateUserDesktop" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.UserDesktopBean">
+		update SYS_USER_DESKTOP_INFO 
+		set
+		ICON_NAME = #{iconName, jdbcType=VARCHAR},
+		FUNC_MEMO = #{funcMemo, jdbcType=VARCHAR}
+		where FUNC_ID = #{funcId, jdbcType=VARCHAR} and USER_ID = #{userId, jdbcType=VARCHAR}
+	</update>
+
+	<select id="querySysRollInfo" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.SysRollInfoBean" resultType="com.forms.prms.web.sysmanagement.homepage.domain.SysRollInfoBean">
+		SELECT  S.ROLL_TITLE ,S.ROLL_ID,to_char(s.add_time,'yyyy-mm-dd') add_time,S.ROLL_INFO FROM SYS_ROLL_INFO  S WHERE S.LAST_DATE &gt;= to_char(SYSDATE, 'YYYY-MM-DD')
+		AND (S.VISUAL_GRADE=1 
+		OR (S.VISUAL_GRADE=2 AND S.VISUAL_ORG = #{org1Code,jdbcType=VARCHAR}))
+		<!--OR (S.VISUAL_GRADE=3 AND S.VISUAL_ORG = #{org2Code,jdbcType=VARCHAR})
+		OR (S.VISUAL_GRADE=4 AND S.VISUAL_ORG = #{dutyCode,jdbcType=VARCHAR})-->
+		order by s.add_time desc
+	</select>
+	
+	<select id="getCount" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.SysRollInfoBean"
+			resultType="String">
+		SELECT COUNT(1) NUMB FROM SYS_USER_DESKTOP_INFO WHERE USER_ID = #{userId,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getFmsErrorNum" parameterType="string" resultType="com.forms.prms.web.sysmanagement.homepage.domain.FmsErrorBean">
+		select sum(decode(err_type,'1',error_num,0)) upd_error_num,
+        sum(decode(err_type,'2',error_num,0)) chk_error_num,
+        sum(decode(err_type,'3',error_num,0)) dwn_error_num from 
+		(
+		 select '1' as err_type, count(1) as error_num  from(
+                  select t1.*, '040302' as fun from ti_upload t1 where t1.data_flag = '09'
+                   )   t1
+			       where exists(
+			        select  1 from (
+			            select distinct pr.FUNC_ID from PF_ROLE_FUNC_RLN  pr
+			           where  pr.role_id in(
+								       (  select pu.role_id  from  PF_USER_ROLE_RLN   pu 
+			                   where  pu.user_id=#{userId,jdbcType=VARCHAR}
+			                 )
+			            ) ) m
+			          where t1.fun=m.FUNC_ID  
+			       )
+			  <!--非总行超级管理员 看所在省行-->
+			  <if test="org1Code != 'A0001' and isSuperAdmin == 1"> 
+				  AND EXISTS (SELECT 1 
+				              FROM TB_FNDWRR F 
+				             WHERE F.OU_CODE = t1.OU_CODE 
+				               AND F.ORG1_CODE = #{org1Code,jdbcType=VARCHAR} )
+			  </if>
+			  <!--非超级管理员-->
+			  <if test="isSuperAdmin == 0"> 
+				  AND t1.ou_code = #{ouCode,jdbcType=VARCHAR}
+			  </if>
+			  union  
+			  select '2' as err_type, count(1) as error_num  from(
+                  select t1.*, '040302' as fun from ti_upload t1 where t1.data_flag = '05'
+                   )   t2
+			       where exists(
+			        select  1 from (
+			            select distinct pr.FUNC_ID from PF_ROLE_FUNC_RLN  pr
+			           where  pr.role_id in(
+								       (  select pu.role_id  from  PF_USER_ROLE_RLN   pu 
+			                   where  pu.user_id=#{userId,jdbcType=VARCHAR}
+			                 )
+			            ) ) m
+			          where t2.fun=m.FUNC_ID  
+			       )
+			  <!--非总行超级管理员 看所在省行-->
+			  <if test="org1Code != 'A0001' and isSuperAdmin == 1"> 
+				  AND EXISTS (SELECT 1 
+				              FROM TB_FNDWRR F 
+				             WHERE F.OU_CODE = t2.OU_CODE 
+				               AND F.ORG1_CODE = #{org1Code,jdbcType=VARCHAR} )
+			  </if>
+			  <!--非超级管理员-->
+			  <if test="isSuperAdmin == 0"> 
+				  AND t2.ou_code = #{ouCode,jdbcType=VARCHAR}
+			  </if>
+			  union 
+			   select '3' as err_type, count(1) as error_num  from(
+                  select  '040303' as fun from ti_download t1 where t1.data_flag = '03'
+                   )   t3
+			       where exists(
+			        select  1 from (
+			            select distinct pr.FUNC_ID from PF_ROLE_FUNC_RLN  pr
+			           where  pr.role_id in(
+								       (  select pu.role_id  from  PF_USER_ROLE_RLN   pu 
+			                   where  pu.user_id=#{userId,jdbcType=VARCHAR}
+			                 )
+			            ) ) m
+			          where t3.fun=m.FUNC_ID  
+			       )
+		)
+
+	</select>
+	
+	<select id="rollInfoDetail" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean" resultType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean">
+		select sri.roll_id,
+				sri.roll_title,
+				sri.roll_info,
+				sri.last_date,
+				sri.add_uid,
+				to_char(sri.add_time,'yyyy-mm-dd') add_time,
+				sri.lupd_uid,
+				sri.lupd_time
+				from sys_roll_info sri where roll_id = #{rollId,jdbcType=VARCHAR}
+	</select>	
+	<select id="getExcepInfoCount" resultType="String" parameterType="String">
+		SELECT count(*) 
+		FROM sys_excep_info t1
+		WHERE (t1.EXCEP_ORG_ID = '00000' or EXCEP_ORG_ID = #{org1Code,jdbcType=VARCHAR} )
+		and NOT EXISTS
+		  (SELECT 1
+		  FROM sys_excep_user_rel t2
+		  WHERE user_id   =#{userId,jdbcType=VARCHAR}
+		  AND t1.excep_id = t2.excep_id
+		  )
+	</select>
+	
+	<select id="getExcepInfos" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean" resultType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean">
+		SELECT t1.excep_id,
+		  t1.excep_info,
+		  t1.excep_org_id,
+		  t1.excep_title,
+		  TO_CHAR(t1.add_time,'yyyy-mm-dd') AS add_time,
+		  t1.add_uid
+		FROM sys_excep_info t1
+		WHERE (t1.EXCEP_ORG_ID = '00000' or t1.EXCEP_ORG_ID = #{org1Code,jdbcType=VARCHAR} )
+		and NOT EXISTS
+		  (SELECT 1
+		  FROM sys_excep_user_rel t2
+		  WHERE t2.user_id   =#{userId,jdbcType=VARCHAR}
+		  AND t1.excep_id = t2.excep_id
+		  )
+		ORDER BY t1.add_time ASC
+	</select>
+	
+	<select id="excepInfoDetail" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean" resultType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean">
+		SELECT excep_id,
+  			excep_info,
+  			excep_org_id,
+ 			excep_title,
+  			to_char(sei.add_time,'yyyy-mm-dd') as add_time,
+  			add_uid
+  			FROM sys_excep_info sei WHERE excep_id=#{excepId, jdbcType=VARCHAR}
+	</select>
+
+    <!--业务提醒汇总过程调用-->
+	<insert id="callSysWarnCount" parameterType="String">
+		CALL PRC_SYS_WARN_COUNT(#{dutyCode, jdbcType=VARCHAR},#{busType, jdbcType=VARCHAR})
+	</insert>
+	
+	<insert id="haveRead" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean">
+		INSERT INTO sys_excep_user_rel
+		(
+			excep_ID,
+			user_id
+		)
+		<if test = "excepInfoList != null and excepInfoList != ''">
+			<foreach collection="excepInfoList" item="item" index="index" separator="union all">
+				SELECT 
+				   #{item.excepInfoChecked,jdbcType=VARCHAR},
+				   #{userId,jdbcType=VARCHAR}
+		      	FROM DUAL
+			</foreach>
+		</if>
+		<if test = "excepInfoList == null or excepInfoList == ''">
+			VALUES(
+				#{excepId, jdbcType=VARCHAR},
+				#{userId, jdbcType=VARCHAR}
+			)
+		</if>
+	</insert>
+	
+	
+	<select id="getPPRight" parameterType="String" resultType="String">
+		   select distinct 1 
+     from pf_user_role_rln p 
+left join pf_role_func_rln r 
+       on p.role_id = r.role_id
+    where p.user_id = #{userId, jdbcType=VARCHAR}
+      and r.func_id in('040304','0405','040501','040502','040505')
+	</select>
+	
+    <select id="getInterfaceRight" parameterType="String" resultType="String">
+		   select distinct 1 
+     from pf_user_role_rln p 
+left join pf_role_func_rln r 
+       on p.role_id = r.role_id
+    where p.user_id = #{userId, jdbcType=VARCHAR}
+      and r.func_id in('040302','040303')
+	</select>
+	
+	
+</mapper>

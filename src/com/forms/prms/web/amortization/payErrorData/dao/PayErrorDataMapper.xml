@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.payErrorData.dao.PayErrorDataDAO">
+	<select id="getList" resultType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean" parameterType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean">
+			SELECT distinct t.*
+			FROM TID_AP_INVOICE_ORDER_ERROR t
+			LEFT JOIN TD_CNT TC  ON T.CNT_NUM = TC.CNT_NUM
+			LEFT JOIN TB_FNDWRR TFRR ON TC.ORG1_CODE = TFRR.ORG1_CODE
+			<if test="orgFlag == 2 or orgFlag == 3">
+			LEFT JOIN TD_CNT_DEVICE TCD ON T.CNT_NUM=TCD.CNT_NUM 
+			LEFT JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = TCD.FEE_DEPT 
+	 			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+	 				AND TACN.FEE_CODE = TCD.FEE_DEPT AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))  
+	 				AND TACN.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy') 
+	 				AND TACN.FEE_CODE IS NOT NULL 
+	 			
+	 			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+ 				 AND TACN2.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code)) 
+ 				AND TACN2.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+ 				AND TACN2.ORG_CODE =  TF2.ORG_CODE 
+	 			
+	 			LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+	 				AND TAC.MONT_CODE = TCD.MONT_CODE AND TAC.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy') 
+			</if>
+			<where>
+			<if test="orgFlag == 1 and isCenterAdmin ==0">
+				and TC.org1_code = #{org1Code,jdbcType=VARCHAR} 
+			</if>
+			<if test="orgFlag == 2">
+				and exists
+				(
+				   select 1 from tb_fndwrr tbf where 
+				   tbf.org2_code = #{org2Code,jdbcType=VARCHAR} 
+				   and (
+				   	    tbf.duty_code = tc.create_dept or 
+				   		tbf.duty_code = tc.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept) or 
+				   	    tbf.duty_code = NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept)
+				   )
+				)
+			</if>
+			<if test="orgFlag == 3">
+				and (tc.create_dept      = #{dutyCode,jdbcType=VARCHAR} or
+				 tc.pay_duty_code    = #{dutyCode,jdbcType=VARCHAR} or
+				 tcd.fee_dept         = #{dutyCode,jdbcType=VARCHAR} or
+				 tac.matr_buy_dept    = #{dutyCode,jdbcType=VARCHAR} or
+				 tac.matr_audit_dept  = #{dutyCode,jdbcType=VARCHAR} or
+				 NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept)   = #{dutyCode,jdbcType=VARCHAR} or
+				 NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept) = #{dutyCode,jdbcType=VARCHAR} 
+				)
+			</if>
+			
+			<if test="org1CodeSearch != null and '' != org1CodeSearch">
+				AND TC.ORG1_CODE = #{org1CodeSearch ,jdbcType=VARCHAR}
+			</if>
+			<if test="org1Name != null and '' != org1Name">
+				AND TFRR.ORG1_NAME LIKE '%' || #{org1Name ,jdbcType=VARCHAR} || '%'  
+			</if>
+			<if test="cntNum != null and '' != cntNum">
+				AND t.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%'  
+			</if>
+			<if test="invoiceId != null and '' != invoiceId">
+				AND t.INVOICE_ID LIKE '%' || #{invoiceId ,jdbcType=VARCHAR} || '%'   
+			</if>
+			<if test="payId != null and '' != payId">
+				AND t.PAY_ID LIKE '%' || #{payId ,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="invoiceAmt != null and '' != invoiceAmt">
+				AND t.INVOICE_AMT = #{invoiceAmt ,jdbcType=VARCHAR}
+			</if>
+			<if test="isDealed != null and '' != isDealed">
+				AND t.IS_DEALED = #{isDealed ,jdbcType=VARCHAR}
+			</if>
+			</where>
+			ORDER BY t.INST_DATE,t.INST_TIME DESC
+	</select>
+	
+	<update id="deal" parameterType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean" >
+		update TID_AP_INVOICE_ORDER_ERROR
+		set IS_DEALED = 'Y',
+			DEAL_USER = #{dealUser ,jdbcType=VARCHAR},
+			DEAL_DATE = to_char(sysdate,'YYYY-MM-DD'),
+			DEAL_TIME = to_char(sysdate,'HH24:MI:SS')
+	 	where BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+	 	and SEQ_NO = #{seqNo ,jdbcType=VARCHAR}
+	</update>
+	
+	
+	
+	
+	
+	<!--根据合同号查询合同信息-->
+	<select id="constractInfo" parameterType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean" 
+			resultType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean">
+		SELECT 
+			CNT.CNT_NUM,
+			CNT.NORMARL_TOTAL_AMT,
+			CNT.ADVANCE_TOTAL_AMT,
+			CNT.FREEZE_TOTAL_AMT,
+			CNT.SUSPENSE_TOTAL_AMT,
+			CNT.CNT_AMT,
+			CNT.CNT_ALL_AMT,
+			CNT.ZB_AMT,
+			CNT.PROVIDER_CODE,
+			CNT.PROVIDER_NAME,
+			CNT.PROVIDER_TYPE,
+			CNT.PAY_MODE,
+			CNT.PROV_ACT_NO,
+			CNT.PROV_ACT_CURR,
+			CNT.BANK_NAME,
+			SEL.PARAM_NAME AS CNT_TYPE_NAME,
+			CNT.IS_ORDER
+		FROM TD_CNT CNT
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CNT_TYPE' AND SEL.PARAM_VALUE = CNT.CNT_TYPE
+		WHERE CNT.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询付款信息（正常或预付款）-->
+	<select id="queryPayInfo" parameterType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean" 
+			resultType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean">
+		SELECT 
+			T.*,
+			TIP.ID,
+			TIP.ICMS_PKUUID
+		FROM ${table} T
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  T.PAY_ID=TIP.ID
+		WHERE T.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND T.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		ORDER BY T.PAY_ID
+	</select>
+	
+	<!--根据合同号查预付款核销信息-->
+	<select id="queryPayAdvanceCancel" parameterType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean" 
+			resultType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean">
+		  SELECT 
+		     TPC.ADVANCE_PAY_ID,
+		     PRO.PAY_AMT,
+		     (
+		     	SELECT NVL(SUM(TPC.CANCEL_AMT),0)
+				FROM TD_PAY_ADVANCE_CANCEL TPC
+				LEFT JOIN TD_PAY_ADVANCE PRO
+				ON PRO.PAY_ID         = TPC.ADVANCE_PAY_ID
+				WHERE PRO.CNT_NUM     = #{cntNum ,jdbcType=VARCHAR}
+				AND PRO.DATA_FLAG = 'F4'
+	            AND TPC.DATA_FLAG IN('00','08','10','12')
+			 ) AS CANCEL_AMT_TOTAL,
+		     SUM(DECODE(TPC.NORMAL_PAY_ID,#{payId ,jdbcType=VARCHAR},TPC.CANCEL_AMT,0)) AS CANCEL_AMT
+		  FROM TD_PAY_ADVANCE_CANCEL TPC
+		  LEFT JOIN TD_PAY_ADVANCE PRO ON PRO.PAY_ID = TPC.ADVANCE_PAY_ID
+		  WHERE PRO.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		  AND TPC.NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR}
+		  AND PRO.DATA_FLAG = 'F4'
+	      AND TPC.DATA_FLAG IN('00','08','10','12')
+		  GROUP BY TPC.ADVANCE_PAY_ID,PRO.PAY_AMT
+	</select>
+	
+	<!--查询预付款或正常付款合同采购设备信息-->
+	<select id="queryDevicesById" parameterType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean" 
+			resultType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean">
+		SELECT 
+		   TMT.CGL_CODE,
+		   TP.PROJ_NAME,
+		   TMT.MATR_NAME,
+		   TCD.DEVICE_MODEL_NAME,
+		   TCD.EXEC_AMT,
+		   TCD.PAYED_AMT,
+		   TCD.FREEZE_AMT - NVL(T.TOTAL_AMT,0) AS FREEZE_AMT,
+		   TCD.SUB_ID,
+		   TCD.MATR_CODE,
+		   TCD.FEE_DEPT,
+		   TCD.REFERENCE,
+		   TCD.SPECIAL,
+		   TPD.SUB_INVOICE_AMT,
+		   TPD.IVROW_MEMO
+		FROM TD_CNT TC
+		LEFT JOIN TD_CNT_DEVICE TCD  ON TC.CNT_NUM = TCD.CNT_NUM 
+		LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+		LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID = TCD.PROJ_ID
+		LEFT JOIN TD_PAY_DEVICE TPD ON TPD.CNT_NUM = TCD.CNT_NUM AND TPD.SUB_ID = TCD.SUB_ID
+		LEFT JOIN  (SELECT TPD.SUB_ID,SUM(TPD.SUB_INVOICE_AMT) AS TOTAL_AMT
+            FROM TD_PAY_DEVICE TPD 
+            LEFT JOIN TD_CNT_DEVICE TCD ON TPD.CNT_NUM = TCD.CNT_NUM AND TPD.SUB_ID = TCD.SUB_ID
+            WHERE TPD.PAY_ID = #{payId ,jdbcType=VARCHAR}
+            AND TPD.CNT_NUM  = #{cntNum ,jdbcType=VARCHAR}
+            GROUP BY TPD.SUB_ID
+        )T ON TPD.SUB_ID = T.SUB_ID
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND TCD.EXEC_AMT != TCD.PAYED_AMT
+		AND TCD.DATA_FLAG = '99'
+		AND TPD.PAY_ID =#{payId ,jdbcType=VARCHAR}
+		AND TPD.PAY_TYPE =#{payType ,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getOrgList" resultType="com.forms.prms.web.amortization.payErrorData.domain.PayErrorDataBean">
+		select distinct org1_code,org1_code || ' ' || org1_name as org1_name from tb_fndwrr order by org1_code
+	</select>
+</mapper>

@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<taglib xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="2.0" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-jsptaglibrary_2_0.xsd">
+  <description><![CDATA["Platform tag definition."]]></description>
+  <display-name>"Platform Tags"</display-name>
+  <tlib-version>1.0</tlib-version>
+  <short-name>p</short-name>
+  <uri>/platform-tags</uri>
+  
+  <tag>
+    <description><![CDATA[Page tag]]></description>
+    <name>page</name>
+    <tag-class>com.forms.platform.web.tag.page.PageTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the implement class of the pageRenderer]]></description>
+      <name>implClass</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the implement class of the pageRenderer]]></description>
+      <name>pageKey</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Button tag]]></description>
+    <name>button</name>
+    <tag-class>com.forms.platform.web.tag.ButtonTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[FuncId attach to the button]]></description>
+      <name>funcId</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Link type, default is button]]></description>
+      <name>linkType</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Button type, default is submit]]></description>
+      <name>type</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Click event of the button]]></description>
+      <name>onclick</name>
+      <required>false</required>
+      <rtexprvalue>true</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Display value of the button]]></description>
+      <name>value</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Class value of the button]]></description>
+      <name>className</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[title of the button or alink]]></description>
+      <name>title</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Other html attributes of the button]]></description>
+      <name>other</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Locale tag]]></description>
+    <name>locale</name>
+    <tag-class>com.forms.platform.web.tag.LocaleTag</tag-class>
+    <body-content>JSP</body-content>
+    <attribute>
+      <description><![CDATA[Submit action of this tag, default is 'personality/changeLocale.do']]></description>
+      <name>action</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Label key of this tag, default is 'label.locale']]></description>
+      <name>label</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Css class name]]></description>
+      <name>className</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Locale option tag]]></description>
+    <name>localeOpt</name>
+    <tag-class>com.forms.platform.web.tag.LocaleOptionTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the label key of this tag]]></description>
+      <name>label</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the value of this tag]]></description>
+      <name>value</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Layout tag]]></description>
+    <name>layout</name>
+    <tag-class>com.forms.platform.web.tag.LayoutTag</tag-class>
+    <body-content>JSP</body-content>
+    <attribute>
+      <description><![CDATA[Submit action of this tag, default is 'personality/changeLayout.do']]></description>
+      <name>action</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Label key of this tag, default is 'label.layout']]></description>
+      <name>label</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Css class name]]></description>
+      <name>className</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Layout option tag]]></description>
+    <name>layoutOpt</name>
+    <tag-class>com.forms.platform.web.tag.LayoutOptionTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the label key of this tag]]></description>
+      <name>label</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the value of this tag]]></description>
+      <name>value</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Theme tag]]></description>
+    <name>theme</name>
+    <tag-class>com.forms.platform.web.tag.ThemeTag</tag-class>
+    <body-content>JSP</body-content>
+    <attribute>
+      <description><![CDATA[Submit action of this tag, default is 'personality/changeLayout.do']]></description>
+      <name>action</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Label key of this tag, default is 'label.layout']]></description>
+      <name>label</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Css class name]]></description>
+      <name>className</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Theme option tag]]></description>
+    <name>themeOpt</name>
+    <tag-class>com.forms.platform.web.tag.ThemeOptionTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the label key of this tag]]></description>
+      <name>label</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the value of this tag]]></description>
+      <name>value</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Message tag]]></description>
+    <name>message</name>
+    <tag-class>com.forms.platform.web.tag.MessageTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the css class of this tag]]></description>
+      <name>className</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the css class of info message]]></description>
+      <name>infoCls</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the css class of warning message]]></description>
+      <name>warningCls</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+    <attribute>
+      <description><![CDATA[Set the css class of error message]]></description>
+      <name>errorCls</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Exception tag]]></description>
+    <name>exception</name>
+    <tag-class>com.forms.platform.web.tag.ExceptionTag</tag-class>
+    <body-content>empty</body-content>
+  </tag>
+  
+  <tag>
+    <description><![CDATA[Navigator tag]]></description>
+    <name>navigator</name>
+    <tag-class>com.forms.platform.web.tag.NavigatorTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the css class of this tag]]></description>
+      <name>className</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+   </tag>
+   
+   <tag>
+    <description><![CDATA[Return link tag]]></description>
+    <name>returnLink</name>
+    <tag-class>com.forms.platform.web.tag.ReturnLinkTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the button type of this tag]]></description>
+      <name>type</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+   </tag>
+   
+   <tag>
+    <description><![CDATA[Duplicate submit token tag]]></description>
+    <name>token</name>
+    <tag-class>com.forms.platform.web.tag.TokenTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the token name]]></description>
+      <name>name</name>
+      <required>false</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+   </tag>
+   
+   <tag>
+    <description><![CDATA[Save authorized funcId into pageContext]]></description>
+    <name>authFunc</name>
+    <tag-class>com.forms.platform.web.tag.AuthoriseTag</tag-class>
+    <body-content>empty</body-content>
+    <attribute>
+      <description><![CDATA[Set the funcId array that may want to visit]]></description>
+      <name>funcArray</name>
+      <required>true</required>
+      <rtexprvalue>false</rtexprvalue>
+    </attribute>
+   </tag>
+</taglib>

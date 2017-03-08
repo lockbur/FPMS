@@ -1,0 +1,1030 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.payAdd.dao.PayAddDAO">
+	<!--合同待付款信息列表查询-->
+	<select id="payList" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			CNT.CNT_NUM,
+			CNT.CNT_TYPE,
+			CNT.CNT_AMT,
+			CNT.CNT_ALL_AMT,
+			CNT.CREATE_DEPT,
+			CNT.CREATE_DATE,
+			CNT.DATA_FLAG,
+			CNT.SIGN_DATE,
+			CNT.IS_ORDER,
+			CNT.CNT_NAME,
+			CNT.PROVIDER_NAME,
+			CNT.PAY_MODE,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME,
+			SEL2.PARAM_NAME AS CNT_TYPE_NAME,
+			FO.DUTY_NAME
+		FROM TD_CNT CNT
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+		LEFT JOIN SYS_SELECT SEL2 ON SEL2.CATEGORY_ID = 'CNT_TYPE' AND SEL2.PARAM_VALUE = CNT.CNT_TYPE
+		LEFT JOIN TB_FNDWRR FO ON FO.DUTY_CODE  = CNT.CREATE_DEPT
+		WHERE CNT.PAY_DUTY_CODE = #{payDutyCode ,jdbcType=VARCHAR}
+		AND (CNT.DATA_FLAG = '20' OR CNT.DATA_FLAG = '32')
+		<!--AND (CNT.FEE_START_DATE IS NULL OR CNT.FEE_START_DATE &lt;= TO_CHAR(SYSDATE,'YYYY-MM-DD'))-->
+		<if test="cntNum != null and '' != cntNum">
+			AND CNT.CNT_NUM LIKE  '%' || #{cntNum ,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND CNT.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND CNT.SIGN_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND CNT.SIGN_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="createDept != null and '' != createDept">
+			AND CNT.CREATE_DEPT = #{createDept ,jdbcType=VARCHAR}
+		</if>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!--根据合同号查询合同信息-->
+	<select id="constractInfo" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			CNT.FEE_TYPE,
+			CNT.CNT_NUM,
+			CNT.NORMARL_TOTAL_AMT,
+			CNT.ADVANCE_TOTAL_AMT,
+			CNT.FREEZE_TOTAL_AMT,
+			CNT.SUSPENSE_TOTAL_AMT,
+			CNT.CNT_AMT,
+			CNT.CNT_All_AMT,
+			CNT.CNT_TAX_AMT,
+			CNT.ZB_AMT,
+			CNT.PROVIDER_CODE,
+			CNT.PROVIDER_NAME,
+			CNT.PROVIDER_TYPE,
+			CNT.PAY_MODE,
+			CNT.PROV_ACT_NO,
+			CNT.PROV_ACT_CURR,
+			CNT.PROVIDER_ADDR,
+			CNT.PROVIDER_ADDR_CODE,
+			CNT.ACT_NAME,
+			CNT.BANK_INFO,
+			CNT.BANK_CODE,
+			CNT.BANK_AREA,
+			CNT.ACT_TYPE,
+			CNT.BANK_NAME,
+			CNT.CNT_TYPE,
+			SEL.PARAM_NAME AS CNT_TYPE_NAME,
+			CNT.IS_ORDER,
+			CNT.DATA_FLAG,
+			CNT.IS_PREPAID_PROVISION,
+			CNT.FEE_START_DATE,
+			CNT.FEE_END_DATE,
+			TO_CHAR(SYSDATE,'yyyy-mm-dd') AS S_DATE,
+			CNT.ONCE_PREPAID,
+			CNT.STOP_DATE,
+			CNT.BGT_TYPE,
+			TO_DATE(CNT.FEE_START_DATE,'YYYY-MM-DD')- TO_DATE( to_char(sysdate,'YYYY-MM-DD'),'YYYY-MM-DD') as days
+		FROM TD_CNT CNT
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CNT_TYPE' AND SEL.PARAM_VALUE = CNT.CNT_TYPE
+		WHERE CNT.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--根据合同号查询正常付款信息-->
+	<select id="queryPayList" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			TP.PAY_ID,
+			TP.CNT_NUM,
+			TP.INVOICE_ID,
+			TP.PROVIDER_CODE,
+			TP.PROVIDER_NAME,
+			TP.PAY_MODE,
+			TP.INVOICE_AMT,
+			TP.ADVANCE_CANCEL_AMT,
+			TP.PAY_AMT,
+			TP.SUSPENSE_AMT,
+			TP.SUS_TOTAL_AMT,
+			TP.DATA_FLAG,
+			TP.IS_CREDIT_NOTE,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME
+		FROM TD_PAY TP
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'PAY_DATA_FLAG' AND SEL.PARAM_VALUE = TP.DATA_FLAG
+		WHERE TP.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND TP.IS_CREDIT_NOTE = #{isCreditNote ,jdbcType=VARCHAR}
+		ORDER BY TP.PAY_ID DESC
+	</select>
+	
+	<!--根据合同号查询预付款信息-->
+	<select id="queryPayAdvanceList" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			TPA.PAY_ID,
+			TPA.CNT_NUM,
+			TPA.INVOICE_ID,
+			TPA.PROVIDER_CODE,
+			TPA.PROVIDER_NAME,
+			TPA.PROVIDER_ADDR_CODE,
+			TPA.PROVIDER_ADDR,
+			TPA.PAY_MODE,
+			TPA.INVOICE_AMT,
+			TPA.PAY_AMT,
+			TPA.DATA_FLAG,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME
+		FROM TD_PAY_ADVANCE TPA
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'PAY_DATA_FLAG' AND SEL.PARAM_VALUE = TPA.DATA_FLAG
+		WHERE TPA.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		ORDER BY TPA.PAY_ID DESC
+	</select>
+	
+	<!--预付款新增保存或提交-->
+	<insert id="addPayAdvanceSaveOrSubimt" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		INSERT INTO TD_PAY_ADVANCE
+		(
+			PAY_ID,
+			CNT_NUM,
+			INVOICE_ID,
+			ATTACHMENT_NUM,
+			PROVIDER_CODE,
+			PROVIDER_TYPE,
+			PROV_ACT_NO,										
+			PROVIDER_NAME,
+			PROVIDER_ADDR,
+			PROVIDER_ADDR_CODE,
+			ACT_NAME,
+			BANK_INFO,
+			BANK_CODE,
+			BANK_AREA,
+			ACT_TYPE,
+			BANK_NAME,
+			PROV_ACT_CURR,
+			INVOICE_MEMO,
+			INVOICE_AMT,
+			PAY_AMT,
+			PAY_DATE,
+			DATA_FLAG,
+			DATA_FLAG_INVOICE,
+			DATA_FLAG_PAY,
+			INST_DUTY_CODE,
+			CNT_TYPE,
+			INST_USER,
+			INST_DATE,
+			INST_TIME,
+			PAY_MODE,
+			ATTACHMENT_TYPE
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			#{cntNum ,jdbcType=VARCHAR},
+			#{invoiceId ,jdbcType=VARCHAR},
+			#{attachmentNum ,jdbcType=NUMERIC},
+			#{providerCode ,jdbcType=VARCHAR},
+			#{providerType ,jdbcType=VARCHAR},
+			#{provActNo ,jdbcType=VARCHAR},
+			#{providerName,jdbcType=VARCHAR},	
+			#{providerAddr,jdbcType=VARCHAR},
+			#{providerAddrCode,jdbcType=VARCHAR},
+			#{actName ,jdbcType=VARCHAR},
+			#{bankInfo ,jdbcType=VARCHAR},	
+			#{bankCode ,jdbcType=VARCHAR},
+			#{bankArea ,jdbcType=VARCHAR},
+			#{actType ,jdbcType=VARCHAR},
+			#{bankName ,jdbcType=VARCHAR},
+			#{provActCurr ,jdbcType=VARCHAR},
+			#{invoiceMemo ,jdbcType=VARCHAR},
+			#{invoiceAmt ,jdbcType=NUMERIC},
+			#{invoiceAmt ,jdbcType=NUMERIC},
+			#{payDate ,jdbcType=VARCHAR},
+			#{dataFlag ,jdbcType=VARCHAR},
+			#{dataFlagInvoice ,jdbcType=VARCHAR},
+			#{dataFlagPay ,jdbcType=VARCHAR},
+			#{instDutyCode ,jdbcType=VARCHAR},
+			#{cntType ,jdbcType=VARCHAR},
+			#{instUser ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYYMMDD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+			#{payMode ,jdbcType=VARCHAR},
+			#{attachmentType ,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!--生成付款单号-->
+	<select id="createPayId" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean"  resultType = "string">
+		SELECT 
+			TF.OU_CODE || TO_CHAR(SYSDATE, 'YYYYMMDD') || #{payFlag ,jdbcType=VARCHAR} || RM_GET_COMMON_ID('PAYID')
+		FROM TD_CNT TC
+		LEFT JOIN TB_FNDWRR  TF ON TC.PAY_DUTY_CODE  = TF.DUTY_CODE
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--根据合同号查预付款核销信息-->
+	<select id="queryPayAdvanceCancel" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		  SELECT 
+	   		  TPA.PAY_ID,
+		      TPA.PAY_AMT,
+		      TPA.PROVIDER_CODE,
+		      TPA.PROVIDER_ADDR_CODE,
+		      T.CANCEL_AMT AS CANCEL_AMT
+		      FROM  TD_PAY_ADVANCE TPA
+	      JOIN (
+	          SELECT TPA.PAY_ID,NVL(SUM(TPC.CANCEL_AMT),0) AS CANCEL_AMT
+              FROM TD_PAY_ADVANCE TPA
+              LEFT JOIN TD_PAY_ADVANCE_CANCEL TPC ON TPA.PAY_ID = TPC.ADVANCE_PAY_ID AND TPC.DATA_FLAG IN('00','08','10','12')
+              WHERE TPA.CNT_NUM =#{cntNum ,jdbcType=VARCHAR}
+              AND TPA.DATA_FLAG_INVOICE = '2'  
+              GROUP BY TPA.PAY_ID
+	      ) T ON T.PAY_ID = TPA.PAY_ID
+	     ORDER BY T.PAY_ID DESC
+	</select>
+	
+	<!--查询预付款或正常付款合同采购设备信息（新增）-->
+	<select id="queryDevicesById" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+		   TMT.CGL_CODE,
+		   TP.PROJ_NAME,
+		   TMT.MATR_NAME,
+		   TCD.DEVICE_MODEL_NAME,
+		   NVL(TCD.EXEC_AMT,0) EXEC_AMT,
+		   NVL(TCD.PAYED_AMT,0) PAYED_AMT,
+		   NVL(TCD.FREEZE_AMT,0) FREEZE_AMT,
+		   NVL(DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,TCD.TAX_NAMT),0) TAX_AMT,
+		   NVL(TCD.PAYED_AMT_TAX,0) PAYED_AMT_TAX,
+		   NVL(TCD.FREEZE_AMT_TAX,0) FREEZE_AMT_TAX,
+		   NVL(TCD.EXEC_AMT,0) + NVL(DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,TCD.TAX_NAMT),0) TOTAL_DEVICE_AMT,
+		   NVL(TCD.PAYED_AMT,0) + NVL(TCD.PAYED_AMT_TAX,0) TOTAL_PAYED_AMT,
+		   NVL(TCD.FREEZE_AMT,0) + NVL(TCD.FREEZE_AMT_TAX,0) TOTAL_FREEZE_AMT,
+		   TCD.TAX_CODE,
+		   TCD.TAX_RATE,
+		   TCD.SUB_ID,
+		   TCD.MATR_CODE,
+		   TCD.FEE_DEPT,
+		   TF.DUTY_NAME AS FEE_DEPT_NAME,
+		   TCD.REFERENCE,
+		   TCD.SPECIAL,
+		   TAX.HAS_TAXROW
+		FROM TD_CNT TC
+		inner JOIN TD_CNT_DEVICE TCD  ON TC.CNT_NUM = TCD.CNT_NUM 
+		LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+		LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TCD.FEE_DEPT
+		LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID = TCD.PROJ_ID
+		LEFT JOIN TB_TAX_CODE TAX ON TCD.TAX_CODE = TAX.TAX_CODE 
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		order by tcd.sub_id
+	</select>
+	
+	<!--查询预付款或正常付款合同采购设备信息（明细）-->
+	<select id="queryDeviceDetailsById" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+		   TMT.CGL_CODE,
+		   TP.PROJ_NAME,
+		   TMT.MATR_NAME,
+		   TCD.DEVICE_MODEL_NAME,
+		   TCD.TAX_CODE,
+		   NVL(TCD.EXEC_AMT,0) EXEC_AMT,
+		   NVL(TCD.PAYED_AMT,0) PAYED_AMT,
+		   NVL(TCD.FREEZE_AMT,0) FREEZE_AMT,
+		   NVL(DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,TCD.TAX_NAMT),0) TAX_AMT,
+		   NVL(TCD.PAYED_AMT_TAX,0) PAYED_AMT_TAX,
+		   NVL(TCD.FREEZE_AMT_TAX,0) FREEZE_AMT_TAX,
+		   TCD.SUB_ID,
+		   TCD.MATR_CODE,
+		   TCD.FEE_DEPT,
+		   TF.DUTY_NAME AS FEE_DEPT_NAME,
+		   TCD.REFERENCE,
+		   TCD.SPECIAL,
+		   TPD.SUB_INVOICE_AMT,
+		   TPD.ADD_TAX_AMT,
+		   TPD.IVROW_MEMO
+		FROM TD_CNT TC
+		inner JOIN TD_CNT_DEVICE TCD  ON TC.CNT_NUM = TCD.CNT_NUM 
+		LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+		LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID = TCD.PROJ_ID
+		LEFT JOIN TD_PAY_DEVICE TPD ON TPD.CNT_NUM = TCD.CNT_NUM AND TPD.SUB_ID = TCD.SUB_ID
+		LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TCD.FEE_DEPT
+		WHERE TC.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND TPD.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND TPD.PAY_TYPE =#{payType ,jdbcType=VARCHAR}
+		AND TPD.SUB_INVOICE_AMT != 0
+		order by tcd.sub_id
+	</select>
+	
+	<!--添加正常付款信息到TD_PAY表-->
+	<insert id="addPayInfo" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" >
+		INSERT INTO TD_PAY
+		(
+			PAY_ID,
+			CNT_NUM,
+			INVOICE_ID,
+			ATTACHMENT_NUM,
+			PROVIDER_CODE,
+			PROVIDER_TYPE,
+			PROV_ACT_NO,										
+			PROVIDER_NAME,
+			PROVIDER_ADDR,
+			PROVIDER_ADDR_CODE,
+			ACT_NAME,
+			BANK_INFO,
+			BANK_CODE,
+			BANK_AREA,
+			ACT_TYPE,
+			BANK_NAME,
+			PROV_ACT_CURR,
+			INVOICE_MEMO,
+			INVOICE_AMT,
+			ADVANCE_CANCEL_AMT,
+			PAY_AMT,
+			PAY_DATE,
+			SUSPENSE_AMT,
+			SUSPENSE_DATE,
+			SUSPENSE_NAME,
+			SUSPENSE_REASON,
+			SUSPENSE_PERIOD,
+			DATA_FLAG,
+			DATA_FLAG_INVOICE,
+			DATA_FLAG_PAY,
+			INST_DUTY_CODE,
+			CNT_TYPE,
+			INST_USER,
+			INST_DATE,
+			INST_TIME,
+			PAY_MODE,
+			ATTACHMENT_TYPE,
+			IS_CREDIT_NOTE,
+			INVOICE_AMT_TAX,
+			INVOICE_AMT_NOTAX,
+			INVOICE_ID_BLUE,
+			INVOICE_AMT_LEFT
+		)
+		VALUES 
+		(
+			#{payId ,jdbcType=VARCHAR},
+			#{cntNum ,jdbcType=VARCHAR},
+			#{invoiceId ,jdbcType=VARCHAR},
+			#{attachmentNum ,jdbcType=NUMERIC},
+			#{providerCode ,jdbcType=VARCHAR},
+			#{providerType ,jdbcType=VARCHAR},
+			#{provActNo ,jdbcType=VARCHAR},
+			#{providerName,jdbcType=VARCHAR},	
+			#{providerAddr,jdbcType=VARCHAR},
+			#{providerAddrCode,jdbcType=VARCHAR},
+			#{actName ,jdbcType=VARCHAR},
+			#{bankInfo ,jdbcType=VARCHAR},	
+			#{bankCode ,jdbcType=VARCHAR},
+			#{bankArea ,jdbcType=VARCHAR},
+			#{actType ,jdbcType=VARCHAR},
+			#{bankName ,jdbcType=VARCHAR},
+			#{provActCurr ,jdbcType=VARCHAR},
+			#{invoiceMemo ,jdbcType=VARCHAR},
+			#{invoiceAmt ,jdbcType=NUMERIC},
+			#{advanceCancelAmt ,jdbcType=NUMERIC},
+			#{payAmt ,jdbcType=NUMERIC},
+			#{payDate ,jdbcType=VARCHAR},
+			#{suspenseAmt ,jdbcType=NUMERIC},
+			#{suspenseDate ,jdbcType=VARCHAR},
+			#{suspenseName ,jdbcType=VARCHAR},
+			#{suspenseReason ,jdbcType=VARCHAR},
+			#{suspensePeriod ,jdbcType=NUMERIC},
+			#{dataFlag ,jdbcType=VARCHAR},
+			#{dataFlagInvoice ,jdbcType=VARCHAR},
+			#{dataFlagPay ,jdbcType=VARCHAR},
+			#{instDutyCode ,jdbcType=VARCHAR},
+			#{cntType ,jdbcType=VARCHAR},
+			#{instUser ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYYMMDD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+			#{payMode ,jdbcType=VARCHAR},
+			#{attachmentType ,jdbcType=VARCHAR},
+			#{isCreditNote ,jdbcType=VARCHAR},
+			#{invoiceAmtTax ,jdbcType=NUMERIC},
+			#{invoiceAmtNotax ,jdbcType=NUMERIC},
+			#{invoiceIdBlue ,jdbcType=VARCHAR},
+			#{invoiceAmt ,jdbcType=NUMERIC}
+		)
+	</insert>
+	
+	<!--添加设备付款信息 to TD_PAY_DEVICE-->
+	<insert id="addPayDevice" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		INSERT INTO TD_PAY_DEVICE
+		(
+			PAY_ID,
+			PAY_TYPE,
+			SUB_ID,
+			CNT_NUM,
+			SUB_INVOICE_AMT,
+			IVROW_MEMO,
+			ADD_TAX_AMT,
+			INVOICE_ID,
+			SUB_INVOICE_AMT_LEFT,
+			ADD_TAX_AMT_LEFT,
+			ADD_TAX_NAMT,
+			ADD_TAX_YAMT
+		)
+		SELECT 
+			#{payId ,jdbcType=VARCHAR} AS PAY_ID,
+			#{payFlag ,jdbcType=VARCHAR} AS PAY_TYPE,
+			SUB_ID,
+			CNT_NUM,
+			#{subInvoiceAmt ,jdbcType=NUMERIC} AS SUB_INVOICE_AMT,
+			#{ivrowMemo ,jdbcType=VARCHAR} AS IVROW_MEMO,
+			#{addTaxAmt ,jdbcType=NUMERIC} AS ADD_TAX_AMT,
+			#{invoiceId ,jdbcType=VARCHAR} AS INVOICE_ID,
+			#{subInvoiceAmt ,jdbcType=NUMERIC} AS SUB_INVOICE_AMT_LEFT,
+			#{addTaxAmt ,jdbcType=NUMERIC} AS ADD_TAX_AMT_LEFT,
+			decode(DEDUCT_FLAG,'Y',0,#{addTaxAmt ,jdbcType=NUMERIC}) AS ADD_TAX_NAMT,
+			decode(DEDUCT_FLAG,'Y',#{addTaxAmt ,jdbcType=NUMERIC},0) AS ADD_TAX_YAMT
+			
+		FROM TD_CNT_DEVICE
+		WHERE CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND　SUB_ID = #{subId ,jdbcType=NUMERIC}
+	</insert>
+	
+	<!--预付款核销信息添加-->
+	<insert id="addPayAdvCancel" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		INSERT INTO TD_PAY_ADVANCE_CANCEL
+		(
+			NORMAL_PAY_ID,
+			ADVANCE_PAY_ID,
+			CANCEL_AMT,
+			INVOICE_ID
+		)
+		VALUES
+		(
+			#{normalPayId ,jdbcType=VARCHAR},
+			#{advancePayId ,jdbcType=VARCHAR},
+			#{cancelAmt ,jdbcType=NUMERIC},
+			#{invoiceId ,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!--更新当前合同的冻结金额-->
+	<update id="updateFreezeTotalAmt" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		UPDATE TD_CNT
+		SET FREEZE_TOTAL_AMT = NVL(FREEZE_TOTAL_AMT,0) + #{freezeTotalAmt ,jdbcType=NUMERIC}
+		WHERE CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND DATA_FLAG = #{dataFlag ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--根据预付款单号查预付款核销明细-->
+	<select id="queryPayAdvCancelDetail" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			TPA.*,
+			SEL1.PARAM_NAME AS PAY_DATA_FLAG_NAME,
+			SEL2.PARAM_NAME AS DATA_FLAG_INVOICE_NAME,
+			SEL3.PARAM_NAME AS DATA_FLAG_PAY_NAME,
+			TF.DUTY_NAME AS INST_DUTY_NAME
+		FROM TD_PAY_ADVANCE TPA
+		LEFT JOIN SYS_SELECT SEL1 ON SEL1.CATEGORY_ID = 'PAY_DATA_FLAG' AND SEL1.PARAM_VALUE = TPA.DATA_FLAG
+		LEFT JOIN SYS_SELECT SEL2 ON SEL2.CATEGORY_ID = 'DATA_FLAG_INVOICE' AND SEL2.PARAM_VALUE = TPA.DATA_FLAG_INVOICE
+		LEFT JOIN SYS_SELECT SEL3 ON SEL3.CATEGORY_ID = 'DATA_FLAG_PAY' AND SEL3.PARAM_VALUE = TPA.DATA_FLAG_PAY
+		LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TPA.INST_DUTY_CODE
+		WHERE TPA.PAY_ID = #{advancePayId ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询付款信息（正常或预付款）-->
+	<select id="queryPayInfo" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			T.*,
+			TIP.ID,
+			TIP.ICMS_PKUUID
+		FROM ${table} T
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  T.PAY_ID=TIP.ID
+		WHERE T.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND T.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询正在结清的总金额-->
+	<select id="queryCleanAmtIng" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" resultType="string">
+		SELECT SUM(CLEAN_AMT) AS CLEAN_AMT_ING_TOTAL
+		FROM TD_PAY_CLEAN
+		WHERE NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR}
+		GROUP BY CLEAN_AMT
+	</select>
+	
+	<!--正常付款暂收结清处理信息提交-->
+	<insert id="paySuspenseDealSubmit" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		INSERT INTO TD_PAY_CLEAN
+		(
+			CLEAN_PAY_ID,
+			NORMAL_PAY_ID,
+			CLEAN_PROJECT,
+			CLEAN_AMT,
+			CLEAN_AMT_FMS,
+			CLEAN_MEMO,
+			CLEAN_REASON,
+			DATA_FLAG
+		)
+		VALUES
+		(
+			#{cleanPayId ,jdbcType=VARCHAR},
+			#{normalPayId ,jdbcType=VARCHAR},
+			#{cleanProject ,jdbcType=VARCHAR},
+			#{cleanAmt ,jdbcType=NUMERIC},
+			#{cleanAmtFms ,jdbcType=NUMERIC},
+			#{cleanMemo ,jdbcType=VARCHAR},
+			#{cleanReason ,jdbcType=VARCHAR},
+			#{dataFlag ,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!--查询已结清列表-->
+	<select id="queryPayCleanInfo" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			TPC.CLEAN_PAY_ID,
+			TPC.NORMAL_PAY_ID,
+			TPC.CLEAN_PROJECT,
+			TPC.CLEAN_AMT,
+			TPC.CLEAN_AMT_FMS,
+			TPC.CLEAN_MEMO,
+			TPC.CLEAN_REASON, 
+			TPC.DATA_FLAG,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME
+		FROM TD_PAY_CLEAN TPC
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CLEAN_DATA_FLAG' AND SEL.PARAM_VALUE = TPC.DATA_FLAG
+		WHERE TPC.NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR}
+		ORDER BY TPC.CLEAN_PAY_ID DESC
+	</select>
+	
+	<!--已结清明细查询-->
+	<select id="querySuspenseDetail" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			TPC.CLEAN_PAY_ID,
+			TPC.NORMAL_PAY_ID,
+			TPC.CLEAN_PROJECT,
+			TPC.CLEAN_AMT,
+			TPC.CLEAN_AMT_FMS,
+			TPC.CLEAN_MEMO,
+			TPC.CLEAN_REASON, 
+			TPC.DATA_FLAG,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME
+		FROM TD_PAY_CLEAN TPC
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'CLEAN_DATA_FLAG' AND SEL.PARAM_VALUE = TPC.DATA_FLAG
+		WHERE TPC.CLEAN_PAY_ID = #{cleanPayId ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--更新设备冻结金额-->
+	<update id="updateDevFreezeAmt" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		UPDATE TD_CNT_DEVICE
+		SET FREEZE_AMT = NVL(FREEZE_AMT,0) + #{freezeAmt ,jdbcType=NUMERIC},
+		FREEZE_AMT_TAX = NVL(FREEZE_AMT_TAX,0) + #{freezeAmtTax ,jdbcType=NUMERIC} 
+		WHERE CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND SUB_ID = #{subId ,jdbcType=NUMERIC}
+	</update>
+	
+	<!--查询附件类型对应的值(从SYS_SELECT表中)-->
+	<select id="queryAtType" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			PARAM_VALUE AS ATTACHMENT_TYPE,
+			PARAM_NAME AS ATTACHMENT_TYPE_NAME
+		FROM SYS_SELECT
+		WHERE CATEGORY_ID='ANNEX_TYPE'
+		ORDER BY PARAM_VALUE
+	</select>
+
+	
+	<!--生成发票号-->
+	<select id="createInvoiceId" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" resultType="string">
+		SELECT 'BOC'||#{org1Code ,jdbcType=VARCHAR}||RM_GET_COMMON_ID('PROJECT')
+		FROM dual
+	</select>
+
+	<select id="getPayReportData" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean"
+		parameterType="string">
+				select 
+				to_char(sysdate,'yyyy/mm/dd') as dateTime,
+				tp.invoice_id,
+				tp.pay_id,
+			    TP.invoice_amt,
+			    TP.pay_amt,
+			    tp.cnt_num,
+			    tp.provider_name,
+			    tp.bank_info,
+			    tp.prov_act_no,
+				tp.ATTACHMENT_NUM,
+				tp.is_credit_note,
+				tp.INVOICE_MEMO,
+				tc.IS_ORDER,
+			    decode(substr(tp.pay_id,-6,1),'1',tp.suspense_amt,0) AS suspense_amt,
+			    (select replace(to_char(WM_CONCAT(m.param_name)),',','/r/n')
+			      from
+			      (  select 
+			            ss.param_name
+			         from table(strsplit((select ATTACHMENT_TYPE from TD_PAY where pay_id = #{payId ,jdbcType=VARCHAR}),',')) t
+			         left join sys_select ss on ss.category_id = 'ANNEX_TYPE' and ss.param_value = 
+					 t.column_value
+			      ) m
+			    ) as attachment_type_name
+			from TD_PAY tp
+			left join td_cnt tc on tc.cnt_num = tp.cnt_num
+			where pay_id = #{payId ,jdbcType=VARCHAR}
+	</select>
+	<select id="getAdvPayReportData" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean"
+		parameterType="string">
+				select 
+				to_char(sysdate,'yyyy/mm/dd') as dateTime,
+				tp.invoice_id,
+				tp.pay_id,
+			    tp.pay_amt,
+			    tp.cnt_num,
+			    tp.provider_name,
+			    tp.bank_info,
+			    tp.prov_act_no,
+				tp.ATTACHMENT_NUM,
+				tp.invoice_memo,
+			    (select replace(to_char(WM_CONCAT(m.param_name)),',','/r/n')
+			      from
+			      (  select 
+			            ss.param_name
+			         from table(strsplit((select ATTACHMENT_TYPE from TD_PAY_ADVANCE where pay_id = #{payId ,jdbcType=VARCHAR} ),',')) t
+			         left join sys_select ss on ss.category_id = 'ANNEX_TYPE' and ss.param_value = 
+					 t.column_value
+			      ) m
+			    ) as attachment_type_name
+			from TD_PAY_ADVANCE tp
+			where pay_id =  #{payId ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--付款添加到log表中-->
+	<insert id = "addPayLog" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		INSERT INTO TD_PAY_AUDIT_LOG
+		(
+			PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_PAY_AUDIT_LOG WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}),
+			#{dataFlag ,jdbcType=VARCHAR},
+			#{operMemo ,jdbcType=VARCHAR},
+			#{instOper ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+	
+	<!--查询审批历史记录-->
+	<select id="queryHis" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			TPAL.PAY_ID,
+			TPAL.INNER_NO,
+			TPAL.DATA_FLAG,
+			SEL.PARAM_NAME AS DATA_FLAG_NAME,
+			TPAL.OPER_MEMO,
+			TPAL.INST_OPER,
+			TPAL.INST_DATE,
+			TPAL.INST_TIME
+		FROM TD_PAY_AUDIT_LOG tpal
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'PAY_DATA_FLAG' AND SEL.PARAM_VALUE = TPAL.DATA_FLAG
+		WHERE TPAL.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		ORDER BY TPAL.INNER_NO  DESC
+	</select>
+	
+	<!--根据合同号查询TI_TRADE_BACKWASH是否有数据-->
+	<select id="getIdByCntNum" parameterType ="string" resultType="string">
+		SELECT ID
+		FROM TI_TRADE_BACKWASH
+		WHERE CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND DATA_FLAG = '0'
+	</select>
+	
+	<!--校验某用户是否可以新增扫描批次-->
+	<select id="ajaxCheckCanAddScanBatch" parameterType ="string" resultType="string">
+		SELECT count(1) as flag
+		  FROM TD_BATCH_ICMS_HEADER a
+		 where a.inst_oper = #{userId ,jdbcType=VARCHAR}
+		   and a.data_flag in ('00', '01')
+	</select>
+	
+	<!--预算冻结的ajax校验-->
+	<select id="checkBgtFrozen" statementType="CALLABLE" parameterType ="java.util.Map">
+		CALL PRC_BGTFROZEN_WHEN_ADDPAY(  
+			#{payId,jdbcType=VARCHAR,mode=IN},  
+			#{flag,jdbcType=VARCHAR,mode=OUT},
+			#{msgInfo,jdbcType=VARCHAR,mode=OUT}
+		)
+	</select>
+	
+	<!--查询付款冻结失败的信息-->
+	<select id="queryBgtFrozenFailMsg"  parameterType ="com.forms.prms.web.pay.payAdd.domain.PayAddBgtBean" 
+		resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBgtBean">
+		SELECT 
+			BGT.*,
+			TMT.MATR_NAME,
+			TMN.MONT_NAME,
+			TR.REFERENCE_NAME,
+			TS.SPECIAL_NAME,
+			FO.DUTY_NAME AS FEE_DEPT_NAME
+		FROM ERP_BUDGET_SUM_CNT_TEMP BGT
+		LEFT JOIN TB_MATR_TYPE TMT ON BGT.MATR_CODE = TMT.MATR_CODE
+		LEFT JOIN TB_MONT_NAME TMN ON BGT.MONT_CODE_NEW = TMN.MONT_CODE
+		LEFT JOIN TB_FNDWRR FO ON FO.DUTY_CODE  = BGT.FEE_DEPT
+		LEFT JOIN TB_REFERENCE  TR ON TR.REFERENCE_ID = BGT.REFERENCE
+		LEFT JOIN TB_SPECIAL TS  ON TS.SPECIAL_ID = BGT.SPECIAL
+		WHERE BGT.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		AND BGT.MEMO IS NOT NULL
+	</select>
+	
+	<!--更新付款单的状态-->
+	<update id="changePayStatus" parameterType ="com.forms.prms.web.pay.payAdd.domain.PayAddBgtBean">
+		UPDATE TD_PAY
+		SET DATA_FLAG = UPPER('B0')
+		WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</update>
+	
+	<select id="checkBgtOverdraw" parameterType ="com.forms.prms.web.pay.payAdd.domain.PayAddBean"
+			resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT TCD.*,BGT.BGT_OVERDRAW BGT_OVERDRAW 
+		FROM TD_CNT_DEVICE TCD
+		INNER JOIN ERP_BUDGET_SUM_CNT BGT 
+		ON BGT.CNT_NUM = TCD.CNT_NUM  AND BGT.FEE_DEPT = TCD.FEE_DEPT 
+		AND BGT.MONT_CODE = TCD.MONT_CODE AND BGT.MATR_CODE = TCD.MATR_CODE
+		AND BGT.REFERENCE = TCD.REFERENCE AND BGT.SPECIAL = TCD.SPECIAL
+		AND BGT.BGT_YEAR = TO_CHAR(SYSDATE,'YYYY')
+		WHERE TCD.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		AND TCD.SUB_ID = #{subId ,jdbcType=NUMERIC}
+	</select>
+	<!--查询预付款核销合同采购设备付款信息(订单类)-->
+	<select id="queryCancelDevices" parameterType ="string"
+			resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+			tpd.*
+		FROM  TD_PAY_DEVICE tpd 
+		left join td_cnt  tc on tc.cnt_num = tpd.cnt_num 
+		WHERE tc.is_order = '0'
+		and tpd.PAY_TYPE = '0'
+		and tpd.SUB_INVOICE_AMT >0
+		and tpd.PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--PO单号、PO行号、数量（订单类）-->
+	<select id="getCancelData" parameterType ="string"
+			resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT 
+		    TCD.PO_NUMBER,TCD.PO_LINENO,T.TOTAL/TCD.EXEC_PRICE AS EXEC_NUM,T.TOTAL AS EXEC_AMT,
+		    decode(tmt.is_gdzc, 'Y', '是', '否') as is_gdzc, tcd.tax_code,tcd.MATR_CODE,tmt.MATR_NAME
+		FROM td_cnt_device tcd
+		JOIN (
+		    SELECT tpd.cnt_num,tpd.sub_id,sum(tpd.SUB_INVOICE_AMT) total
+		    FROM TD_PAY_DEVICE tpd
+		    LEFT JOIN td_cnt  tc ON tc.cnt_num = tpd.cnt_num 
+		    WHERE tc.is_order = '0' 
+		    AND tpd.PAY_ID = #{payId ,jdbcType=VARCHAR}
+		    AND tpd.SUB_INVOICE_AMT != 0
+		    GROUP BY tpd.cnt_num,tpd.sub_id,tpd.SUB_INVOICE_AMT
+		) t on tcd.cnt_num = t.cnt_num and tcd.sub_id = t.sub_id
+		left join tb_matr_type tmt on tcd.matr_code = tmt.matr_code
+	</select>
+	
+	<!--预付款单号-->
+	<select id="getAdvCancelPayIds" parameterType ="string" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		<!--SELECT to_char(WM_CONCAT(t.advance_pay_id))
+		FROM td_pay_advance_cancel t
+		where t.normal_pay_id = #{payId ,jdbcType=VARCHAR}-->
+		SELECT t.advance_pay_id,t.CANCEL_AMT,t.INVOICE_ID
+		FROM td_pay_advance_cancel t
+		where t.normal_pay_id = #{payId ,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="ajaxCheckInvoiceId" parameterType ="string" resultType="string">
+		select a.invoice_Id
+		from (
+		select invoice_Id from td_pay t
+		where t.invoice_Id = #{invoiceId ,jdbcType=VARCHAR}
+		<!--如果不为空，则为修改，则需要校验付款单号-->
+		<if test="modifyFlag != null and '' != modifyFlag">
+		and t.pay_id != #{payId ,jdbcType=VARCHAR}
+		</if>
+		union 
+		select invoice_Id from td_pay_advance t 
+		where t.invoice_Id = #{invoiceId ,jdbcType=VARCHAR}
+		<if test="modifyFlag != null and '' != modifyFlag">
+		and t.pay_id != #{payId ,jdbcType=VARCHAR}
+		</if>
+		) a
+	</select>
+	
+	<select id="checkOuprovider" parameterType ="string" resultType="string">
+		select decode(count(1), 0, 'Y','N') as need_reselect 
+			from tb_provider a
+			where a.provider_code = #{providerCode ,jdbcType=VARCHAR} 
+			and a.ou_code = #{ouCode ,jdbcType=VARCHAR}
+			and a.provider_addr_code = #{providerAddrCode ,jdbcType=VARCHAR}
+
+	</select>
+	
+	<!--查看可冲销的蓝字发票列表-->
+	<select id="getBlueInvoiceList" parameterType ="com.forms.prms.web.pay.payAdd.domain.PayAddBean" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT A.INVOICE_ID           AS INVOICE_ID,
+               A.INVOICE_AMT          AS INVOICE_AMT,
+               A.INVOICE_AMT_NOTAX    AS INVOICE_AMT_NOTAX,
+               A.INVOICE_AMT_TAX      AS INVOICE_AMT_TAX,
+               A.INVOICE_AMT_LEFT     AS INVOICE_AMT_LEFT,
+               C.PARAM_NAME           AS DATA_FLAG_INVOICE_NAME        
+          FROM TD_PAY A, SYS_SELECT C
+         WHERE C.CATEGORY_ID = 'DATA_FLAG_INVOICE'
+           AND A.DATA_FLAG_INVOICE = C.PARAM_VALUE
+           AND A.DATA_FLAG_INVOICE = '2' 
+           AND A.INVOICE_AMT > 0 
+           AND A.IS_CREDIT_NOTE = '1'
+           AND A.INVOICE_AMT_LEFT > 0
+           AND A.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+         <if test="invoiceIdBlue != null and '' != invoiceIdBlue">
+			AND A.INVOICE_ID LIKE  '%' || #{invoiceIdBlue ,jdbcType=VARCHAR} || '%'
+		</if>
+	</select>
+	
+	<!--查看原蓝字发票信息-->
+	<select id="queryInvoiceBlue" parameterType ="string" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT A.CNT_NUM            AS CNT_NUM,
+               A.PAY_ID             AS PAY_ID,
+               A.INVOICE_ID         AS INVOICE_ID,
+               A.PAY_MODE           AS PAY_MODE,
+               A.INVOICE_AMT        AS INVOICE_AMT,
+               A.ADVANCE_CANCEL_AMT AS ADVANCE_CANCEL_AMT,
+               A.PAY_AMT            AS PAY_AMT,
+               A.SUSPENSE_AMT       AS SUSPENSE_AMT,
+               A.SUS_TOTAL_AMT      AS SUS_TOTAL_AMT,
+               C.PARAM_NAME         AS DATA_FLAG_INVOICE_NAME,
+               B.PARAM_NAME         AS DATA_FLAG_PAY_NAME,
+               A.INVOICE_AMT_NOTAX  AS INVOICE_AMT_NOTAX,
+               A.INVOICE_AMT_TAX    AS INVOICE_AMT_TAX,
+               A.INVOICE_AMT_LEFT   AS INVOICE_AMT_LEFT,
+               TIP.ICMS_PKUUID      AS ICMS_PKUUID     
+          FROM TD_PAY A
+          JOIN SYS_SELECT B ON A.DATA_FLAG_PAY = B.PARAM_VALUE
+          JOIN SYS_SELECT C ON A.DATA_FLAG_INVOICE = C.PARAM_VALUE
+     LEFT JOIN TI_ICMS_PKUUID TIP ON A.PAY_ID = TIP.ID
+         WHERE B.CATEGORY_ID       = 'DATA_FLAG_PAY'
+           AND C.CATEGORY_ID       = 'DATA_FLAG_INVOICE'
+           AND A.INVOICE_ID        = #{invoiceIdBlue ,jdbcType=VARCHAR}
+	</select>
+	
+	<!--查看原蓝字发票行设备信息-->
+	<select id="queryInvoiceBlueDevice" parameterType ="string" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT T.INVOICE_ID,
+               TMT.CGL_CODE,
+               TP.PROJ_NAME,
+               TMT.MATR_NAME,
+               TCD.DEVICE_MODEL_NAME,
+               TCD.SUB_ID,
+               TCD.MATR_CODE,
+               TCD.FEE_DEPT,
+               TF.DUTY_NAME AS FEE_DEPT_NAME,
+               TCD.REFERENCE,
+               TCD.SPECIAL,
+               SUM(TPD.SUB_INVOICE_AMT) AS  SUB_INVOICE_AMT,
+               SUM(TPD.ADD_TAX_AMT) AS ADD_TAX_AMT,
+               TCD.TAX_CODE,
+               SUM(TPD.SUB_INVOICE_AMT_LEFT) AS SUB_INVOICE_AMT_LEFT,
+               SUM(TPD.ADD_TAX_AMT_LEFT) AS ADD_TAX_AMT_LEFT,
+               TCD.TAX_RATE,
+               TAX.HAS_TAXROW
+          FROM TD_PAY T
+          JOIN TD_PAY_DEVICE TPD ON T.INVOICE_ID = TPD.INVOICE_ID 
+          JOIN TD_CNT_DEVICE TCD  ON T.CNT_NUM = TCD.CNT_NUM AND TPD.SUB_ID = TCD.SUB_ID 
+     LEFT JOIN TB_TAX_CODE TAX ON TCD.TAX_CODE = TAX.TAX_CODE 
+     LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+     LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TCD.FEE_DEPT
+     LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID = TCD.PROJ_ID
+         WHERE TPD.SUB_INVOICE_AMT != 0
+           AND T.INVOICE_ID = #{invoiceIdBlue ,jdbcType=VARCHAR}
+      GROUP BY T.INVOICE_ID,
+               TMT.CGL_CODE,
+               TP.PROJ_NAME,
+               TMT.MATR_NAME,
+               TCD.DEVICE_MODEL_NAME,
+               TCD.SUB_ID,
+               TCD.MATR_CODE,
+               TCD.FEE_DEPT,
+               TF.DUTY_NAME,
+               TCD.REFERENCE,
+               TCD.SPECIAL,
+               TCD.TAX_CODE,
+               TCD.TAX_RATE,
+               TAX.HAS_TAXROW
+      ORDER BY TCD.SUB_ID
+	</select>
+	
+	<!--贷项通知单更新原蓝字发票剩余可冲销的余额-->
+	<update id="updateBlueInvoiceAmtLeft" parameterType ="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		UPDATE TD_PAY T
+           SET T.INVOICE_AMT_LEFT = T.INVOICE_AMT_LEFT + #{invoiceAmt ,jdbcType=NUMERIC}
+         WHERE T.INVOICE_ID =  #{invoiceIdBlue ,jdbcType=VARCHAR}
+	</update>
+	
+	<!--是否存在预付款核销-->
+	<select id="getExists0" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean" resultType="String">
+     SELECT 1 FROM TD_PAY_DEVICE T
+      WHERE T.PAY_TYPE = '0'
+        AND T.PAY_ID = #{payIdBlue, jdbcType = VARCHAR}
+        AND T.SUB_ID = #{subId, jdbcType = NUMERIC}
+	</select>
+	
+	<!--获取预付款核销冲销的金额-->
+	<select id="getAdvanceUpdateLeftAmt" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean"
+			                       resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+     SELECT #{payIdBlue, jdbcType = VARCHAR} AS PAY_ID_BLUE,
+            #{subId, jdbcType = NUMERIC} AS SUB_ID,
+            LEAST(NVL(T.SUB_INVOICE_AMT_LEFT, 0),abs(#{subInvoiceAmt,jdbcType=NUMERIC})) AS AC_UPD_INVOICE_AMT_LEFT,
+            LEAST(NVL(T.ADD_TAX_AMT_LEFT, 0), abs(#{addTaxAmt,jdbcType=NUMERIC})) AS AC_UPD_TAX_AMT_LEFT
+       FROM TD_PAY_DEVICE T
+      WHERE T.PAY_TYPE = '0'
+        AND T.PAY_ID = #{payIdBlue, jdbcType = VARCHAR}
+        AND T.SUB_ID = #{subId, jdbcType = NUMERIC}
+	</select>
+	
+	<!--贷项通知单_预付款核销更新原蓝字发票发票行剩余可冲销的余额-->
+	<update id="updateBlueACDeviceLeft" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		UPDATE TD_PAY_DEVICE T 
+           SET T.SUB_INVOICE_AMT_LEFT = T.SUB_INVOICE_AMT_LEFT - #{acUpdInvoiceAmtLeft,jdbcType=NUMERIC},
+               T.ADD_TAX_AMT_LEFT  = T.ADD_TAX_AMT_LEFT - #{acUpdTaxAmtLeft,jdbcType=NUMERIC}
+         WHERE T.PAY_TYPE = '0'
+           AND T.PAY_ID = #{payIdBlue ,jdbcType=VARCHAR}
+           AND T.SUB_ID = #{subId ,jdbcType=NUMERIC}
+	</update>
+	
+	<!--贷项通知单_正常付款更新原蓝字发票发票行剩余可冲销的余额-->
+	<update id="updateBlueDeviceLeft" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		UPDATE TD_PAY_DEVICE T 
+           SET T.SUB_INVOICE_AMT_LEFT = T.SUB_INVOICE_AMT_LEFT + #{subInvoiceAmt,jdbcType=NUMERIC},
+               T.ADD_TAX_AMT_LEFT  = T.ADD_TAX_AMT_LEFT + #{addTaxAmt,jdbcType=NUMERIC}
+         WHERE T.PAY_TYPE = '1'
+           AND T.PAY_ID = #{payIdBlue ,jdbcType=VARCHAR}
+           AND T.SUB_ID = #{subId ,jdbcType=NUMERIC}
+	</update>
+	
+	<!--查看原蓝字发票下的贷项通知单列表-->
+	<select id="getCreditListByInvoiceidBlue" parameterType ="com.forms.prms.web.pay.payAdd.domain.PayAddBean" resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		SELECT T.CNT_NUM,
+		       T.PAY_ID,
+               T.INVOICE_ID,
+               T.INVOICE_AMT_NOTAX,
+               T.INVOICE_AMT_TAX,
+               T.INVOICE_AMT,
+               T.DATA_FLAG,
+               T.DATA_FLAG_INVOICE,
+               T.DATA_FLAG_PAY,
+               T.INVOICE_ID_BLUE,
+               B.PARAM_NAME AS PAY_DATA_FLAG_NAME,
+               C.PARAM_NAME AS DATA_FLAG_INVOICE_NAME,
+               D.PARAM_NAME AS DATA_FLAG_PAY_NAME
+          FROM TD_PAY T
+          JOIN SYS_SELECT B ON T.DATA_FLAG = B.PARAM_VALUE
+          JOIN SYS_SELECT C ON T.DATA_FLAG_INVOICE = C.PARAM_VALUE
+          JOIN SYS_SELECT D ON T.DATA_FLAG_PAY = D.PARAM_VALUE
+         WHERE T.INVOICE_ID_BLUE = #{invoiceIdBlue ,jdbcType=VARCHAR}
+           AND B.CATEGORY_ID       = 'PAY_DATA_FLAG'
+           AND C.CATEGORY_ID       = 'DATA_FLAG_INVOICE'
+           AND D.CATEGORY_ID       = 'DATA_FLAG_PAY'
+        <if test="invoiceId != null and '' != invoiceId">
+			AND T.INVOICE_ID LIKE  '%' || #{invoiceId ,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="payId != null and '' != payId">
+			AND T.PAY_ID LIKE  '%' || #{payId ,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="dataFlag != null and '' != dataFlag">
+			AND T.DATA_FLAG = #{dataFlag ,jdbcType=VARCHAR} 
+		</if>
+		<if test="dataFlagInvoice != null and '' != dataFlagInvoice">
+			AND T.DATA_FLAG_INVOICE = #{dataFlagInvoice ,jdbcType=VARCHAR}
+		</if>
+		<if test="dataFlagPay != null and '' != dataFlagPay">
+			AND T.DATA_FLAG_PAY = #{dataFlagPay ,jdbcType=VARCHAR}
+		</if>
+	</select>
+	<!--封面需求：汇总某付款单下的核算码、不含税金额、税额-->
+	<select id="getCglCodeAmt" parameterType="com.forms.prms.web.pay.payAdd.domain.PayAddBean"
+			                       resultType="com.forms.prms.web.pay.payAdd.domain.PayAddBean">
+		  SELECT nvl(CGL_CODE, 'null') cgl_code,
+		       SUM(M.SUB_INVOICE_AMT) AS subInvoiceAmt,
+		       SUM(M.ADD_TAX_AMT) AS addTaxAmt
+		  FROM (SELECT MATR_CODE,
+		               SUM(SUB_INVOICE_AMT) AS SUB_INVOICE_AMT,
+		               SUM(ADD_TAX_AMT) AS ADD_TAX_AMT
+		          FROM TD_PAY_DEVICE TPD
+		          LEFT JOIN TD_CNT_DEVICE TCD ON TCD.CNT_NUM = TPD.CNT_NUM
+		                                     AND TCD.SUB_ID = TPD.SUB_ID
+		         WHERE TPD.PAY_ID = #{payId,jdbcType=VARCHAR}
+		         GROUP BY TCD.MATR_CODE) M
+		  LEFT JOIN TB_MATR_TYPE TMT ON M.MATR_CODE = TMT.MATR_CODE
+		 GROUP BY TMT.CGL_CODE
+	</select>
+</mapper>

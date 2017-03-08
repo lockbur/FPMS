@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.dealexceldata.exceldealtool.dao.ExcelDealDao">
+	<!--更新任务状态-->
+	<update id="updateTaskLoadStatus" parameterType="com.forms.dealexceldata.exceldealtool.domain.ImportBean">
+		UPDATE TD_TASK_LOAD
+		SET DATA_FLAG =  #{dataFlag, jdbcType=VARCHAR },
+		PROC_DATE = TO_CHAR(SYSDATE,'YYYY-MM-DD'),
+		PROC_TIME = TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+		PROC_MEMO = #{procMemo, jdbcType=VARCHAR }
+		WHERE TASK_ID =  #{taskId, jdbcType=VARCHAR }
+		AND DATA_FLAG = #{beforeDataFlag, jdbcType=VARCHAR }
+	</update>
+	
+	<!--根据taskId查询导入的汇总数据-->
+	<select id="getTaskLoadDataById" parameterType="string" resultType="com.forms.dealexceldata.exceldealtool.domain.ImportBean">
+		SELECT 
+			TASK_ID,
+			TASK_DESC,
+			CONFIG_ID,
+			SOURCE_FNAME,
+			SOURCE_FPATH,
+			DATA_FLAG,
+			TASK_PARAMS,
+			LOAD_TYPE,
+			TASK_BATCH_NO
+		FROM TD_TASK_LOAD
+		WHERE TASK_ID = #{taskId, jdbcType=VARCHAR }
+	</select>
+	
+	<select id="queryById" parameterType="string" resultType="Integer">
+		SELECT COUNT(1)
+		FROM ${tableName}
+		WHERE BATCH_NO = #{taskBatchNo, jdbcType=VARCHAR }
+	</select>
+	<delete id="deleteDataById" parameterType="string">
+		DELETE FROM ${tableName}
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR }
+	</delete>
+	<update id="updateBgtSumTotal" parameterType="com.forms.dealexceldata.exceldealtool.domain.ImportBean">
+		UPDATE ERP_BUDGET_SUM_TOTAL
+		SET STATUS = #{dataFlag, jdbcType=VARCHAR },
+		MEMO = substrb(#{memo, jdbcType=VARCHAR },1,1000)
+		WHERE BATCH_NO = #{taskBatchNo, jdbcType=VARCHAR }
+		AND STATUS = #{beforeDataFlag, jdbcType=VARCHAR }
+	</update>
+	<update id="updateMontAprv" parameterType="com.forms.dealexceldata.exceldealtool.domain.ImportBean">
+		UPDATE TBL_MONT_APRV
+		SET EXCEL_STATUS = #{dataFlag, jdbcType=VARCHAR },
+		MEMO = substrb(#{memo, jdbcType=VARCHAR },1,1000)
+		WHERE BATCH_NO = #{taskBatchNo, jdbcType=VARCHAR }
+		AND EXCEL_STATUS = #{beforeDataFlag, jdbcType=VARCHAR }
+	</update>
+	
+	<update id="updateUserRoleRln" parameterType="com.forms.dealexceldata.exceldealtool.domain.ImportBean">
+		UPDATE TL_USER_INFO_HEADER
+		SET EXCEL_STATUS = #{dataFlag, jdbcType=VARCHAR },
+		MEMO = substrb(#{memo, jdbcType=VARCHAR },1,1000)
+		WHERE BATCH_NO = #{taskBatchNo, jdbcType=VARCHAR }
+		AND EXCEL_STATUS = #{beforeDataFlag, jdbcType=VARCHAR }
+	</update>
+	
+	<select id="queryTaskByBatchNo" parameterType="string" resultType="com.forms.prms.tool.exceltool.domain.CommonExcelDealBean">
+		SELECT 
+			TASK_ID,
+			TASK_DESC,
+			CONFIG_ID,
+			SOURCE_FNAME,
+			SOURCE_FPATH,
+			DATA_FLAG,
+			TASK_PARAMS,
+			LOAD_TYPE,
+			TASK_BATCH_NO
+		FROM TD_TASK_LOAD
+		WHERE TASK_BATCH_NO = #{batchNo, jdbcType=VARCHAR }
+	</select>
+</mapper>

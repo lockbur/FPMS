@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="0">
+		<!--<mapping cell="A1">bean.title</mapping>-->
+		<mapping cell="A1" regExp="\u9884\u7b97\u673a\u6784\u4ee3\u7801" formatDesc="预算机构代码">bean.headInfos</mapping>
+		<mapping cell="B1" regExp="\u9884\u7b97\u673a\u6784\u540d\u79f0" formatDesc="预算机构名称">bean.headInfos</mapping>
+		<mapping cell="C1" regExp="\u76d1\u63a7\u6307\u6807\u4ee3\u7801" formatDesc="监控指标代码">bean.headInfos</mapping>
+		<mapping cell="D1" regExp="\u76d1\u63a7\u6307\u6807\u540d\u79f0" formatDesc="监控指标名称">bean.headInfos</mapping>
+		<mapping cell="E1" regExp="\u7269\u6599\u7f16\u7801" formatDesc="物料编码">bean.headInfos</mapping>
+		<mapping cell="F1" regExp="\u7269\u6599\u540d\u79f0" formatDesc="物料名称">bean.headInfos</mapping>
+		<mapping cell="H1" regExp="\u603b\u9884\u7b97" formatDesc="总预算">bean.headInfos</mapping>
+		
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.budget.bgtImport.domain.BudgetImportBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" nullAllowed="false" formatDesc="预算机构代码不允许为空" maxLength="5">detail.bgtOrgcode</mapping>
+			<mapping row="1" col="1"   maxLength="300">detail.bgtOrgname</mapping>
+			<mapping row="1" col="2" nullAllowed="false" formatDesc="监控指标代码不允许为空" maxLength="50">detail.bgtMontcode</mapping>
+			<mapping row="1" col="3" maxLength="300">detail.bgtMontname</mapping>
+			<mapping row="1" col="4" maxLength="11">detail.bgtMatrcode</mapping>
+			<mapping row="1" col="5" maxLength="300">detail.bgtMatrname</mapping>
+			<mapping row="1" col="7" regExp="\d{2,18}">detail.bgtSum</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

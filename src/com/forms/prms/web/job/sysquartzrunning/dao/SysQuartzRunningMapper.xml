@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.job.sysquartzrunning.dao.ISysQuartzRunningDao">
+	<insert id="insertQuartz" parameterType="String">
+		insert into SYS_QUARTZ_RUNNING(
+             QUARTZ_FLAG
+         )values(
+	          #{quartzFlag,jdbcType=VARCHAR}
+         )
+	</insert>
+	
+	<delete id="delQuartz" parameterType="String">
+		DELETE SYS_QUARTZ_RUNNING WHERE QUARTZ_FLAG = #{quartzFlag,jdbcType=VARCHAR}
+	</delete>
+</mapper>

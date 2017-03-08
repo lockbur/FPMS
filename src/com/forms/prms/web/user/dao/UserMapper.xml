@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.user.dao.UserDao">
+	
+	<resultMap type="com.forms.prms.web.user.domain.User" id="resultMap">
+		<result property="userId" column="USER_ID"/>
+		<result property="userName" column="USER_NAME"/>
+		<result property="password" column="PASSWORD"/>
+	</resultMap>
+	
+	<delete id="deleteOnlineUser" parameterType="string">
+		DELETE FROM SYS_USER_ONLINE OU
+		WHERE OU.USER_ID = #{userId,jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="deleteOnlineUserBySessionId" parameterType="string">
+		DELETE FROM SYS_USER_ONLINE OU
+		WHERE OU.SESSION_ID = #{sessionId,jdbcType=VARCHAR}
+	</delete>
+	
+	<select id="queryOnlineUser"
+		resultType="com.forms.prms.web.user.domain.User" parameterType="string">
+		SELECT OU.USER_ID,OU.USER_NAME,OU.SESSION_ID,
+			OU.LOGIN_IP,OU.LOGIN_DATETIME
+		FROM SYS_USER_ONLINE OU
+		WHERE OU.USER_ID = #{userId,jdbcType=VARCHAR}
+	</select>
+	
+	<update id="updateOnlineUser" parameterType="com.forms.prms.web.user.domain.User">
+		update SYS_USER_ONLINE 
+		SET SESSION_ID = #{sessionId,jdbcType=VARCHAR},
+		LOGIN_DATETIME = #{loginDateTime}
+		WHERE USER_ID = #{userId,jdbcType=VARCHAR}
+	</update>
+	
+	<insert id="addOnlineUser" parameterType="com.forms.prms.web.user.domain.User">
+		MERGE INTO SYS_USER_ONLINE SU
+		USING (
+			SELECT #{userId, jdbcType=VARCHAR } AS USER_ID,
+	               #{sessionId, jdbcType=VARCHAR } AS SESSION_ID,
+	               #{loginIp, jdbcType=VARCHAR } AS LOGIN_IP,
+	               SYSDATE AS LOGIN_DATETIME
+	         FROM DUAL) E
+		ON (SU.USER_ID = E.USER_ID)
+		WHEN MATCHED THEN
+		UPDATE
+		     SET SU.LOGIN_IP       = E.LOGIN_IP,
+		         SU.SESSION_ID     = E.SESSION_ID,
+		         SU.LOGIN_DATETIME = E.LOGIN_DATETIME
+		WHEN NOT MATCHED THEN
+		INSERT
+		    (USER_ID, LOGIN_IP, SESSION_ID, LOGIN_DATETIME)
+		VALUES
+		    (E.USER_ID,  E.LOGIN_IP, E.SESSION_ID, E.LOGIN_DATETIME)
+	</insert>
+	
+	<select id="queryByUserId" resultMap="resultMap" parameterType="string">
+	SELECT T1.*, T2.ROLE_IDS
+	  FROM (SELECT U.USER_ID,
+	               U.USER_NAME,
+	               U.PASSWORD,
+	               U.PHONE_NUMBER,
+	               U.NOTES_ID,
+	               U.MEMO,
+	               U.IS_SYS_USER,
+	               U.USER_TYPE,
+	               U.ORG1_CODE,
+	               U.ORG1_NAME,
+	               U.DUTY_CODE,
+	               U.DUTY_NAME,
+	               U.ORG2_CODE,
+	               U.ORG2_NAME,
+	               U.OU_NAME,
+	               U.OU_CODE,
+	               U.IS_BUYER<!-- ,
+	               U.LOGO_IMG AS LOGO_IMG -->
+	          FROM SYS_USER U) T1
+	  JOIN (SELECT U1.USER_ID,
+	               zh_concat(r.role_id) as ROLE_IDS
+	          FROM SYS_USER U1
+	          LEFT JOIN pf_user_role_rln r
+	            ON u1.user_id = r.user_id
+	         WHERE U1.USER_ID = #{userId,jdbcType=VARCHAR}
+	         GROUP BY U1.USER_ID) T2
+	    ON T1.USER_ID = T2.USER_ID
+	</select>
+	
+	<select id="queryUsersContentData" parameterType="string" resultType="com.forms.prms.web.user.domain.UserContactData">
+	SELECT
+	        DISTINCT T1.user_id
+	        ,t1.user_name
+	        ,NVL(t1.PHONE_NUMBER, '无') AS PHONE_NUMBER
+	        ,NVL(t1.NOTES_ID, '无') AS email
+	    FROM
+	        SYS_USER T1
+	    WHERE
+	        T1.USER_ID IN
+		<foreach item="item" index="index" collection="list" open="("
+			separator="," close=")">
+			#{item,jdbcType=VARCHAR}
+		</foreach>
+	</select>
+	<!--这个就是放到webhelp里面的用户信息-->
+	<select id="getUser"
+		resultType="com.forms.prms.web.user.domain.User" parameterType="string">
+		
+		SELECT T1.* 
+	  FROM (SELECT U.*,
+			       DECODE(U.STATUS,
+			              '0', '未入司',
+			              '1', '试用期',
+			              '2', '在岗工作',
+			              '3', '离职',
+			              '4', '退休',
+			              '5', '内退',
+			              '6', '离休',
+			              '7', '待岗',
+			              '8', '外派',
+			              '9', '退职',
+			              '10', '亲属随任',
+			              '11', '借用',
+			              '12', '脱钩',
+			              '13', '挂职',
+			              '') STATUS_NAME,
+			              TF.ORG2_CODE_ORI ,
+			              TF.ORG2_NAME_ORI,
+			               (select to_char(wm_concat(sr.role_name)) from  pf_user_role_rln pr 
+                   left join sys_role sr on sr.role_id = pr.role_id
+                  where pr.user_id = u.user_id)as role_name
+	          FROM SYS_USER U LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = U.DUTY_CODE
+	          
+	          ) T1
+	 
+    WHERE T1.USER_ID = #{userId, jdbcType=VARCHAR }
+	</select>
+	<update id="changePwd" parameterType="com.forms.prms.web.user.domain.User">
+		update sys_user 
+		SET password = #{password,jdbcType=VARCHAR},
+		PWD_CHANGE_DATE = #{pwdChangeDate,jdbcType=VARCHAR},
+		PWD_FAIL_TIMES = '0',
+		PWD_ERR_DATE = null
+		WHERE USER_ID = #{userId,jdbcType=VARCHAR}
+	</update>
+	<delete id="initOnlineUser">
+		DELETE FROM SYS_USER_ONLINE
+	</delete>
+	<insert id="insertUserPwd" parameterType="com.forms.prms.web.user.domain.User">
+		INSERT INTO SYS_USER_PWD (
+			USER_ID,
+			PWD
+		) VALUES (
+			#{userId, jdbcType=VARCHAR },
+			#{password, jdbcType=VARCHAR }
+		)
+	</insert>
+	<select id="getDownloadList" resultType="com.forms.prms.web.user.domain.CtrlFileBean">
+		SELECT 
+			T.*,
+			DECODE(FILE_TYPE , '01' , '控件类' , '02' , '系统参数类' , '03' , '其他类')
+		FROM TB_UPLOAD_FILE_MNGT T 
+	</select>
+	<!--修改密码输入错误次数-->
+	<update id="updatePwdErrorCount" parameterType="com.forms.prms.web.user.domain.User">
+		<if test="isLocked == 1">
+			update sys_user set PWD_FAIL_TIMES = (PWD_FAIL_TIMES+1),
+			PWD_ERR_DATE = to_char(sysdate,'yyyy-mm-dd')
+			 where user_id=#{userId, jdbcType=VARCHAR }
+		</if>
+		<if test="isLocked == 0">
+			update sys_user set PWD_FAIL_TIMES = (PWD_FAIL_TIMES+1),
+			PWD_ERR_DATE = to_char(sysdate,'yyyy-mm-dd')
+			 where user_id=#{userId, jdbcType=VARCHAR }
+		</if>
+		
+	</update>
+	<!--初始化密码输入错误次数-->
+	<update id="initPwdEroCount" parameterType="com.forms.prms.web.user.domain.User">
+		update sys_user set PWD_FAIL_TIMES = '0'
+		, PWD_ERR_DATE = null
+		where user_id=#{userId, jdbcType=VARCHAR }
+	</update>
+	<select id="getUserRole" parameterType="String" resultType="String">
+		select to_char(wm_concat(role_id)) role_id from  pf_user_role_rln where user_id=#{userId, jdbcType=VARCHAR }
+	</select>
+	<update id="initErrorPwd" parameterType="com.forms.prms.web.user.domain.User">
+		update sys_user set PWD_ERR_DATE = null , PWD_FAIL_TIMES = '0'
+		where user_id=#{userId, jdbcType=VARCHAR }
+	</update>
+	<!--获取数据库时间-->
+	<select id="getDate" resultType="String">
+		select sysdate from dual
+	</select>
+	
+	<select id="getRole" parameterType="com.forms.prms.web.user.domain.User" resultType="com.forms.prms.web.user.domain.User">
+		select ROLE_ID
+		from PF_USER_ROLE_RLN
+		where USER_ID=#{userId, jdbcType=VARCHAR}
+	</select>
+</mapper>

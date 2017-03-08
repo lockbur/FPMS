@@ -1,0 +1,859 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.sysmanagement.montindex.dao.MontIndexDao">
+	<select id="shList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			SELECT DISTINCT   TMNN.MONT_CODE,
+			  TMNN.MONT_NAME,
+			  TMNN.data_year,
+			  TF.ORG1_NAME AS org21Name,
+			  TMNN.MONT_TYPE,
+			  SS.PARAM_NAME AS MONT_TYPE_NAME,
+			  <!--decode(TMNN.MONT_TYPE,'11','专项包','12','省行统购资产','21','非省行统购资产','22','非专项包费用') as MONT_TYPE_name,-->
+			  TMNN.ORG21_CODE
+			FROM TB_MONT_NAME TMNN  
+			LEFT JOIN TB_FNDWRR TF
+			ON TF.ORG1_CODE=TMNN.ORG21_CODE
+			left join sys_select ss on TMNN.MONT_TYPE = ss.param_value and ss.category_id = 'MONT_TYPE'
+			where TMNN.org21_code=#{org21Code,jdbcType=VARCHAR}
+			and TMNN.data_year= #{dataYear,jdbcType=VARCHAR}
+		 <if test="orgType =='01'">
+		 	AND TMNN.MONT_TYPE IN('11','12')
+		 </if>
+		  <if test="orgType =='02'">
+		 	AND TMNN.MONT_TYPE IN('21','22')
+		 </if>
+		  <if test="montCode != null and montCode != ''">
+				AND TMNN.MONT_CODE = #{montCode,jdbcType=VARCHAR}
+		  </if>	  
+		  <if test="montName != null and montName != ''">
+				AND TMNN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		  </if>
+		  <if test="montType != null and montType != ''">
+				AND TMNN.MONT_TYPE = #{montType,jdbcType=VARCHAR}
+		  </if>
+		 order by TMNN.MONT_CODE desc
+	</select>
+	<!--
+	<select id="shHisList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			SELECT distinct TMNN.MONT_CODE,
+				TMNN.MONT_NAME,
+				TMNN.data_year,
+				TF.ORG1_NAME AS org21Name,
+				TMNN.MONT_TYPE,
+				TMNN.ORG21_CODE,
+				SS.PARAM_NAME AS montTypeName
+			FROM TB_MONT_NAME_HIS TMNN
+			LEFT JOIN SYS_SELECT SS ON TMNN.MONT_TYPE=SS.PARAM_VALUE
+			AND SS.CATEGORY_ID='MONT_TYPE'
+			LEFT JOIN TB_FNDWRR TF ON  TF.ORG1_CODE=TMNN.ORG21_CODE	
+			WHERE TMNN.ORG21_CODE=#{org21Code,jdbcType=VARCHAR}
+		  <if test="montCode != null and montCode != ''">
+				AND TMNN.MONT_CODE = #{montCode,jdbcType=VARCHAR}
+		  </if>	  
+		  <if test="montName != null and montName != ''">
+				AND TMNN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		  </if>
+		  <if test="dataYear != null and dataYear != ''">
+				AND TMNN.data_year = #{dataYear,jdbcType=VARCHAR}
+		  </if>
+		  <if test="montType != null and montType != ''">
+				AND TMNN.MONT_TYPE = #{montType,jdbcType=VARCHAR}
+		  </if>	
+	</select>
+	-->
+	<select id="fhList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			 select distinct TMNN.MONT_CODE,
+			  TMNN.MONT_NAME,
+			  TMNN.data_year,
+			  TF.ORG2_NAME AS org21Name,
+			  TMNN.MONT_TYPE,
+			  SS.PARAM_NAME as MONT_TYPE_name,
+			  TMNN.ORG21_CODE
+			FROM TB_MONT_NAME TMNN
+			LEFT JOIN TB_FNDWRR TF
+			ON TF.ORG2_CODE=TMNN.ORG21_CODE
+			LEFT JOIN SYS_SELECT SS
+			ON TMNN.MONT_TYPE = SS.PARAM_VALUE 
+			AND SS.CATEGORY_ID = 'MONT_TYPE'
+			where TMNN.org21_code=#{org21Code,jdbcType=VARCHAR}
+			and TMNN.data_year=#{dataYear,jdbcType=VARCHAR}	
+			 <if test="orgType =='01'">
+		 	AND TMNN.MONT_TYPE IN('11','12')
+		 </if>
+		  <if test="orgType =='02'">
+		 	AND TMNN.MONT_TYPE IN('21','22')
+		 </if>
+		  <if test="montCode != null and montCode != ''">
+				AND TMNN.MONT_CODE = #{montCode,jdbcType=VARCHAR}
+		  </if>	  
+		  <if test="montName != null and montName != ''">
+				AND TMNN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		  </if>
+		  <if test="montType != null and montType != ''">
+				AND TMNN.MONT_TYPE = #{montType,jdbcType=VARCHAR}
+		  </if>
+		 order by TMNN.MONT_CODE desc
+	</select>
+	<!--
+	<select id="fhHisList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			SELECT 
+				distinct TMNN.MONT_CODE,
+				TMNN.MONT_NAME,
+				TMNN.data_year,
+				TF.ORG2_NAME AS org21Name,
+				TMNN.MONT_TYPE,
+				TMNN.ORG21_CODE,
+				SS.PARAM_NAME AS montTypeName
+			FROM TB_MONT_NAME_HIS TMNN
+			LEFT JOIN SYS_SELECT SS ON TMNN.MONT_TYPE=SS.PARAM_VALUE
+			AND SS.CATEGORY_ID='MONT_TYPE'
+			LEFT JOIN TB_FNDWRR TF ON  TF.ORG2_CODE=TMNN.ORG21_CODE	
+			WHERE TMNN.ORG21_CODE=#{org21Code,jdbcType=VARCHAR}
+		  <if test="montCode != null and montCode != ''">
+				AND TMNN.MONT_CODE = #{montCode,jdbcType=VARCHAR}
+		  </if>
+		  <if test="montName != null and montName != ''">
+				AND TMNN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		  </if>
+		  <if test="dataYear != null and dataYear != ''">
+				AND TMNN.data_year = #{dataYear,jdbcType=VARCHAR}
+		  </if>
+		  <if test="montType != null and montType != ''">
+				AND TMNN.MONT_TYPE = #{montType,jdbcType=VARCHAR}
+		  </if>
+		 order by TMNN.MONT_CODE desc
+	</select>
+	-->	
+	<select id="fyzcList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			 select * from tb_matr_type t 
+			 <where>
+			 	  <if test="montCode != null and montCode != ''">
+					 and  not exists(
+      			            SELECT 1 FROM TB_MONT_MATR_CONTRA TMM
+      			            LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = TMM.MONT_CODE
+      			            WHERE TMM.MONT_CODE =#{montCode,jdbcType=VARCHAR}
+      			            AND TMM.MATR_CODE = T.MATR_CODE
+      			            AND TMN.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+      			             )
+      			        
+		 	  </if>
+			 </where>
+			
+	</select>
+	<select id="fyList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			 select * from tb_matr_type t
+			 <where>
+			 	
+			 	 <if test="montCode != null and montCode != ''">
+				 and  not exists(
+      			           SELECT 1 FROM TB_MONT_MATR_CONTRA TMM
+      			            LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = TMM.MONT_CODE
+      			            WHERE TMM.MONT_CODE =#{montCode,jdbcType=VARCHAR}
+      			            AND TMM.MATR_CODE = T.MATR_CODE
+      			            AND TMN.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			 	          )	
+			 	   and t.MATR_TYPE='3'	          
+		 	  </if>
+			 <if test="montCode == null or montCode == ''">
+			   and  t.MATR_TYPE='3'
+			   </if>
+			 </where>
+			 
+	</select>
+	
+	<select id="zcList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			 select * from tb_matr_type t
+			  <if test="montCode != null and montCode != ''">
+				 where  not exists(
+				 			SELECT 1 FROM TB_MONT_MATR_CONTRA TMM
+      			            LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = TMM.MONT_CODE
+      			            WHERE TMM.MONT_CODE =#{montCode,jdbcType=VARCHAR}
+      			            AND TMM.MATR_CODE = T.MATR_CODE
+      			            AND TMN.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			 	          )	
+			 	   and t.MATR_TYPE='1'	         
+		 	  </if>
+		 	   <if test="montCode == null or montCode == ''">
+			     where t.MATR_TYPE='1'
+			  </if>
+	</select>
+	
+	<select id="checkMont" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="String">
+			SELECT MONT_NAME
+			FROM  TB_MONT_NAME
+			WHERE ORG21_CODE=#{org21Code,jdbcType=VARCHAR}
+			AND MONT_NAME=#{montName,jdbcType=VARCHAR}
+			 <if test="montCode != null and montCode != ''">
+				AND MONT_CODE !=#{montCode,jdbcType=VARCHAR}
+		     </if>
+		    AND  DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="selectCount" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="String">
+		select max( substr(mont_code,length(mont_code)-7) )  from TB_MONT_NAME 
+		where ORG21_CODE =#{org21Code,jdbcType=VARCHAR} 
+		and mont_type=#{montType,jdbcType=VARCHAR}
+		AND DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+	</select>
+	
+	<!--增加监控指标表-->
+	<insert id="addMont" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		INSERT into TB_MONT_NAME 
+		(
+			ORG21_CODE,
+			MONT_CODE,
+			MONT_NAME,
+			MONT_TYPE,
+			data_year
+			<if test="projType != null and projType != ''">
+				,PROJ_TYPE
+		  	</if>	
+		)
+		values
+	    (
+	          #{org21Code, jdbcType=VARCHAR },
+	          #{montCode, jdbcType=VARCHAR },
+	          #{montName, jdbcType=VARCHAR },
+	          #{montType,jdbcType=VARCHAR },	         
+	           #{dataYear,jdbcType=VARCHAR }	    
+	         <if test="projType != null and projType != ''">
+	         ,#{projType,jdbcType=VARCHAR }
+		  	 </if>	
+         )
+	</insert>
+	<!--增加监控指标物料表-->
+	<insert id="addMontMatr" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		INSERT into TB_MONT_MATR_CONTRA 
+		(
+
+			MONT_CODE,
+			MATR_CODE,
+			INST_OPER,
+			ORG21_CODE,
+			is_valid,
+			MONT_PROJ_TYPE
+		) (
+		<foreach collection="list" item="item" index="index" separator="union " >
+				select 
+				#{montCode,jdbcType=VARCHAR},
+				#{item.matrCode,jdbcType=VARCHAR}, 
+				#{instOper,jdbcType=VARCHAR},
+				#{org21Code,jdbcType=VARCHAR}, 
+				#{item.isValid,jdbcType=VARCHAR}, 
+				#{projType,jdbcType=VARCHAR}
+				from dual
+		</foreach>
+		)
+	</insert>
+	<!--添加监控指标物料关系数据-->
+	<insert id="editAddMontMatr" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		<if test="matrLst!=null">
+			MERGE INTO TB_MONT_MATR_CONTRA TMMC
+			USING
+			(
+			<foreach collection="matrLst" item="item"  separator="union">
+				SELECT 
+					#{montCode ,jdbcType=VARCHAR} AS MONT_CODE,
+					#{item ,jdbcType=VARCHAR} AS MATR_CODE,
+					#{instOper,jdbcType=VARCHAR} AS INST_OPER,
+					#{org21Code,jdbcType=VARCHAR} AS ORG21_CODE
+					from dual
+			</foreach>
+			)MONT_MATR
+			ON(TMMC.MONT_CODE = MONT_MATR.MONT_CODE AND TMMC.MATR_CODE = MONT_MATR.MATR_CODE )
+			WHEN NOT MATCHED THEN 
+				INSERT VALUES
+				(
+					MONT_MATR.MONT_CODE,
+					MONT_MATR.MATR_CODE,
+					MONT_MATR.INST_OPER,
+					MONT_MATR.ORG21_CODE
+				)
+		</if>
+	</insert>
+	<!--根据监控指标code查找信息-->
+	<select id="getMontMatrByMontCode" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			  SELECT c.matr_code,
+			         c.MATR_NAME,
+			         c.cgl_code,
+			         a.is_valid
+			FROM TB_MONT_MATR_CONTRA a
+			LEFT JOIN TB_MONT_NAME b
+			on a.mont_code =b.mont_code
+			LEFT JOIN tb_matr_type c
+			ON a.MATR_CODE    =c.MATR_CODE
+			WHERE b.mont_code =#{montCode,jdbcType=VARCHAR}
+			AND b.ORG21_CODE  =#{org21Code,jdbcType=VARCHAR}
+	</select>
+	<!--根据监控指标code查找信息-->
+	<select id="getMontMatrByMontCodeInvalid" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			  SELECT c.matr_code,
+			         c.MATR_NAME,
+			         c.cgl_code
+			FROM TB_MONT_MATR_CONTRA a
+			LEFT JOIN TB_MONT_NAME b
+			on a.mont_code =b.mont_code
+			LEFT JOIN tb_matr_type c
+			ON a.MATR_CODE    =c.MATR_CODE
+			WHERE b.mont_code =#{montCode,jdbcType=VARCHAR}
+			AND b.ORG21_CODE  =#{org21Code,jdbcType=VARCHAR}
+			AND IS_VALID = '0'
+	</select>
+	<!--根据监控指标code查找详细信息-->
+	<select id="getMontInfoByMontCode" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		SELECT 
+			TMNN.MONT_CODE,
+			TMNN.MONT_NAME,
+			TMNN.ORG21_CODE,
+			TMNN.MONT_TYPE,
+			TMNN.data_year,
+			SS.PARAM_NAME AS montTypeName,
+			TMNN.PROJ_TYPE AS projTypeName
+        FROM TB_MONT_NAME  TMNN
+        LEFT JOIN SYS_SELECT SS ON TMNN.MONT_TYPE=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='MONT_TYPE'
+		WHERE MONT_CODE =#{montCode,jdbcType=VARCHAR}
+		AND   ORG21_CODE  =#{org21Code,jdbcType=VARCHAR}
+	</select>
+		<!--删除物料-->
+	<delete id="delMatr"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		delete from TB_MONT_MATR_CONTRA where mont_code =#{montCode,jdbcType=VARCHAR}  and MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+	</delete>
+	<!--删除-->
+	<delete id="delMontMatr"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		delete from TB_MONT_MATR_CONTRA where mont_code =#{montCode,jdbcType=VARCHAR} 
+	</delete>
+	<!--删除监控指标-->
+	<delete id="delMont"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		delete from TB_MONT_NAME where mont_code = #{montCode,jdbcType=VARCHAR} AND ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+	</delete>
+	<!--编辑物料的监控指标-->
+	<update id="editMont" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		UPDATE TB_MONT_NAME
+		SET mont_name   = #{montName,jdbcType=VARCHAR} 
+		WHERE MONT_CODE = #{montCode,jdbcType=VARCHAR}
+		AND ORG21_CODE  = #{org21Code,jdbcType=VARCHAR}
+	</update>
+	<!--查看监控指标是否存在于物料监控指标表中-->
+	<select id="selectCheckBean" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+			resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		SELECT 
+			distinct MONT_CODE
+        FROM TB_MONT_MATR_CONTRA 
+		WHERE MONT_CODE =#{montCode,jdbcType=VARCHAR}
+	</select>
+		<!--监控指标列表查询-->
+		<select id="montList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			select distinct a.* ,
+			      tf1.org1_name,
+			      tf2.org2_name
+			      from 
+			   (SELECT TMN.MONT_CODE,
+			    MONT_NAME,
+			    tmmc.matr_code,
+   				tmt.matr_name,
+			    TMN.org21_code,
+			    mont_type,
+			    decode(mont_type,'11','专项包','12','省行统购资产','21','非省行统购类资产','22','非专项包费用类') as mont_type_name,
+			    data_year,
+			    proj_type
+				FROM TB_MONT_NAME TMN
+				left join tb_mont_matr_contra tmmc
+				on tmn.mont_code=tmmc.mont_code
+				LEFT JOIN tb_matr_type tmt
+  				ON tmmc.matr_code   = tmt.matr_code					    
+		    	) a
+		    	left join tb_fndwrr tf1
+		    	on a.org21_code=tf1.org1_code
+		    	left join tb_fndwrr tf2
+		    	on a.org21_code=tf2.org2_code
+		    	<where>
+		    		<if test="userOrg2Code !='' and userOrg2Code!=null ">
+		    			and a.org21_code in (#{userOrg2Code, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+		    	   </if>
+		      	 	<if test="org2Code !='' and org2Code!=null ">
+		    			and a.org21_code in (#{org2Code, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+		    		</if>	
+		    		<if test="montCode !='' and montCode!=null ">
+		    			and a.mont_code=#{montCode, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="montName !='' and montName!=null ">
+		    			and a.mont_name like '%'|| #{montName, jdbcType=VARCHAR} ||'%'
+		    		</if>	
+		    		<if test="montType !='' and montType!=null ">
+		    			and a.mont_type=#{montType, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="dataYear !='' and dataYear!=null ">
+		    			and a.data_year=#{dataYear, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="matrCode !='' and matrCode!=null ">
+		    			and a.matr_code=#{matrCode, jdbcType=VARCHAR}
+		    		</if>	
+		    		<if test="matrName !='' and matrName!=null ">
+		    			and a.matr_name like '%'|| #{matrName, jdbcType=VARCHAR} ||'%'
+		    		</if>
+		    	</where>			    					    				    					    			    		
+		</select>
+		<!--监控指标未来列表查询-->
+		<select id="montFutList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			select distinct a.* ,
+			      tf1.org1_name,
+			      tf2.org2_name,
+			      tmmc.matr_code,
+			      tmt.matr_name
+			      from 
+			   (SELECT MONT_CODE,
+				MONT_NAME,
+				org21_code,
+			    mont_type,
+			    decode(mont_type,'11','专项包','12','省行统购资产','21','非省行统购类资产','22','非专项包费用类') as mont_type_name,
+			    data_year,
+			    proj_type
+			    FROM TB_MONT_NAME_FUT TMNF
+		    	) a
+		    	left join tb_fndwrr tf1
+		    	on a.org21_code=tf1.org1_code
+		    	left join tb_fndwrr tf2
+		    	on a.org21_code=tf2.org2_code
+		    	left join tb_mont_matr_contra_fut tmmc
+		    	on a.mont_code=tmmc.mont_code
+		    	left join tb_matr_type tmt
+		    	on tmmc.matr_code = tmt.matr_code
+		    	<where>
+		    		<if test="userOrg2Code !='' and userOrg2Code!=null ">
+		    			and a.org21_code in (#{userOrg2Code, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+		    	   </if>
+		      	 	<if test="org2Code !='' and org2Code!=null ">
+		    			and a.org21_code in (#{org2Code, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+		    		</if>	
+		    		<if test="montCode !='' and montCode!=null ">
+		    			and a.mont_code=#{montCode, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="montName !='' and montName!=null ">
+		    			and a.mont_name like '%'|| #{montName, jdbcType=VARCHAR} ||'%'
+		    		</if>	
+		    		<if test="montType !='' and montType!=null ">
+		    			and a.mont_type=#{montType, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="dataYear !='' and dataYear!=null ">
+		    			and a.data_year=#{dataYear, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="matrCode !='' and matrCode!=null ">
+		    			and tmmc.matr_code=#{matrCode, jdbcType=VARCHAR}
+		    		</if>	
+		    		<if test="matrName !='' and matrName!=null ">
+		    			and tmt.matr_name like '%'|| #{matrName, jdbcType=VARCHAR} ||'%'
+		    		</if>
+		    	</where>			    					    				    					    			    		
+		</select>
+		<!--监控指标历史列表查询-->
+		<select id="montHisList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			select distinct a.* ,
+			      tf1.org1_name,
+			      tf2.org2_name,
+			      tmmc.matr_code,
+			      tmt.matr_name
+			      from 
+			   (SELECT MONT_CODE,
+				MONT_NAME,
+				org21_code,
+			    mont_type,
+			    decode(mont_type,'11','专项包','12','省行统购资产','21','非省行统购类资产','22','非专项包费用类') as mont_type_name,
+			    data_year,
+			    proj_type
+			    FROM TB_MONT_NAME_HIS TMNF
+		    	) a
+		    	left join tb_fndwrr tf1
+		    	on a.org21_code=tf1.org1_code
+		    	left join tb_fndwrr tf2
+		    	on a.org21_code=tf2.org2_code
+		    	left join tb_mont_matr_contra_his tmmc
+		    	on a.mont_code=tmmc.mont_code
+		    	left join tb_matr_type tmt
+		    	on tmmc.matr_code = tmt.matr_code
+		    	<where>
+		    		<if test="userOrg2Code !='' and userOrg2Code!=null ">
+		    			and a.org21_code in (#{userOrg2Code, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+		    	   </if>
+		      	 	<if test="org2Code !='' and org2Code!=null ">
+		    			and a.org21_code in (#{org2Code, jdbcType=VARCHAR},#{org1Code, jdbcType=VARCHAR})
+		    		</if>	
+		    		<if test="montCode !='' and montCode!=null ">
+		    			and a.mont_code=#{montCode, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="montName !='' and montName!=null ">
+		    			and a.mont_name like '%'|| #{montName, jdbcType=VARCHAR} ||'%'
+		    		</if>	
+		    		<if test="montType !='' and montType!=null ">
+		    			and a.mont_type=#{montType, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="dataYear !='' and dataYear!=null ">
+		    			and a.data_year=#{dataYear, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="matrCode !='' and matrCode!=null ">
+		    			and tmmc.matr_code=#{matrCode, jdbcType=VARCHAR}
+		    		</if>	
+		    		<if test="matrName !='' and matrName!=null ">
+		    			and tmt.matr_name like '%'|| #{matrName, jdbcType=VARCHAR} ||'%'
+		    		</if>	
+		    	</where>	    					    				    					    			    		
+		</select>	
+		<select id="selectProjType" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+				SELECT DISTINCT A.MONT_PROJ_TYPE as PARAM_NAME
+				FROM TB_MONT_MATR_CONTRA A LEFT JOIN TB_MONT_NAME B 
+				ON A.MONT_CODE = B.MONT_CODE
+				WHERE B.ORG21_CODE= #{org21Code, jdbcType=VARCHAR}
+				and a.MONT_PROJ_TYPE is not null
+		</select>	
+		<select id="getYear"  resultType="String">
+			 select to_char(sysdate,'YYYY') from dual
+		</select>
+		<!--删除专向包审批链监控指标的数据-->
+		<delete id="delApproveChainSpec"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		 delete from  tb_aprv_chain_spec
+		 where mont_code=#{montCode,jdbcType=VARCHAR} 
+		</delete>	
+		
+		<!--删除非专向包审批链监控指标的数据-->
+		<delete id="delApproveChainNoSpec"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		 delete from  tb_aprv_chain_nospec
+		 where mont_code=#{montCode,jdbcType=VARCHAR} 
+		</delete>
+		
+		<!--删除专向包审批链监控指标下某一个物料的数据-->
+		<delete id="delApproveChainSpecMatr"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		 delete from  tb_aprv_chain_spec
+		 where mont_code=#{montCode,jdbcType=VARCHAR} 
+		 and  matr_code=#{matrCode,jdbcType=VARCHAR}
+		</delete>	
+		
+		<!--删除非专向包审批链监控指标下的某一个物料的数据-->
+		<delete id="delApproveChainNoSpecMatr"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		 delete from  tb_aprv_chain_nospec
+		 where mont_code=#{montCode,jdbcType=VARCHAR} 
+		  and  matr_code=#{matrCode,jdbcType=VARCHAR}
+		</delete>	
+		<!--删除没有传到后台的已维护物料-->
+		<delete id="delNotExistMatr"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+				delete from TB_MONT_MATR_CONTRA 
+				where mont_code =#{montCode,jdbcType=VARCHAR}
+				and
+		<foreach collection="fristMatrsList" item="item" index="index" separator="or" open="(" close=")">	
+				 MATR_CODE = #{item,jdbcType=VARCHAR} 
+		</foreach>
+		</delete>	
+		
+		<!--删除没有传到后台的已维护物料对应的专向包中审批链-->
+		<delete id="delNotExistApproveChainSpec"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		  delete from  tb_aprv_chain_spec
+			 where mont_code=#{montCode,jdbcType=VARCHAR} 
+			 and  
+		 <foreach collection="fristMatrsList" item="item" index="index" separator="or"  open="(" close=")" >
+			matr_code=#{item,jdbcType=VARCHAR}
+		 </foreach>
+		</delete>	
+		
+		<!--删除没有传到后台的已维护物料对应的非专向包中审批链-->
+		<delete id="delNotExistApproveChainNoSpec"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		 	delete from  tb_aprv_chain_nospec
+		 	where mont_code=#{montCode,jdbcType=VARCHAR} 
+		 	and 
+		 	<foreach collection="fristMatrsList" item="item" index="index" separator="or" open="(" close=")" >
+		 	 matr_code=#{item,jdbcType=VARCHAR}
+		 	</foreach> 
+		</delete>
+		<!--查看监控指标和物料在合同表中是否存在-->
+		<select id="checkMontCode" parameterType="String" resultType="String">
+			 
+		   SELECT MONT_CODE
+		  FROM TD_CNT_DEVICE a
+		 WHERE decode(to_char(sysdate,'yyyy'),a.curr_year,a.curr_mont_code,nvl2(a.next_mont_code,a.next_mont_code,a.curr_mont_code)) =#{montCode,jdbcType=VARCHAR}
+		   
+		   <if test="matrCode !='' and matrCode!=null ">
+		   		and MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		   </if>
+		   AND ROWNUM = 1
+		   
+		</select>		
+		<!--查看监控指标和物料在预算表中是否存在-->
+		<select id="checkMontIsBud" parameterType="String" resultType="String">
+			SELECT *
+			  FROM erp_budget_sum a
+			 where a.bgt_year = to_char(sysdate, 'yyyy')
+			   and a.bgt_montcode = #{montCode,jdbcType=VARCHAR}
+			   <if test="matrCode !='' and matrCode != null ">
+			   and a.bgt_matrcode = #{matrCode,jdbcType=VARCHAR}
+			   </if>
+			   and ROWNUM = 1
+
+		</select>		
+		
+		<!--包括历史表在内的数据-->
+		<select id="allMontList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			select distinct a.* ,
+			      tf1.org1_name,
+			      tf2.org2_name,
+			      tmt.matr_name
+			      from 
+			   ((SELECT TMNH.MONT_CODE,
+			    MONT_NAME,
+			    matr_code,
+			    TMNH.org21_code,
+			    mont_type,
+			    decode(tmnh.mont_type,'11','专项包','12','省行统购资产','21','非省行统购类资产','22','非专项包费用类') as mont_type_name,
+			    data_year,
+			    proj_type
+				FROM TB_MONT_NAME_HIS TMNH
+		    	left join tb_mont_matr_contra_his tmmch
+		    	on TMNH.mont_code=tmmch.mont_code
+		    	<where>
+		    		<if test="montCode !='' and montCode!=null ">
+		    			and instr(mont_code_his,#{montCode, jdbcType=VARCHAR})>0
+		    		</if>
+		    	</where>
+		    	)union
+				(SELECT TMN.MONT_CODE,
+				MONT_NAME,
+			    matr_code,				
+				TMN.org21_code,
+			    mont_type,
+			    decode(tmn.mont_type,'11','专项包','12','省行统购资产','21','非省行统购类资产','22','非专项包费用类') as mont_type_name,
+			    data_year,
+			    to_char(tmmc.mont_code_his) mont_code_his,				    
+			    proj_type
+			    FROM TB_MONT_NAME TMN
+		    	left join tb_mont_matr_contra tmmc
+		    	on tmn.mont_code=tmmc.mont_code
+		    	<where>
+		    		<if test="montCode !='' and montCode!=null ">
+		    			and instr(mont_code_his,#{montCode, jdbcType=VARCHAR})>0
+		    		</if>
+		    	</where>			         	
+		    	)) a
+		    	left join tb_fndwrr tf1
+		    	on a.org21_code=tf1.org1_code
+		    	left join tb_fndwrr tf2
+		    	on a.org21_code=tf2.org2_code
+		    	left join tb_matr_type tmt
+		    	on a.matr_code = tmt.matr_code
+		    	where a.org21_code in(#{org1Code, jdbcType=VARCHAR},#{org2Code,jdbcType=VARCHAR})
+		    		<if test="montName !='' and montName!=null ">
+		    			and a.mont_name like '%'|| #{montName, jdbcType=VARCHAR} ||'%'
+		    		</if>	
+		    		<if test="montType !='' and montType!=null ">
+		    			and a.mont_type=#{montType, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="dataYear !='' and dataYear!=null ">
+		    			and a.data_year=#{dataYear, jdbcType=VARCHAR}
+		    		</if>
+		    		<if test="matrCode !='' and matrCode!=null ">
+		    			and a.matr_code=#{matrCode, jdbcType=VARCHAR}
+		    		</if>	
+		    		<if test="matrName !='' and matrName!=null ">
+		    			and tmt.matr_name like '%'|| #{matrName, jdbcType=VARCHAR} ||'%'
+		    		</if>		    				    				    					    			    		
+		</select>		
+		<select id="selectMontThisYear" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		    select distinct tc.mont_code,
+               tc.mont_name,
+               tc.org21_code,
+               tc.mont_type,
+                
+               tc.data_year,
+               tc.matr_code,
+               tc.mont_proj_type as proj_type,
+                b.matr_name,
+                <!--decode(tc.mont_type,
+                       '11',
+                       '专项包',
+                       '12',
+                       '省行统购资产',
+                       '21',
+                       '非省行统购类资产',
+                       '22',
+                       '非专项包费用类') as mont_type_name,-->
+                  ss.param_name as mont_type_name,
+                  tc.is_valid
+				  from (select tm1.mont_code,
+				               tm1.mont_name,
+				               tm1.org21_code,
+				               tm1.mont_type,
+				               
+				               tm1.data_year,
+				               tmc1.matr_code,
+				               tmc1.mont_proj_type,
+				               tmc1.is_valid  
+				          from tb_mont_matr_contra tmc1
+				          left join tb_mont_name tm1
+				            on tmc1.mont_code = tm1.mont_code  
+				          where tm1.data_year = #{dataYear, jdbcType=VARCHAR} 
+					    and (tm1.ORG21_CODE = #{org1Code, jdbcType=VARCHAR}
+								OR tm1.ORG21_CODE = #{org2Code, jdbcType=VARCHAR}
+							)
+				        union
+				        select tm2.mont_code,
+				               tm2.mont_name,
+				               tm2.org21_code,
+				               tm2.mont_type,
+				                
+				               tm2.data_year,
+				               tmc2.matr_code,
+				               tmc2.mont_proj_type,
+				               tmc2.is_valid  
+				          from tb_mont_matr_contra_his tmc2
+				          left join tb_mont_name_his tm2
+				            on tmc2.mont_code = tm2.mont_code
+				          where tm2.data_year = #{dataYear, jdbcType=VARCHAR} 
+			     and (tm2.ORG21_CODE = #{org1Code, jdbcType=VARCHAR}
+						OR tm2.ORG21_CODE = #{org2Code, jdbcType=VARCHAR}
+					)) tc
+				  LEFT JOIN TB_MATR_TYPE B
+				    ON B.MATR_CODE = tc.MATR_CODE
+				  left join sys_select ss on tc.mont_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+
+			<where>
+				<if test="montType !='' and montType!=null  ">
+				    and tc.MONT_TYPE =#{montType, jdbcType=VARCHAR}
+				</if>
+	    		<if test="matrCode !='' and matrCode!=null ">
+	    			and tc.matr_code=#{matrCode, jdbcType=VARCHAR}
+	    		</if>	
+	    		<if test="matrName !='' and matrName!=null ">
+	    			and b.matr_name like '%'|| #{matrName, jdbcType=VARCHAR} ||'%'
+	    		</if>
+	    		
+				<if test="montName !='' and montName!=null  ">
+				    and tc.mont_name like '%'|| #{montName, jdbcType=VARCHAR} ||'%' 
+				</if>
+				<if test="montCode !='' and montCode!=null  ">					
+					and tc.mont_code=#{montCode,jdbcType=VARCHAR}
+				</if>
+			</where>
+				    				    	
+		</select>
+		<select id="selectHis" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+							resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			SELECT DISTINCT
+			NVL2(T1.DATA_YEAR,T1.DATA_YEAR,T2.DATA_YEAR) data_year,
+			NVL2(T1.Proj_Type,T1.Proj_Type,T2.Proj_Type) Proj_Type ,
+			decode(nvl2(T1.mont_type,T1.mont_type,T2.mont_type),
+			                                       '11',
+			                                       '专项包',
+			                                       '12',
+			                                       '省行统购资产',
+			                                       '21',
+			                                       '非省行统购类资产',
+			                                       '22',
+			                                       '非专项包费用类') as mont_type_name ,
+			NVL2(F1.ORG1_NAME,F1.ORG1_NAME,F2.ORG1_NAME) ORG1_NAME,
+			nvl2(F3.ORG2_NAME, F3.ORG2_NAME, F4.ORG2_NAME) ORG2_NAME,
+			C.MATR_CODE,
+			TM.MATR_NAME,
+			C.MONT_CODE_NEW MONT_CODE,
+			NVL2(T1.MONT_NAME,T1.MONT_NAME,T2.MONT_NAME) MONT_NAME
+			
+			FROM ( 
+					select distinct a.mont_code_new,A.MATR_CODE from tb_mont_matr_contra_change  a
+					start with a.mont_code_old=#{montCode,jdbcType=VARCHAR} and a.matr_code=#{matrCode,jdbcType=VARCHAR}
+					connect by prior a.mont_code_new = a. mont_code_old AND A.MATR_CODE= #{matrCode,jdbcType=VARCHAR}
+					union
+					select #{montCode,jdbcType=VARCHAR},#{matrCode,jdbcType=VARCHAR} from dual
+			) C
+			LEFT JOIN TB_MONT_NAME T1 ON T1.MONT_CODE = C.MONT_CODE_NEW
+			LEFT JOIN TB_MONT_NAME_his T2 ON T2.MONT_CODE = C.MONT_CODE_NEW
+			LEFT JOIN TB_MATR_TYPE TM ON TM.MATR_CODE = C.MATR_CODE
+			LEFT JOIN TB_FNDWRR F1 ON F1.ORG1_CODE = T1.ORG21_CODE
+			LEFT JOIN TB_FNDWRR F2 ON F2.ORG1_CODE = T2.ORG21_CODE
+			LEFT JOIN TB_FNDWRR F3 ON F3.ORG2_CODE = T1.ORG21_CODE
+			LEFT JOIN TB_FNDWRR F4 ON F4.ORG2_CODE =T2.ORG21_CODE
+			order by c.MONT_CODE_NEW ASC
+		</select>
+		<!--增加的是校验-->
+		<select id="preAddIsTrue" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+						resultType="String">
+			select mont_code from TB_MONT_NAME WHERE DATA_YEAR =#{dataYear,jdbcType=VARCHAR}
+			AND MONT_TYPE = #{montType,jdbcType=VARCHAR}
+			AND ORG21_CODE =#{org21Code,jdbcType=VARCHAR}
+			and rownum=1
+		</select>
+		<select id="getCglCodeList" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+						resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			SELECT DISTINCT A.CGL_CODE FROM TB_MATR_TYPE A
+		</select>
+		<!--启用-->
+		<update id="changeValid"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			<foreach collection="inValidList" item="item" index="index" separator="union " >	
+				update TB_MONT_MATR_CONTRA set IS_VALID='1' where mont_code =#{montCode,jdbcType=VARCHAR} and matr_code = #{item,jdbcType=VARCHAR}
+				and IS_VALID='0'
+			</foreach>
+		</update>
+		<delete id="deleteByMontCode"  parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			DELETE TB_MONT_MATR_CONTRA 
+			WHERE MONT_CODE =#{montCode,jdbcType=VARCHAR}
+		</delete>
+		<!--查看是否有还没有走完流程的数据-->
+		<select id="selectImpBatch" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+						resultType="int">
+			select COUNT(1) 
+			from TBL_MONT_APRV 
+			WHERE DATA_YEAR =TO_CHAR(SYSDATE,'YYYY')
+			AND PRO_TYPE = '01'
+			AND SUB_TYPE = #{montType,jdbcType=VARCHAR}
+			AND ORG21_CODE =#{org21Code,jdbcType=VARCHAR}
+			AND EXCEL_STATUS NOT IN('E1','E3','E6')
+			AND CNT_STATUS NOT IN('C5','C6')
+			and rownum=1
+		</select>
+		<!--修改监控指标信息-->
+		<update id="updateMont" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			update tb_mont_name a set a.mont_name = #{montName,jdbcType=VARCHAR} where mont_code = #{montCode,jdbcType=VARCHAR}
+		</update>
+		<select id="getOrg21Name" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+						resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			SELECT DISTINCT D.ORG2_CODE, D.ORG2_NAME,D.ORG1_CODE,D.ORG1_NAME
+               FROM TB_FNDWRR D
+              WHERE D.ORG2_CODE = #{org2Code,jdbcType=VARCHAR}
+              AND ROWNUM = 1
+		</select>
+		<select id="getSelectMatrs" parameterType="String"
+						resultType="String">
+			SELECT A.MATR_CODE FROM 
+			TB_MONT_MATR_CONTRA A WHERE A.MONT_CODE= #{montCode,jdbcType=VARCHAR}
+		</select >
+			
+		<delete id="delAprvChain" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+			<if test="montType == 11">
+				delete from tb_aprv_chain_spec where mont_Code =  #{montCode,jdbcType=VARCHAR}
+				and matr_Code not in
+				<foreach collection="list" item="obj" index="index" open="(" close=")"  separator="," > 
+         	 		#{obj.matrCode,jdbcType=VARCHAR}
+          		</foreach>
+			</if>
+			<if test="montType == 12 or montType == 21 or montType == 22">
+				delete from tb_aprv_chain_spec where mont_Code =  #{montCode,jdbcType=VARCHAR}
+				and matr_Code not in
+				<foreach collection="list" item="obj" index="index" open="(" close=")"  separator="," > 
+         	 		#{obj.matrCode,jdbcType=VARCHAR}
+          		</foreach>
+			</if>
+		</delete>
+</mapper>

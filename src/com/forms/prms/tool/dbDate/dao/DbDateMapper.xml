@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.tool.dbDate.dao.DbDateDao">
+	 
+	
+	<select id="getDate" parameterType="java.lang.String" resultType="java.lang.String" >
+		<if test="type == 'yyyy-MM-dd'">
+			select to_char(sysdate,'yyyy-MM-dd') from dual
+		</if>
+		<if test="type == 'yyyyMMdd'">
+			select to_char(sysdate,'yyyyMMdd') from dual
+		</if>
+	</select>
+	
+	<select id="getTime" parameterType="java.lang.String" resultType="java.lang.String" >
+		<if test="type == 'HH:mm:ss'">
+			select  TO_CHAR(SYSDATE, 'HH24:MI:SS') from dual
+		</if>
+	</select>
+	 
+</mapper>

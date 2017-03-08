@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="GBK"?>
+<FMSConfig>
+	<!--PRC_ERP_31-->
+	<FMS ID="31" TableName="TIU_AP_INVOICE" CheckTableName="TIU_AP_INVOICE_CHECK" OrderBy="SEQ_NO,IVROW_SEQNO" Type="3">
+		<File>
+			<FileName>ERP_INVOICE_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip>true</IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="2" comment="财务中心代码" col="OU_CODE"/>
+			<Column id="3" comment="财务中心名称" col="OU_NAME"/>
+			<Column id="4" comment="发票类型" col="INVOICE_TYPE"/>
+			<Column id="5" comment="发票编号" col="INVOICE_NO"/>
+			<Column id="6" comment="发票影像ID" col="INVOICE_IMAGE_ID"/>
+			<Column id="7" comment="发票影像ID" col="INVOICE_IMAGE_ADDRESS"/>
+			<Column id="8" comment="合同影像ID" col="CNT_IMAGE_ID"/>
+			<Column id="9" comment="合同影像地址" col="CNT_IMAGE_ADDRESS"/>
+			<Column id="10" comment="纸质发票日期" col="INVOICE_DATE"/>
+			<Column id="11" comment="供应商名称" col="PROVIDER_NAME"/>
+			<Column id="12" comment="供应商地点名称" col="PROVIDER_ADDR"/>
+			<Column id="13" comment="发票金额" col="INVOICE_AMT"/>
+			<Column id="14" comment="发票币种" col="CURRENCY"/>
+			<Column id="15" comment="汇率" col="EXCHANGE_RATE"/>
+			<Column id="16" comment="付款条件" col="PAY_CONDITION"/>
+			<Column id="17" comment="收款账户名称" col="ACT_NAME"/>
+			<Column id="18" comment="收款帐号" col="ACT_NO"/>
+			<Column id="19" comment="开户行详细信息" col="BANK_INFO"/>
+			<Column id="20" comment="开户行行号" col="BANK_CODE"/>
+			<Column id="21" comment="银行地区码" col="BANK_AREA"/>
+			<Column id="22" comment="本次付款金额" col="PAY_AMT"/>
+			<Column id="23" comment="暂收金额" col="SUSPENSE_AMT"/>
+			<Column id="24" comment="核销金额" col="CANCEL_AMT"/>
+			<Column id="25" comment="付款到期日" col="PAY_END_DATE"/>
+			<Column id="26" comment="发票说明" col="INVOICE_MEMO"/>
+			<Column id="27" comment="支付方式" col="PAY_WAY"/>
+			<Column id="28" comment="会计日期" col="ACCOUNT_DATE"/>
+			<Column id="29" comment="合同编号" col="CNT_NUM"/>
+			<Column id="30" comment="付款单号" col="PAY_ID"/>
+			<Column id="31" comment="iAP供应商名称" col="IAP_PROVIDER_NAME"/>
+			<Column id="32" comment="iAP供应商开户行" col="IAP_BANK_NAME"/>
+			<Column id="33" comment="iAP开户行行号" col="IAP_BANK_CODE"/>
+			<Column id="34" comment="iAP供应商银行帐户名" col="IAP_ACT_NAME"/>
+			<Column id="35" comment="iAP供应商银行帐号" col="IAP_ACT_NO"/>
+			<Column id="36" comment="iAP账户类型" col="IAP_TYPE"/>
+			<Column id="37" comment="发票行序号" col="IVROW_SEQNO"/>
+			<Column id="38" comment="发票行金额" col="IVROW_AMT"/>
+			<Column id="39" comment="发票行会计日期" col="IVROW_DATE"/>
+			<Column id="40" comment="发票行说明" col="IVROW_MEMO"/>
+			<Column id="41" comment="机构代码" col="ORG_CODE"/>
+			<Column id="42" comment="责任中心代码" col="DUTY_CODE"/>    
+			<!--<Column id="41" comment="物料编码" col="MATR_CODE"/>    
+			<Column id="42" comment="监控指标" col="MONT_CODE"/>-->
+			<Column id="43" comment="核算码" col="CGL_CODE"/>
+			<Column id="44" comment="参考" col="REFERENCE"/>
+			<Column id="45" comment="专项" col="SPECIAL"/>
+			<Column id="46" comment="产品" col="PRODUCT"/>
+			<Column id="47" comment="公司间" col="COMPANY"/>
+			<Column id="48" comment="备用段1" col="RESERVE1"/>
+			<Column id="49" comment="备用段2" col="RESERVE2"/>
+			<Column id="50" comment="Attribute1" col="ATTRIBUTE1"/>
+			<Column id="51" comment="Attribute2" col="ATTRIBUTE2"/>
+			<Column id="52" comment="Attribute3" col="ATTRIBUTE3"/>
+			<Column id="53" comment="Attribute4" col="ATTRIBUTE4"/>
+			<Column id="54" comment="Attribute5" col="ATTRIBUTE5"/>
+			<Column id="55" comment="Attribute6" col="ATTRIBUTE6"/>
+			<Column id="56" comment="Attribute7" col="ATTRIBUTE7"/>
+			<Column id="57" comment="Attribute8" col="ATTRIBUTE8"/>
+			<Column id="58" comment="Attribute9" col="ATTRIBUTE9"/>
+			<Column id="59" comment="Attribute10" col="ATTRIBUTE10"/>
+			<Column id="60" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="61" comment="错误原因" col="ERROR_REASON"/>
+		</FileColumns>
+		<UpdateColumns>
+			<Column id="60" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="61" comment="错误原因" col="ERROR_REASON"/>
+		</UpdateColumns>
+		<PrimaryColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+		</PrimaryColumns>
+	</FMS>
+	
+	<!--PRC_ERP_32-->
+	<FMS ID="32" TableName="TIU_PAY_CANCEL" CheckTableName="TIU_PAY_CANCEL_CHECK" OrderBy="SEQ_NO,CANCEL_INVOICE_NO" Type="3">
+		<File>
+			<FileName>ERP_APLLY_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip>true</IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="2" comment="财务中心代码" col="OU_CODE"/>
+			<Column id="3" comment="财务中心名称" col="OU_NAME"/>
+			<Column id="4" comment="发票编号" col="INVOICE_NO"/>
+			<Column id="5" comment="供应商名称" col="PROVIDER_NAME"/>
+			<Column id="6" comment="供应商地点名称" col="PROVIDER_ADDR"/>
+			<Column id="7" comment="核销预付款发票编号" col="CANCEL_INVOICE_NO"/>
+			<Column id="8" comment="预付款分配行" col="ADVANCE_NO"/>
+			<Column id="9" comment="核销预付款金额" col="ADVANCE_CANCEL_AMT"/>
+			<Column id="10" comment="核算日期" col="CHECK_DATE"/>
+			<Column id="11" comment="Attribute1" col="ATTRIBUTE1"/>
+			<Column id="12" comment="Attribute2" col="ATTRIBUTE2"/>
+			<Column id="13" comment="Attribute3" col="ATTRIBUTE3"/>
+			<Column id="14" comment="Attribute4" col="ATTRIBUTE4"/>
+			<Column id="15" comment="Attribute5" col="ATTRIBUTE5"/>
+			<Column id="16" comment="Attribute6" col="ATTRIBUTE6"/>
+			<Column id="17" comment="Attribute7" col="ATTRIBUTE7"/>
+			<Column id="18" comment="Attribute8" col="ATTRIBUTE8"/>
+			<Column id="19" comment="Attribute9" col="ATTRIBUTE9"/>
+			<Column id="20" comment="Attribute10" col="ATTRIBUTE10"/>
+			<Column id="21" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="22" comment="错误原因" col="ERROR_REASON"/>
+		</FileColumns>
+		<UpdateColumns>
+			<Column id="21" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="22" comment="错误原因" col="ERROR_REASON"/>
+		</UpdateColumns>
+		<PrimaryColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+		</PrimaryColumns>
+	</FMS>
+	<!-- 预提待摊 校验文件 -->
+	<FMS ID="33" TableName="TIU_ACCOUNT" CheckTableName="TIU_ACCOUNT_CHECK" OrderBy="SEQ_NO" Type="3">
+		<File>
+			<FileName>ERP_GL_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip>true</IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="2" comment="凭证批名称" col="VOUCHER_BATCH_NAME"/>
+			<Column id="3" comment="凭证名称" col="VOUCHER_NAME"/>
+			<!--<Column id="4" comment="合同编号" col="CNT_NUM"/>-->
+			<Column id="4" comment="交易流水号" col="CGL_TRADE_NO"/>
+			<Column id="5" comment="会计日期" col="ACCOUNT_DATE"/>
+			<Column id="6" comment="币种" col="CURRENCY"/>
+			<Column id="7" comment="汇率" col="EXCHANGE_RATE"/>
+			<Column id="8" comment="影像编号" col="IMAGE_ID"/>
+			<Column id="9" comment="影像地址" col="IMAGE_ADDR"/>
+			<Column id="10" comment="凭证行号" col="VOUCHER_SEQ_NO"/>
+			<Column id="11" comment="机构代码" col="ORG_CODE"/>
+			<Column id="12" comment="责任中心代码" col="DUTY_CODE"/>
+			<Column id="13" comment="核算码" col="CGL_CODE"/>
+			<Column id="14" comment="参考" col="REFERENCE"/>
+			<Column id="15" comment="专项" col="SPECIAL"/>
+			<Column id="16" comment="产品" col="PRODUCT"/>
+			<Column id="17" comment="公司间" col="COMPANY"/>
+			<Column id="18" comment="备用1" col="RESERVE1"/>
+			<Column id="19" comment="备用2" col="RESERVE2"/>
+			<Column id="20" comment="借方金额" col="DEBIT_AMT"/>
+			<Column id="21" comment="贷方金额" col="CREDIT_AMT"/>
+			<Column id="22" comment="行说明" col="ROW_MEMO"/>
+			<Column id="23" comment="Attribute1" col="ATTRIBUTE1"/>
+			<Column id="24" comment="Attribute2" col="ATTRIBUTE2"/>
+			<Column id="25" comment="Attribute3" col="ATTRIBUTE3"/>
+			<Column id="26" comment="Attribute4" col="ATTRIBUTE4"/>
+			<Column id="27" comment="Attribute5" col="ATTRIBUTE5"/>
+			<Column id="28" comment="Attribute6" col="ATTRIBUTE6"/>
+			<Column id="29" comment="Attribute7" col="ATTRIBUTE7"/>
+			<Column id="30" comment="Attribute8" col="ATTRIBUTE8"/>
+			<Column id="31" comment="Attribute9" col="ATTRIBUTE9"/>
+			<Column id="32" comment="Attribute10" col="ATTRIBUTE10"/>
+			<Column id="33" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="34" comment="错误原因" col="ERROR_REASON"/>
+		</FileColumns>
+		<UpdateColumns>
+			<Column id="33" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="34" comment="错误原因" col="ERROR_REASON"/>
+		</UpdateColumns>
+		<PrimaryColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+		</PrimaryColumns>
+	</FMS>
+	
+	<!-- 结果文件 -->
+	<FMS ID="FMS2ERP" TradeTypes="21,22,23,25,26" Type="2"/>
+	<!--PRC_FMS_21-->
+	<FMS ID="21" TableName="TID_AP_INVOICE" Type="2">
+		<File>
+			<FileName>TOERP_INVOICES_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="3" comment="发票类型" col="INVOICE_TYPE"/>
+			<Column id="4" comment="发票编号" col="INVOICE_NO"/>
+			<Column id="9" comment="GL日期" col="GL_DATE"/>
+			<Column id="11" comment="供应商名称" col="PROVIDER_NAME"/>
+			<!--<Column id="11" comment="收款帐号" col="ACT_NO"/>-->
+			<Column id="15" comment="发票金额" col="INVOICE_AMT"/>
+			<Column id="17" comment="发票取消状态" col="INVOICE_CANCEL_STATE"/>
+			<Column id="18" comment="发票取消日期" col="INVOICE_CANCEL_DATE"/>
+			<Column id="22" comment="合同编号" col="CNT_NUM"/>
+			<Column id="23" comment="付款单号" col="PAY_ID"/>
+			<Column id="24" comment="iAP供应商名称" col="IAP_PROVIDER_NAME"/>
+			<Column id="28" comment="iAP供应商银行帐号" col="IAP_ACT_NO"/>
+			<Column id="30" comment="发票行序号" col="IVROW_SEQNO"/>
+			<Column id="31" comment="发票行类型" col="INVOICE_ROW_TYPE"/>
+			<Column id="32" comment="发票行金额" col="IVROW_AMT"/>
+			<Column id="34" comment="预付款发票编号" col="CANCEL_INVOICE_ID"/>
+			<Column id="36" comment="责任中心代码" col="FEE_DEPT"/>   
+			<Column id="37" comment="核算码 " col="CGL_CODE"/>
+			<Column id="38" comment="参考 " col="REFERENCE"/>
+			<Column id="39" comment="专项 " col="SPECIAL"/>
+			<Column id="44" comment="PO行号" col="PO_LINENO"/>
+			<Column id="45" comment="PO单号" col="PO_NUMBER"/>
+		</FileColumns>
+	</FMS>
+	<!--PRC_FMS_22-->
+	<FMS ID="22" TableName="TID_AP_PAY,TD_PAY_CLEAN_LOG" Type="2">
+		<File>
+			<FileName>TOERP_PAYMENT_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="7" comment="付款日期" col="PAY_DATE"/>
+			<Column id="8" comment="付款金额" col="PAY_AMT"/>
+			<Column id="17" comment="发票编号" col="INVOCIE_NO"/>
+			<Column id="18" comment="合同编号" col="CNT_NUM"/>
+			<Column id="19" comment="付款单号" col="PAY_ID"/>
+			<Column id="20" comment="影像编号" col="IMAGE_ID"/>
+			<Column id="28" comment="发票取消状态" col="PAY_CANCEL_STATE"/>
+			<Column id="29" comment="发票取消日期" col="PAY_CANCEL_DATE"/>
+		</FileColumns>
+	</FMS>
+	
+	<!-- 预提待摊 结果文件 -->
+	<FMS ID="23" TableName="TID_ACCOUNT" Type="2">
+		<File>
+			<FileName>TOERP_GLJOURNAL_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="2" comment="凭证批名称" col="VOUCHER_BATCH_NAME"/>
+			<Column id="3" comment="凭证名称" col="VOUCHER_NAME"/>
+			<Column id="4" comment="日记账创建日期" col="CREATE_DATE"/>
+			<Column id="5" comment="GL日期" col="GL_DATE"/>
+			<Column id="6" comment="过账日期" col="ACCOUNT_DATE"/>
+			<Column id="7" comment="凭证编号" col="VOUCHER_NO"/>
+			<Column id="8" comment="凭证说明" col="VOUCHER_MEMO"/>
+			<Column id="9" comment="币种" col="CURRENCY"/>
+			<Column id="10" comment="汇率" col="EXCHANGE_RATE"/>
+			<!--<Column id="11" comment="合同编号" col="CNT_NUM"/>-->
+			<Column id="11" comment="交易流水号" col="CGL_TRADE_NO"/>
+			<Column id="12" comment="所属财务中心" col="OU_CODE"/>
+			<Column id="13" comment="所属一级行" col="ORG1_CODE"/>
+			<Column id="14" comment="凭证行号" col="VOUCHER_SEQ_NO"/>
+			<Column id="15" comment="机构代码" col="ORG_CODE"/>
+			<Column id="16" comment="责任中心代码" col="DUTY_CODE"/>
+			<Column id="17" comment="核算码" col="CGL_CODE"/>
+			<Column id="18" comment="参考段" col="REFERENCE"/>
+			<Column id="19" comment="专项" col="SPECIAL"/>
+			<Column id="20" comment="产品段" col="PRODUCT"/>
+			<Column id="21" comment="公司间段" col="COMPANY"/>
+			<Column id="22" comment="备用段1" col="RESERVE1"/>
+			<Column id="23" comment="备用段2" col="RESERVE2"/>
+			<Column id="24" comment="借方金额" col="DEBIT_AMT"/>
+			<Column id="25" comment="贷方金额" col="CREDIT_AMT"/>
+			<Column id="26" comment="日记账行说明" col="ROW_MEMO"/>
+		</FileColumns>
+	</FMS>
+	<!--  -->
+	<!--读取订单详情34文件-->
+	<FMS ID="34" TableName="TIU_ORDER" CheckTableName="TIU_ORDER_CHECK" OrderBy="SEQ_NO" Type="3">
+		<File>
+			<FileName>ERP_PO_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip>true</IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="2" comment="财务中心代码" col="OU_CODE"/>
+			<Column id="3" comment="财务中心名称" col="OU_NAME"/>
+			<Column id="4" comment="订单类型" col="ORDER_TYPE"/>
+			<Column id="5" comment="订单号" col="ORDER_ID"/>
+			<Column id="6" comment="供应商名称" col="PROVIDER_NAME"/>
+			<Column id="7" comment="供应商地点" col="PROVIDER_ADDR"/>
+			<Column id="8" comment="币别" col="CURRENCY"/>
+			<Column id="9" comment="汇率" col="EXCHANGE_RATE"/>
+			<Column id="10" comment="采购员工号" col="ORDER_USER"/>
+			<Column id="11" comment="订单说明" col="ORDER_MEMO"/>
+			<Column id="12" comment="集采编号" col="STOCK_NUM"/>
+			<Column id="13" comment="采评会批复金额" col="STOCK_AMT"/>
+			<Column id="14" comment="采评会批复供应商" col="STOCK_PROV"/>
+			<Column id="15" comment="合同或协议编号" col="CNT_NUM"/>
+			<Column id="16" comment="部门编码" col="DEPT_ID"/>
+			<Column id="17" comment="签订日期" col="SIGN_DATE"/>
+			<Column id="18" comment="合同影像ID" col="CNT_IMAGE_ID"/>
+			<Column id="19" comment="合同影像地址" col="CNT_IMAGE_ADDRESS"/>
+			<Column id="20" comment="合同约定期限（开始日期）" col="START_DATE"/>
+			<Column id="21" comment="合同约定期限（截止日期）" col="END_DATE"/>
+			<Column id="22" comment="付款条件说明" col="PAY_TERM_MEMO"/>
+			<Column id="23" comment="采购方式" col="PROCUREMENT_ROUTE"/>
+			<Column id="24" comment="订单行号" col="ROW_SEQNO"/>
+			<Column id="25" comment="物料编码" col="MATR_CODE"/>
+			<Column id="26" comment="类别" col="FAMILY"/>
+			<Column id="27" comment="说明" col="MEMO"/>
+			<Column id="28" comment="单位" col="UNIT"/>
+			<Column id="29" comment="数量" col="AMOUNT"/>
+			<Column id="30" comment="单价" col="PRICE"/>
+			<Column id="31" comment="发运行行号" col="SEND_NETNO"/>
+			<Column id="32" comment="发运行库存组织代码" col="SEND_ORGAN_NO"/>
+			<Column id="33" comment="发运行库存组织名称" col="SEND_ORGAN_NAME"/>
+			<Column id="34" comment="收货方" col="RECEIVE_NETNO"/>
+			<Column id="35" comment="Attribute1" col="ATTRIBUTE1"/>
+			<Column id="36" comment="Attribute2" col="ATTRIBUTE2"/>
+			<Column id="37" comment="Attribute3" col="ATTRIBUTE3"/>
+			<Column id="38" comment="Attribute4" col="ATTRIBUTE4"/>
+			<Column id="39" comment="Attribute5" col="ATTRIBUTE5"/>
+			<Column id="40" comment="Attribute6" col="ATTRIBUTE6"/>
+			<Column id="41" comment="Attribute7" col="ATTRIBUTE7"/>
+			<Column id="42" comment="Attribute8" col="ATTRIBUTE8"/>
+			<Column id="43" comment="Attribute9" col="ATTRIBUTE9"/>
+			<Column id="44" comment="Attribute10" col="ATTRIBUTE10"/>
+			<Column id="45" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="46" comment="错误原因" col="ERROR_REASON"/>
+		</FileColumns>
+		<UpdateColumns>
+			<Column id="45" comment="导入状态" col="IMPORT_STATUS"/>
+			<Column id="46" comment="错误原因" col="ERROR_REASON"/>
+		</UpdateColumns>
+		<PrimaryColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+		</PrimaryColumns>
+	</FMS>
+	<!--第二次读取订单详情25-->
+	<FMS ID="25" TableName="TID_ORDER" OrderBy="SEQ_NO" Type="2">
+		<File>
+			<FileName>TOERP_PO_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip>true</IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="4" comment="PO单号" col="PO_NUMBER"/>
+			<Column id="6" comment="订单号"  col="ORDER_ID"/>
+			<Column id="8" comment="供应商名称"  col="PROVIDER_NAME"/>
+			<Column id="13" comment="采购员工号" col="ORDER_USER"/>
+			<Column id="15" comment="状态" col="STATUS"/>
+			<Column id="16" comment="订单行号"  col="ROW_SEQNO"/>
+			<Column id="18" comment="物料编码"  col="MATR_CODE"/>
+			<Column id="22" comment="数量"  col="AMOUNT"/>
+			<Column id="23" comment="单价"  col="PRICE"/>
+			<Column id="26" comment="集采编号" col="STOCK_NUM"/>
+			<Column id="29" comment="合同或协议编号" col="CNT_NUM"/>
+		</FileColumns>
+	</FMS>
+	<FMS ID="FMSSYS" TradeTypes="12,11,13" Type="1"/>
+	<!--从FMS得到用户信息 -->
+	<FMS ID="11" TableName="FMS_USER" Type="1">
+		<File>
+			<FileName>TOERP_EMPLOYEE_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="2" comment="用户编号" col="USER_ID"/>
+			<Column id="3" comment="用户名" col="USER_NAME"/>
+			<Column id="4" comment="所属机构代码" col="ORG_CODE"/>
+			<Column id="5" comment="所属机构名称" col="ORG_NAME"/>
+			<Column id="6" comment="责任中心代码" col="DUTY_CODE"/>
+			<Column id="7" comment="责任中心名称" col="DUTY_NAME"/>
+			<Column id="8" comment="财务中心代码" col="OU_CODE"/>
+			<Column id="9" comment="财务中心名称" col="OU_NAME"/>
+			<Column id="10" comment="员工状态" col="STATUS"/>
+			<Column id="11" comment="离职日期" col="LEAVE_DATE"/>
+			<Column id="12" comment="是否采购员  " col="IS_BUYER"/>
+		</FileColumns>
+	</FMS>
+	<!--从FMS得到机构及机构层级信息 -->
+	<FMS ID="12" TableName="FMS_ORG" Type="1">
+		<File>
+			<FileName>TOERP_COMCC_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ"/>
+			<Column id="2" comment="一级机构代码" col="ORG1_CODE"/>
+			<Column id="3" comment="一级机构名称" col="ORG1_NAME"/>
+			<Column id="4" comment="二级机构代码" col="ORG2_CODE"/>
+			<Column id="5" comment="二级机构名称" col="ORG2_NAME"/>
+			<Column id="6" comment="明细机构代码" col="ORG_CODE"/>
+			<Column id="7" comment="明细机构名称" col="ORG_NAME"/>
+			<Column id="8" comment="责任中心代码" col="DUTY_CODE"/>
+			<Column id="9" comment="责任中心名称" col="DUTY_NAME"/>
+			
+
+			<Column id="10" comment="责任中心是否失效" col="IS_INVALID"/>
+			<Column id="11" comment="失效时间" col="INVALID_DATE"/>
+			<Column id="12" comment="FMS交叉验证创建日期" col="FMS_CREATE_DATE"/>
+			
+			
+			<Column id="13" comment="所属财务中ID" col="OU_ID"/>
+			<Column id="14" comment="所属财务中心代码" col="OU_CODE"/>
+			<Column id="15" comment="所属财务中心名称  " col="OU_NAME"/>
+			<Column id="16" comment="默认机构  责任中心  " col="DEF_ORG_DUTY"/>
+			<Column id="17" comment="默认收单方 收货方  " col="DEF_DELIVERY"/>
+			<Column id="18" comment="库存组织代码" col="STACK_ORG_CODE"/>
+			<Column id="19" comment="库存组织名称" col="STACK_ORG_NAME"/>
+			<Column id="20" comment="ICMS" col="ICMS"/>
+		</FileColumns>
+	</FMS>
+	<!--供应商信息-->
+	<FMS ID="13" TableName="FMS_PROVIDER_ACT" Type="1">
+		<File>
+			<FileName>TOERP_VENDORS_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="2" comment="供应商编号" col="PROVIDER_CODE"/>
+			<Column id="3" comment="供应商名称" col="PROVIDER_NAME"/>
+			<Column id="4" comment="供应商类型" col="PROVIDER_TYPE"/>
+			<Column id="5" comment="供应商地点" col="PROVIDER_ADDR"/>
+			<Column id="6" comment="付款条件" col="PAY_CONDITION"/>
+			<Column id="7" comment="支付方式" col="PAY_MODE"/>
+			<Column id="8" comment="银行名称" col="BANK_NAME"/>
+			<Column id="9" comment="分行名称" col="BRANCH_NAME"/>
+			<Column id="10" comment="银行账户名称" col="ACT_NAME"/>
+			<Column id="11" comment="银行账户编号 " col="ACT_NO"/>
+			<Column id="12" comment="银行账户币种  " col="ACT_CURR"/>
+			<Column id="13" comment="是否主要帐号  " col="IS_MASTER_ACT"/>
+			<Column id="14" comment="账户类型  " col="ACT_TYPE"/>
+			<Column id="15" comment="开户行详细信息  " col="BANK_INFO"/>
+			<Column id="16" comment="开户行行号  " col="BANK_CODE"/>
+			<Column id="17" comment="银行地区码  " col="BANK_AREA"/>
+			<Column id="18" comment="所属财务中心ID  " col="OU_ID"/>
+			<Column id="19" comment="所属财务中心CODE  " col="OU_CODE"/>
+			<Column id="20" comment="所属财务中心名称  " col="OU_NAME"/>
+			<Column id="21" comment="是否一般纳税人  " col="IS_TAXPAYER"/>
+			<Column id="22" comment="增值税 " col="VAT"/>
+		</FileColumns>
+	</FMS>
+	<!--科目余额信息-->
+	<FMS ID="26" TableName="TID_CGL_BALANCE" Type="1">
+		<File>
+			<FileName>TOERP_BALANCE_{date8}.gz</FileName>
+			<CharSet>GBK</CharSet>
+			<Sep> | </Sep>
+			<IsZip></IsZip>
+			<IsUnZip>true</IsUnZip>
+		</File>
+		<FileColumns>
+			<Column id="1" comment="序号" col="SEQ_NO"/>
+			<Column id="2" comment="一级行代码" col="ORG1_CODE"/>
+			<Column id="3" comment="一级行名称" col="ORG1_NAME"/>
+			<Column id="4" comment="财务中心名称" col="OU_NAME"/>
+			<Column id="5" comment="机构代码" col="ORG_CODE"/>
+			<Column id="6" comment="机构名称" col="ORG_NAME"/>
+			<Column id="7" comment="责任中心代码" col="DUTY_CODE"/>
+			<Column id="8" comment="责任中心名称" col="DUTY_NAME"/>
+			<Column id="9" comment="物料编码" col="MATR_CODE"/>
+			<Column id="10" comment="监控指标" col="MONT_CODE"/>
+			<Column id="11" comment="核算码" col="CGL_CODE"/>
+			<Column id="12" comment="核算码名称" col="CGL_NAME"/>
+			<Column id="13" comment="参考段" col="REFERENCE_ID"/>
+			<Column id="14" comment="参考段名称" col="REFERENCE_NAME"/>
+			<Column id="15" comment="专项段" col="SPECIAL_ID"/>
+			<Column id="16" comment="专项段名称" col="SPECIAL_NAME"/>
+			<Column id="17" comment="产品段" col="PROD_ID"/>
+			<Column id="18" comment="产品段名称" col="PROD_NAME"/>	
+			<Column id="19" comment="公司间段" col="COMP_ID"/>
+			<Column id="20" comment="公司间段名称" col="COMP_NAME"/>
+			<Column id="21" comment="备用段1" col="RSV1_CODE"/>
+			<Column id="22" comment="备用段1名称" col="RSV1_NAME"/>
+			<Column id="23" comment="备用段2" col="RSV2_CODE"/>
+			<Column id="24" comment="备用段2名称" col="RSV2_NAME"/>
+			<Column id="25" comment="币种" col="CURR_CODE"/>
+			<Column id="26" comment="借方余额" col="DR_AMT"/>
+			<Column id="27" comment="贷方余额" col="CR_AMT"/>			
+		</FileColumns>
+	</FMS>	
+</FMSConfig>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.scan.dao.PayScanDAO">
+	<delete id="clearBatchDetail" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		delete from TD_BATCH_ICMS_DETAIL
+		  where BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+	</delete>
+	<delete id="clearBatchHeader" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		delete from TD_BATCH_ICMS_HEADER
+		  where BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+	</delete>
+	<insert id="insertBatchDetail" parameterType="string">
+		insert into TD_BATCH_ICMS_DETAIL
+		  (BATCH_NO,
+		   INNER_ID,
+		   PAY_ID,
+		   ATTACH_CNT,
+		   DATA_FLAG,
+		   ICMS_PKUUID,
+		   upload_time
+		   )
+		values
+		  (#{batchNo, jdbcType = VARCHAR},
+		   #{innerId, jdbcType = VARCHAR},
+		   #{payId, jdbcType = VARCHAR},
+		   #{attachCnt, jdbcType = VARCHAR},
+		   '01',
+		   #{icmsPkuuid, jdbcType = VARCHAR},
+		   to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss'))
+	</insert>
+	
+	<update id="updateBatchGeneral" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		update TD_BATCH_ICMS_HEADER
+		   set 
+		   <if test="mainCntOk != null and '' != mainCntOk">
+		   	   MAIN_CNT_OK   = #{mainCntOk, jdbcType = VARCHAR},
+		   </if>
+		   <if test="attachCntOk != null and '' != attachCntOk">
+		       ATTACH_CNT_OK = #{attachCntOk, jdbcType = VARCHAR},
+		   </if>
+		   DATA_FLAG  = #{dataFlag, jdbcType = VARCHAR}
+		 where BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+	</update>
+	
+	<update id="updateBatchDetail" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		update TD_BATCH_ICMS_DETAIL
+		   set 
+		       <if test="icmsPkuuid != null and '' != icmsPkuuid">
+		       ICMS_PKUUID = #{icmsPkuuid, jdbcType = VARCHAR},
+		       upload_time = to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss'),
+		       </if>
+		       DATA_FLAG  = #{dataFlag, jdbcType = VARCHAR},
+		       <if test="dataFlag == '04' or dataFlag == '05' or dataFlag == '06'">
+		       audit_time = to_char(sysdate, 'yyyy-mm-dd hh24:mi:ss'),
+		       </if>
+		       MEMO = #{memo, jdbcType = VARCHAR}
+		 where BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+		       and PAY_ID = #{payId, jdbcType = VARCHAR}
+	</update>
+	
+	<insert id="insertUUID">
+		insert into TI_ICMS_PKUUID
+		  (ID,
+		   ICMS_PKUUID,
+		   INST_OPER,
+		   INST_DATE,
+		   INST_TIME)
+		 select d.PAY_ID,
+		   d.ICMS_PKUUID,
+		   h.INST_OPER,
+		   to_char(sysdate,'yyyy-MM-dd'),
+		   to_char(sysdate,'hh24:mi:ss')
+		 from TD_BATCH_ICMS_DETAIL D
+		 left join TD_BATCH_ICMS_HEADER H
+		 on h.BATCH_NO = D.BATCH_NO
+		 where DATA_FLAG='02'
+	</insert>
+	
+	<select id="selectBatchDetail" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean" resultType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		 select BATCH_NO,
+              INNER_ID,
+              PAY_ID,
+              ATTACH_CNT,
+              DATA_FLAG,
+              MEMO,
+              ICMS_PKUUID,
+              ICMS_PKUUID as ICMS_PKUUIDS
+         from TD_BATCH_ICMS_DETAIL
+        where BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+         <if test="dataFlag != null and '' != dataFlag">
+		   	   and data_flag   = #{dataFlag, jdbcType = VARCHAR}
+		   </if>
+		   <if test="payId != null and '' != payId">
+		   	   and pay_id   = #{payId, jdbcType = VARCHAR}
+		   </if>
+	</select>
+	
+	<update id="validate" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		call PRC_PAY_SCAN_VALIDATE(#{batchNo, jdbcType = VARCHAR},#{instOper, jdbcType = VARCHAR})
+	</update>
+	
+	<update id="updatePay" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		update TD_PAY P
+		   set P.DATA_FLAG = 'D0'
+		 where exists (select 1
+		          from TD_BATCH_ICMS_DETAIL D
+		         where D.BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+		               and D.PAY_ID = P.PAY_ID
+		               and D.DATA_FLAG = '02')
+
+	</update>
+	<update id="updatePayAdvance" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		update td_pay_advance P
+		   set P.DATA_FLAG = 'D0'
+		 where exists (select 1
+		          from TD_BATCH_ICMS_DETAIL D
+		         where D.BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+		               and D.PAY_ID = P.PAY_ID
+		               and D.DATA_FLAG = '02')
+
+	</update>
+	
+	<update id="updatePayFail" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		update TD_PAY P
+		   set P.DATA_FLAG = 'AC'
+		 where exists (select 1
+		          from TD_BATCH_ICMS_DETAIL D
+		         where D.BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+		               and D.PAY_ID = P.PAY_ID
+		               and D.DATA_FLAG = '03')
+
+	</update>
+	<update id="updatePayAdvanceFail" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		update td_pay_advance P
+		   set P.DATA_FLAG = 'AC'
+		 where exists (select 1
+		          from TD_BATCH_ICMS_DETAIL D
+		         where D.BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+		               and D.PAY_ID = P.PAY_ID
+		               and D.DATA_FLAG = '03')
+
+	</update>
+	
+	<select id="findDutyCode" parameterType="string" resultType="string">
+		 select inst_duty_code
+	         from td_pay
+	        where PAY_ID = #{payId, jdbcType = VARCHAR}
+	     union
+	     select inst_duty_code
+	         from td_pay_advance
+	        where PAY_ID = #{payId, jdbcType = VARCHAR}
+	</select>
+	
+	<select id="queryPay" parameterType="string" resultType="com.forms.prms.web.pay.paysure.domain.PaySureBean">
+		SELECT T.INST_DUTY_CODE,TF.ORG1_CODE
+		FROM (
+			SELECT TP.PAY_ID,TP.INST_DUTY_CODE
+			FROM TD_PAY TP
+			UNION
+			SELECT TPA.PAY_ID,TPA.INST_DUTY_CODE
+			FROM TD_PAY_ADVANCE TPA
+		) T
+		LEFT JOIN TB_FNDWRR TF  ON T.INST_DUTY_CODE = TF.DUTY_CODE
+		WHERE T.PAY_ID = #{payId, jdbcType = VARCHAR}
+	</select>
+	
+	<!--更新预付款表的图像编辑状态-->
+	<update id="agreePreEdit"
+		parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		UPDATE TD_PAY_ADVANCE TPA SET 
+		TPA.ICMS_EDIT= '2' 
+		WHERE TPA.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TPA.ICMS_EDIT = '1'
+	</update>
+	
+	<!--更新付款表的图像编辑状态-->
+	<update id="agreeEdit"
+		parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		UPDATE TD_PAY TP SET 
+		TP.ICMS_EDIT= '2' 
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TP.ICMS_EDIT = '1'
+	</update>
+	
+	<!--添加到log表中-->
+	<insert id = "addLog" parameterType="com.forms.prms.web.pay.scan.domain.PayScanBean">
+		INSERT INTO TD_PAY_AUDIT_LOG
+		(
+			PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_PAY_AUDIT_LOG WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}),
+			#{dataFlag ,jdbcType=VARCHAR},
+			#{auditMemo ,jdbcType=VARCHAR},
+			#{instOper ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+</mapper>

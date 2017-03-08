@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.orderquery.dao.OrderQueryDao">
+	<!--查找所有状态下的订单-->
+	<select id="getList" parameterType="com.forms.prms.web.pay.orderquery.domain.OrderQueryBean"  resultType="com.forms.prms.web.pay.orderquery.domain.OrderQueryBean">
+			SELECT DISTINCT
+		    		TOR.ORDER_ID,
+					TOR.STOCK_NUM,
+					TOR.CNT_NUM,
+					B.DUTY_NAME AS orderDutyCodeName,
+					SS.PARAM_NAME AS dataFlagName,
+					TC.CNT_NAME,
+					SUM(TCD.EXEC_AMT) ORDER_AMT,
+					SUM(DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,'N',TCD.TAX_NAMT))CNT_TR_AMT,
+					TOR.ORDER_DUTY_CODE,
+					TOR.INST_DATE,
+					TOR.PO_NUMBER,
+					TOR.CHK_USER
+		   	FROM TD_ORDER TOR
+		   	LEFT JOIN TD_CNT TC ON TOR.CNT_NUM=TC.CNT_NUM
+			LEFT JOIN SYS_SELECT SS ON TOR.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='ORDER_DATA_FLAG'
+			LEFT JOIN TB_FNDWRR B ON B.DUTY_CODE = TOR.ORDER_DUTY_CODE
+			LEFT JOIN TD_CNT_DEVICE TCD ON TCD.ORDER_ID = TOR.ORDER_ID
+			LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+			 LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID = TCD.PROJ_ID
+			 
+				LEFT JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = TCD.FEE_DEPT
+	 			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+	 				AND TACN.FEE_CODE = TCD.FEE_DEPT AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code)) 
+	 				AND TACN.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+	 				AND TACN.FEE_CODE IS NOT NULL
+	 				
+	 			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+	 				 AND TACN2.MONT_CODE = 
+	 				 decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+	 				AND TACN2.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+	 				AND TACN2.ORG_CODE =  TF2.ORG_CODE
+	 			 
+	 			LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+	 				AND TAC.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code)) 
+	 				AND TAC.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy') 
+	 				
+			WHERE 1=1 			
+			<if test="orderId != null and '' != orderId and 'null' != orderId">
+					AND TOR.ORDER_ID LIKE '%' || #{orderId ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="cntName != null and '' != cntName and 'null' != cntName">
+					AND TC.CNT_NAME  LIKE '%'|| #{cntName ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="cntNum != null and '' != cntNum and 'null' != cntNum">
+					AND TOR.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="dataFlag != null and '' != dataFlag and 'null' != dataFlag">
+					AND TOR.DATA_FLAG =  #{dataFlag,jdbcType=VARCHAR} 
+			</if>
+			<if test="chkUser != null and '' != chkUser and 'null' != chkUser">
+					AND TOR.CHK_USER =  #{chkUser,jdbcType=VARCHAR} 
+			</if>
+			<if test="matrCode != null and '' != matrCode and 'null' != matrCode">
+					AND TCD.MATR_CODE =  #{matrCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="matrName != null and '' != matrName and 'null' != matrName">
+					AND TMT.MATR_NAME LIKE '%'|| #{matrName ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="cglCode != null and '' != cglCode and 'null' != cglCode">
+					AND TMT.CGL_CODE =  #{cglCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="projName != null and '' != projName and 'null' != projName">
+					AND TP.PROJ_NAME LIKE '%'|| #{projName ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="poNumber != null and '' != poNumber and 'null' != poNumber">
+					AND TCD.PO_NUMBER =  #{poNumber,jdbcType=VARCHAR} 
+			</if>
+			<if test="providerName != null and '' != providerName and 'null' != providerName">
+					AND TC.PROVIDER_NAME like '%'|| #{providerName ,jdbcType=VARCHAR}|| '%' 
+			</if>
+			<if test="orderDutyCode != null and '' != orderDutyCode and 'null' != orderDutyCode">
+					AND TOR.ORDER_DUTY_CODE = #{orderDutyCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="orgFlag == 1">
+				and exists 
+				(
+				    select 1 from TB_FNDWRR tbf where tbf.org1_code = #{org1Code,jdbcType=VARCHAR} and 
+				    ( 
+					    tbf.duty_code = tc.create_dept or 
+				   		tbf.duty_code = tc.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept) or 
+				   	    tbf.duty_code = NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept)
+				    ) 
+				 )
+			</if>
+			<if test="orgFlag == 2">
+				and exists 
+				(
+				    select 1 from TB_FNDWRR tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+				    ( 
+					    tbf.duty_code = tc.create_dept or 
+				   		tbf.duty_code = tc.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept) or 
+				   	    tbf.duty_code = NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept)
+				    ) 
+				 )
+			</if>
+			<if test="orgFlag == 3">
+				and (tc.create_dept      = #{instDutyCode,jdbcType=VARCHAR} or
+					 tc.pay_duty_code    = #{instDutyCode,jdbcType=VARCHAR} or
+					 tcd.fee_dept         = #{instDutyCode,jdbcType=VARCHAR} or
+					 tac.matr_buy_dept    = #{instDutyCode,jdbcType=VARCHAR} or
+					 tac.matr_audit_dept  = #{instDutyCode,jdbcType=VARCHAR} or
+					 NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept)   = #{instDutyCode,jdbcType=VARCHAR} or
+					 NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept) = #{instDutyCode,jdbcType=VARCHAR} 
+					)
+			</if>
+			 
+	      GROUP BY 
+	       TOR.ORDER_ID,
+	          TOR.STOCK_NUM,
+	          TOR.CNT_NUM,
+	          B.DUTY_NAME  ,
+	          SS.PARAM_NAME  ,
+	          TC.CNT_NAME,
+	          TOR.ORDER_DUTY_CODE,
+	          TOR.INST_DATE,
+	          TOR.PO_NUMBER,
+	          TOR.CHK_USER
+	</select>
+	
+	<!--通过订单号查找详细信息-->
+	<select id="getInfo" parameterType="String"  resultType="com.forms.prms.web.pay.orderquery.domain.OrderQueryBean">
+		SELECT 
+			TOR.ORDER_ID,
+			TOR.ORDER_MEMO,
+			TOR.STOCK_NUM,
+			TOR.STOCK_AMT,
+			TOR.STOCK_PROV AS stockProv,
+			TOR.CNT_NUM,
+			TOR.DEPT_ID,
+			TOR.SIGN_DATE,
+			TOR.START_DATE,
+			TOR.END_DATE,
+			TOR.PROCUREMENT_ROUTE,
+			TF.DUTY_NAME AS instDutyCode,
+			TOR.INST_DATE,
+			TOR.INST_TIME,
+			TOR.INST_USER,
+			TF1.DUTY_NAME AS orderDutyCode,
+			SS.PARAM_NAME AS payTermMemo,
+			TOR.PO_NUMBER,
+			TOR.DATA_FLAG
+		FROM TD_ORDER TOR
+		LEFT JOIN TB_FNDWRR TF ON  TOR.INST_DUTY_CODE=TF.DUTY_CODE
+		LEFT JOIN TB_FNDWRR TF1 ON  TOR.ORDER_DUTY_CODE=TF1.DUTY_CODE
+		LEFT JOIN SYS_SELECT SS ON TOR.PAY_TERM_MEMO=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='CNT_PAY_TERM'
+		WHERE  TOR.ORDER_ID=#{orderId,jdbcType=VARCHAR}
+	</select>
+	<!--通过合同号查找对应的所有订单号-->
+	<select id="orderListByCntNum" parameterType="String"  resultType="com.forms.prms.web.pay.orderquery.domain.OrderQueryBean">
+		select 
+			TOR.ORDER_ID,
+			SS1.PARAM_NAME AS procurementRoute,
+			tor.ORDER_DUTY_CODE||'-'||TF.DUTY_NAME AS orderDutyCodeName,
+			ss.param_name as dataflag,
+			TOR.order_memo,
+			tor.oper_memo
+		FROM TD_ORDER TOR
+		LEFT JOIN TB_FNDWRR TF ON  TOR.ORDER_DUTY_CODE=TF.DUTY_CODE 	
+		left join sys_select ss on tor.data_flag=ss.param_value and ss.category_id='ORDER_DATA_FLAG'
+		left join sys_select ss1 on tor.procurement_route=ss1.param_value and ss1.category_id='PROCUREMENT_ROUTE'
+		where  cnt_num=#{cntNum,jdbcType=VARCHAR}
+		order by tor.inst_date, tor.inst_time
+	</select>
+	
+	<select id="getListDetail" parameterType="com.forms.prms.web.pay.orderquery.domain.OrderQueryBean"  resultType="com.forms.prms.web.pay.orderquery.domain.OrderQueryBean">
+			SELECT DISTINCT
+		          TOR.CNT_NUM,
+		            TOR.ORDER_ID,
+		            TOR.PO_NUMBER,
+		            TCD.PO_LINENO,
+		            TC.PROVIDER_NAME,
+		            TP.PROJ_NAME,
+		            TCD.MATR_CODE,
+		            TMT.MATR_NAME,
+		            TMT.CGL_cODE,
+		            TCD.EXEC_NUM,
+		            TCD.EXEC_PRICE,
+		            TCD.EXEC_AMT,
+		            DECODE(TO_CHAR(SYSDATE,'YYYY'),TCD.CURR_YEAR,TCD.CURR_MONT_CODE,NVL2(TCD.NEXT_MONT_CODE,TCD.NEXT_MONT_CODE,TCD.CURR_MONT_CODE)) MONT_CODE,
+		            TMN.MONT_NAME,
+		          	DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,'N',TCD.TAX_NAMT)CNT_TR_AMT,
+		          	 TCD.TAX_CODE
+		         FROM TD_ORDER TOR
+		         LEFT JOIN TD_CNT TC ON TOR.CNT_NUM=TC.CNT_NUM
+		      LEFT JOIN SYS_SELECT SS ON TOR.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='ORDER_DATA_FLAG'
+		      LEFT JOIN TB_FNDWRR B ON B.DUTY_CODE = TOR.ORDER_DUTY_CODE
+		      LEFT JOIN TD_CNT_DEVICE TCD ON TCD.ORDER_ID = TOR.ORDER_ID
+		      LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+		      LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID = TCD.PROJ_ID
+		      LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = DECODE(TO_CHAR(SYSDATE,'YYYY'),TCD.CURR_YEAR,TCD.CURR_MONT_CODE,NVL2(TCD.NEXT_MONT_CODE,TCD.NEXT_MONT_CODE,TCD.CURR_MONT_CODE))
+		    
+		    LEFT JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = TCD.FEE_DEPT
+	 			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+	 				AND TACN.FEE_CODE = TCD.FEE_DEPT AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code)) 
+	 				AND TACN.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+	 				AND TACN.FEE_CODE IS NOT NULL
+	 				
+	 			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+	 				 AND TACN2.MONT_CODE = 
+	 				 decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+	 				AND TACN2.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+	 				AND TACN2.ORG_CODE =  TF2.ORG_CODE
+	 			 
+	 			LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+	 				AND TAC.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code)) 
+	 				AND TAC.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy') 
+	 				
+		      WHERE 1=1      
+			<if test="orderId != null and '' != orderId and 'null' != orderId">
+					AND TOR.ORDER_ID LIKE '%' || #{orderId ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="cntName != null and '' != cntName and 'null' != cntName">
+					AND TC.CNT_NAME  LIKE '%'|| #{cntName ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="cntNum != null and '' != cntNum and 'null' != cntNum">
+					AND TOR.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="dataFlag != null and '' != dataFlag and 'null' != dataFlag">
+					AND TOR.DATA_FLAG =  #{dataFlag,jdbcType=VARCHAR} 
+			</if>
+			<if test="chkUser != null and '' != chkUser and 'null' != chkUser">
+					AND TOR.CHK_USER =  #{chkUser,jdbcType=VARCHAR} 
+			</if>
+			<if test="matrCode != null and '' != matrCode and 'null' != matrCode">
+					AND TCD.MATR_CODE =  #{matrCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="matrName != null and '' != matrName and 'null' != matrName">
+					AND TMT.MATR_NAME LIKE '%'|| #{matrName ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="cglCode != null and '' != cglCode and 'null' != cglCode">
+					AND TMT.CGL_CODE =  #{cglCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="projName != null and '' != projName and 'null' != projName">
+					AND TP.PROJ_NAME LIKE '%'|| #{projName ,jdbcType=VARCHAR}|| '%'
+			</if>
+			<if test="poNumber != null and '' != poNumber and 'null' != poNumber">
+					AND TCD.PO_NUMBER =  #{poNumber,jdbcType=VARCHAR} 
+			</if>
+			<if test="providerName != null and '' != providerName and 'null' != providerName">
+					AND TC.PROVIDER_NAME '%'|| #{providerName ,jdbcType=VARCHAR}|| '%' 
+			</if>
+			<if test="orderDutyCode != null and '' != orderDutyCode and 'null' != orderDutyCode">
+					AND TOR.ORDER_DUTY_CODE = #{orderDutyCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="orgFlag == 1">
+				and exists 
+				(
+				    select 1 from TB_FNDWRR tbf where tbf.org1_code = #{org1Code,jdbcType=VARCHAR} and 
+				    ( 
+					    tbf.duty_code = tc.create_dept or 
+				   		tbf.duty_code = tc.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept) or 
+				   	    tbf.duty_code = NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept)
+				    ) 
+				 )
+			</if>
+			<if test="orgFlag == 2">
+				and exists 
+				(
+				    select 1 from TB_FNDWRR tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+				    ( 
+					    tbf.duty_code = tc.create_dept or 
+				   		tbf.duty_code = tc.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept) or 
+				   	    tbf.duty_code = NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept)
+				    ) 
+				 )
+			</if>
+			<if test="orgFlag == 3">
+				and (tc.create_dept      = #{instDutyCode,jdbcType=VARCHAR} or
+					 tc.pay_duty_code    = #{instDutyCode,jdbcType=VARCHAR} or
+					 tcd.fee_dept         = #{instDutyCode,jdbcType=VARCHAR} or
+					 tac.matr_buy_dept    = #{instDutyCode,jdbcType=VARCHAR} or
+					 tac.matr_audit_dept  = #{instDutyCode,jdbcType=VARCHAR} or
+					 NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept)   = #{instDutyCode,jdbcType=VARCHAR} or
+					 NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept) = #{instDutyCode,jdbcType=VARCHAR} 
+					)
+			</if>
+	</select>
+</mapper>	

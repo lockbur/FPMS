@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.tool.seqno.dao.ISeqNoDAO">
+
+	<select id="getSeqNO" 
+		parameterType="com.forms.prms.tool.seqno.domain.SeqNoBean"
+		resultType="com.forms.prms.tool.seqno.domain.SeqNoBean">
+		SELECT T.SEQ_TYPE,T.SEQ_DATE,T.SEQ_NO FROM BASE_SYS_SEQNO T WHERE T.SEQ_TYPE = #{seqType, jdbcType=VARCHAR} and T.SEQ_DATE = #{seqDate, jdbcType=VARCHAR}  FOR UPDATE
+	</select>
+	
+	<insert id="insertSeqNo"
+		parameterType="com.forms.prms.tool.seqno.domain.SeqNoBean">
+		insert into BASE_SYS_SEQNO
+		(
+			SEQ_TYPE,
+			SEQ_DATE,
+			SEQ_NO
+		)
+		values
+		(
+			#{seqType, jdbcType=VARCHAR },
+			#{seqDate, jdbcType=VARCHAR },
+			#{seqNo,   jdbcType=VARCHAR }
+		)
+	</insert>
+
+	
+	<update id="updateSeqNo" parameterType="com.forms.prms.tool.seqno.domain.SeqNoBean">
+		update BASE_SYS_SEQNO set 
+			 SEQ_NO = #{seqNo ,jdbcType=VARCHAR}
+		WHERE SEQ_TYPE = #{seqTyp,jdbcType=VARCHAR} and SEQ_DATE = #{seqDate,jdbcType=VARCHAR} 
+	</update>
+	
+</mapper>

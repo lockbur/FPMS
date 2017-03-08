@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.waterbook.dao.IWaterBookDAO">
+	<!-- 插入流水信息 -->
+	<insert id="insertWB" parameterType="com.forms.prms.web.sysmanagement.waterbook.domain.WaterBook">
+		<selectKey resultType="String" order="BEFORE" keyProperty="wbNum">  
+	        SELECT to_char(sysdate,'yyyymmddhh24miss')||lpad(SEQ_WATER_BOOK.NEXTVAL,10,'0') FROM DUAL   
+	    </selectKey>
+		INSERT INTO tl_water_book
+		  (wb_num,
+		   bus_num,
+		   bus_type,
+		   bus_menu,
+		   operate_type,
+		   operate_date,
+		   operate_time,
+		   operator,
+		   operate_log,
+		   old_data_flag,
+		   new_data_flag)
+		VALUES
+		  (#{wbNum, jdbcType=VARCHAR},
+		   #{busNum, jdbcType=VARCHAR},
+		   #{busType, jdbcType=VARCHAR},
+		   #{busMenu, jdbcType=VARCHAR},
+		   #{operateType, jdbcType=VARCHAR},
+		   to_char(sysdate,'yyyy-mm-dd'),
+		   to_char(sysdate,'hh24:mi:ss'),
+		   #{operator, jdbcType=VARCHAR},
+		   #{operateLog, jdbcType=VARCHAR},
+		   #{oldDataFlag, jdbcType=VARCHAR},
+		   #{newDataFlag, jdbcType=VARCHAR})
+	</insert>
+	<!-- 获取流水列表 -->
+	<select id="getWBList" parameterType="String" resultType="com.forms.prms.web.sysmanagement.waterbook.domain.WaterBook">
+		SELECT wb_num, bus_num, bus_type, bus_menu, operate_type, operate_date, operate_time, operator, operate_log, old_data_flag, new_data_flag  
+		FROM tl_water_book
+		WHERE bus_num = #{busNum,jdbcType=VARCHAR}
+		ORDER BY wb_num
+	</select>
+	<!-- 获取流水信息 -->
+	<select id="getWBDtl" parameterType="String" resultType="com.forms.prms.web.sysmanagement.waterbook.domain.WaterBook">
+		SELECT wb_num, bus_num, bus_type, bus_menu, operate_type, operate_date, operate_time, operator, operate_log, old_data_flag, new_data_flag  
+		FROM tl_water_book
+		WHERE wb_num = #{wbNum,jdbcType=VARCHAR}
+	</select>
+</mapper>

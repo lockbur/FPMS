@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.accEntry.dao.AccEntryDAO">
+
+	<select id="getAccEntry" parameterType="String"
+	                         resultType="com.forms.prms.web.amortization.accEntry.domain.CglTrade">
+	SELECT T.CNT_NUM,
+		   T.FEE_YYYYMM ,
+		   T.DUTY_CODE,
+		   T.FEE_CGL_CODE,
+		   T.MATR_CODE,
+		   T.MONT_CODE,
+		   T.REFERENCE,
+		   T.SPECIAL,
+		   T.TRADE_DATE,
+		   T.DEBIT_CGL_CODE,
+		   T.DEBIT_DATA_FLAG,
+		   T.CREDIT_CGL_CODE,
+		   T.TRADE_AMT,
+		   T.CREDIT_DATA_FLAG,
+		   T.ERROR_REASON
+	  FROM TI_CGL_TRADE T
+	 WHERE T.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	   <!--AND T.DEBIT_DATA_FLAG = '02'
+	   AND T.CREDIT_DATA_FLAG = '02'-->
+	   <if test="startDate != null and startDate != ''">
+			AND T.TRADE_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	   </if>
+	   <if test="endDate != null and endDate != ''">
+			AND T.TRADE_DATE &lt;= #{endDate,jdbcType=VARCHAR}
+	   </if>	   
+  ORDER BY T.TRADE_DATE DESC,T.CGL_TRADE_NO ASC
+	</select>
+  
+
+</mapper>

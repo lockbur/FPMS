@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetResolve.resolveQuery.dao.ResolveQueryDao">
+	<select id="getResolveQueryList" 
+		parameterType="com.forms.prms.web.budget.budgetResolve.resolveQuery.domain.ResolveQuery" 
+		resultType="com.forms.prms.web.budget.budgetResolve.resolveQuery.domain.ResolveQuery">
+	
+	</select>
+	
+	<select id="getResolveQuery" 
+		parameterType="com.forms.prms.web.budget.budgetResolve.resolveQuery.domain.ResolveQuery" 
+		resultType="com.forms.prms.web.budget.budgetResolve.resolveQuery.domain.ResolveQuery">
+	
+	</select>
+</mapper>

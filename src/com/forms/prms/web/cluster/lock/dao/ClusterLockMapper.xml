@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.cluster.lock.dao.ClusterLockDAO">
+
+	<!-- 加锁 -->
+	<insert id="insertClusterLock" parameterType="com.forms.prms.web.cluster.lock.domain.ClusterLock">
+		INSERT INTO TL_LOCK 
+		(
+		 TASK_TYPE,
+		 TASK_SUB_TYPE,
+		 IP_ADDRESS,
+		 INST_OPER,
+		 INST_DATE,
+		 INST_TIME,
+		 MEMO
+		)
+		VALUES
+		(
+		 #{taskType, jdbcType=VARCHAR},
+		 #{taskSubType, jdbcType=VARCHAR},
+		 #{ipAddress, jdbcType=VARCHAR},
+		 #{instOper, jdbcType=VARCHAR},
+		 to_char(sysdate,'yyyy-MM-dd') ,
+		 to_char(sysdate,'HH24:mi:ss') ,
+		 #{memo, jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 查询任务是否锁住 -->
+	<select id="selectClusterLock" parameterType="com.forms.prms.web.cluster.lock.domain.ClusterLock"
+								   resultType="com.forms.prms.web.cluster.lock.domain.ClusterLock">
+		SELECT TASK_TYPE,
+			   TASK_SUB_TYPE,
+			   IP_ADDRESS,
+			   INST_OPER,
+			   INST_DATE,
+			   INST_TIME,
+			   MEMO
+		  FROM TL_LOCK 
+		 WHERE TASK_TYPE = #{taskType, jdbcType=VARCHAR}
+		 <if test="taskType == 'fmsupload' ">
+		 	AND (TASK_SUB_TYPE = #{taskSubType, jdbcType=VARCHAR} or TASK_SUB_TYPE = 'AAAAA')
+		 </if>
+		 <if test="taskType != 'fmsupload' ">
+		 	AND TASK_SUB_TYPE = #{taskSubType, jdbcType=VARCHAR} 
+		 </if>
+		   
+	</select>
+	
+	<!-- 查询系统所有集群锁 -->
+	<select id="getClusterLockList" resultType="com.forms.prms.web.cluster.lock.domain.ClusterLock">
+		SELECT TASK_TYPE,
+			   TASK_SUB_TYPE,
+			   IP_ADDRESS,
+			   INST_OPER,
+			   INST_DATE,
+			   INST_TIME,
+			   MEMO,
+	 CASE WHEN INST_DATE||INST_TIME &lt; to_char(sysdate-1/24,'yyyy-mm-ddhh24:mi:ss') 
+	      THEN 'DELETE' 
+	      ELSE '' 
+	       END AS DEL_FLAG
+		  FROM TL_LOCK 
+	</select>
+	
+	<!-- 释放锁 -->
+	<delete id="deleteClusterLock" parameterType="com.forms.prms.web.cluster.lock.domain.ClusterLock">
+		DELETE FROM TL_LOCK 
+		 WHERE TASK_TYPE = #{taskType, jdbcType=VARCHAR}
+		   AND TASK_SUB_TYPE = #{taskSubType, jdbcType=VARCHAR}
+	</delete>
+	
+	<!-- 资源初始化时清空本机占用的锁 -->
+	<delete id="clearClusterLock" parameterType="String">
+		DELETE FROM TL_LOCK 
+	 	 WHERE IP_ADDRESS = #{ipAddress, jdbcType=VARCHAR}
+	</delete>
+	<!-- 系统启动清除锁，修改该服务器正在复核 的监控指标-->
+	<update id="updateStatusB1" parameterType="String">
+		UPDATE TBL_MONT_APRV A  SET A.CNT_STATUS ='C6',A.MEMO=#{memo, jdbcType=VARCHAR}
+		WHERE A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+		AND A.IP_ADDRESS = #{ipAddress, jdbcType=VARCHAR}
+		AND A.PRO_TYPE ='01'
+		AND A.CNT_STATUS = 'C4'
+	</update>
+	<!-- 系统启动清除锁，修改该服务器正在复核 的预算-->
+	<update id="updateStatusB2" parameterType="String">
+		UPDATE ERP_BUDGET_SUM_TOTAL A  SET A.STATUS ='06',A.MEMO=#{memo, jdbcType=VARCHAR}
+		WHERE A.BGT_YEAR = TO_CHAR(SYSDATE,'YYYY')
+		AND A.IP_ADDRESS = #{ipAddress, jdbcType=VARCHAR} 
+		AND A.STATUS = '04'
+	</update>
+<!-- 系统启动清除锁，修改该服务器正在复核 的预算-->
+	<update id="updateStatusC1" parameterType="String">
+		UPDATE TB_FNDWRR_CHANGE A  SET A.STATUS ='04',A.MEMO=#{memo, jdbcType=VARCHAR}
+		WHERE   A.IP_ADDRESS = #{ipAddress, jdbcType=VARCHAR} 
+		AND A.STATUS = '05'
+	</update>
+</mapper>

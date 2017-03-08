@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="B1" regExp="\u5408\u540c\u5206\u671f\u4ed8\u6b3e\u6309\u8fdb\u5ea6" formatDesc="该值应该为[合同分期付款按进度]">bean.headInfos</mapping>
+		<mapping cell="E1" regExp="\u5408\u540c\u5206\u671f\u4ed8\u6b3e\u6309\u6761\u4ef6" formatDesc="该值应该为[合同分期付款按条件]">bean.headInfos</mapping>
+		<mapping cell="H1" regExp="\u5408\u540c\u5206\u671f\u4ed8\u6b3e\u6309\u65e5\u671f" formatDesc="该值应该为[合同分期付款按日期]">bean.headInfos</mapping>
+
+		<mapping cell="A1" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u4ed8\u6b3e\u5e74\u6708" formatDesc="该值应该为[付款年月]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u4ed8\u6b3e\u6bd4\u4f8b" formatDesc="该值应该为[付款比例]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u4ed8\u6b3e\u91d1\u989d" formatDesc="该值应该为[付款金额]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u5230\u8d27\u652f\u4ed8" formatDesc="该值应该为[到货支付]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u9a8c\u6536\u652f\u4ed8" formatDesc="该值应该为[验收支付]">bean.headInfos</mapping>
+		<mapping cell="G2" regExp="\u7ed3\u7b97\u652f\u4ed8" formatDesc="该值应该为[结算支付]">bean.headInfos</mapping>
+		<mapping cell="H2" regExp="\u5408\u540c\u7b7e\u8ba2\u5929\u6570" formatDesc="该值应该为[合同签订天数]">bean.headInfos</mapping>
+		<mapping cell="I2" regExp="\u652f\u4ed8\u91d1\u989d" formatDesc="该值应该为[支付金额]">bean.headInfos</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntFqfkBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.cntNum</mapping>
+			<mapping row="1" col="1">detail.jdDate</mapping>
+			<mapping row="1" col="2">detail.jdtj</mapping>
+			<mapping row="1" col="3">detail.jdzf</mapping>
+			<mapping row="1" col="4">detail.dhzf</mapping>
+			<mapping row="1" col="5">detail.yszf</mapping>
+			<mapping row="1" col="6">detail.jszf</mapping>
+			<mapping row="1" col="7">detail.rqtj</mapping>
+			<mapping row="1" col="8">detail.rqzf</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

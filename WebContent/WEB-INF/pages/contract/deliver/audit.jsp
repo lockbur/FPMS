@@ -1,0 +1,35 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
+<%@ taglib uri="http://www.formssi.com/taglibs/froms" prefix="forms" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="/platform-tags" prefix="p" %>
+
+<script type="text/javascript">
+
+
+</script>
+
+<!-- 审批弹出框DIV -->
+<div id="auditDiv" style="display:none;">
+		<form action="" method="post" id="auditForm">
+		<p:token/>
+			<table width="98%">
+				<tr>
+					<td align="left">
+						移交机构：<input id="dutyTree" type="text" class="base-input-text">
+						<input name="deliverDutyCode" type="hidden" id="deliverDutyCode">
+						<forms:OrgSelPlugin  triggerEle="#auditForm dutyTree,deliverDutyCode::name,id" rootNodeId="${user.org1Code}" 
+							parentCheckFlag="false" dialogFlag="true" jsVarName="dutyTree"/>
+<%-- 						<forms:OrgSelPlugin rootNodeId="${user.org1Code}" jsVarGetValue="deliverDutyCode" jsVarName="dutyTree" radioFlag="true"/> --%>
+					</td>
+				</tr>
+				<tr>
+					<td align="left" >
+						<div id="hideCntNums" style="display:none;"></div>
+						<br>操作备注(<span id="authmemoSpan">0/200</span>)：
+						<textarea class="base-textArea" onkeyup="$_showWarnWhenOverLen1(this,200,'authmemoSpan')" id="waterMemo" name="waterMemo" valid errorMsg="请输入审批意见。"></textarea>
+					</td>
+				</tr>
+			</table>
+		</form>
+	</div>

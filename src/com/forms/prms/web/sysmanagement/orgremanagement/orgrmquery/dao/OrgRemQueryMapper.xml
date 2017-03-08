@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.dao.OrgReQueryDAO">
+	<!--自动撤并查询-->
+	<select id="list" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean"
+			resultType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean">
+		SELECT 
+			BATCH_NO,
+			DUTY_CODE,
+			DUTY_NAME,
+			CHANGE_TYPE,
+			ORG_CODE_BEFORE,
+			ORG_NAME_BEFORE,
+			ORG_CODE_AFTER,
+			ORG_NAME_AFTER,
+			INST_DATE,
+			INST_TIME,
+			STATUS,
+			DUTY_CODE_AFTER,
+			DUTY_NAME_AFTER
+		FROM TB_FNDWRR_BATCH 
+		<where>
+			<if test="dutyCode != null and '' != dutyCode">
+				AND DUTY_CODE =  #{dutyCode ,jdbcType=VARCHAR}
+			</if>
+			<if test="dutyName != null and '' != dutyName">
+				AND DUTY_NAME LIKE '%' || #{dutyName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="instDateS != null and '' != instDateS">
+				AND INST_DATE &gt;= #{instDateS ,jdbcType=VARCHAR}
+			</if>
+			<if test="instDateE != null and '' != instDateE">
+				AND INST_DATE &lt;=  #{instDateE ,jdbcType=VARCHAR}
+			</if>
+			<if test="changeType != null and '' != changeType">
+				AND CHANGE_TYPE =  #{changeType ,jdbcType=VARCHAR}
+			</if>
+			<if test="status != null and '' != status">
+				AND STATUS =  #{status ,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	
+	<select id="orgList" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean"
+			resultType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean">
+		select * from tb_fndwrr_org_batch 
+		<where>
+			<if test="orgCode != null and '' != orgCode">
+				AND ORG_CODE =  #{orgCode ,jdbcType=VARCHAR}
+			</if>
+			<if test="orgName != null and '' != orgName">
+				AND ORG_NAME LIKE '%' || #{orgName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="instDateS != null and '' != instDateS">
+				AND INST_DATE &gt;= #{instDateS ,jdbcType=VARCHAR}
+			</if>
+			<if test="instDateE != null and '' != instDateE">
+				AND INST_DATE &lt;=  #{instDateE ,jdbcType=VARCHAR}
+			</if>
+			<if test="changeType != null and '' != changeType">
+				AND CHANGE_TYPE =  #{changeType ,jdbcType=VARCHAR}
+			</if>
+			<if test="status != null and '' != status">
+				AND STATUS =  #{status ,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	<update id="dutyOver" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean">
+		 update TB_FNDWRR_BATCH set STATUS ='1' 
+		 where batch_no=#{batchNo ,jdbcType=VARCHAR} and DUTY_CODE = #{dutyCode ,jdbcType=VARCHAR}
+	</update>
+		<update id="orgOver" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean">
+		 update TB_FNDWRR_ORG_BATCH set STATUS ='1' 
+		 where batch_no=#{batchNo ,jdbcType=VARCHAR} and ORG_CODE = #{orgCode ,jdbcType=VARCHAR}
+	</update>
+	<select id="exportList" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean"
+			resultType="com.forms.prms.web.sysmanagement.orgremanagement.orgrmquery.domain.OrgReQueryBean">
+				
+		SELECT A.*,
+		DECODE(NVL(B.IS_LOCKED ,'N'), 'Y' , '锁定' ,'N' , '未锁定') AS IS_LOCKED
+		FROM TB_FNDWRR A	
+		LEFT JOIN TB_FNDWRR_LOCK B
+		ON A.DUTY_CODE=B.DUTY_CODE
+		<where>
+			<if test="isSuperAdmin == 1 and org1CheckCode != 'A0001'.toString()">
+				AND A.ORG1_CODE= #{org1CheckCode ,jdbcType=VARCHAR}
+			</if>
+			<if test="isSuperAdmin == 0">
+				AND A.ORG2_CODE= #{org2CheckCode ,jdbcType=VARCHAR}
+			</if>
+		 	<if test="isLocked == '0'.toString()">
+		 		AND 1=1
+			</if>
+		 	<if test="isLocked == 'N'.toString()">
+		 		AND NOT EXISTS(
+	 			SELECT 1 FROM TB_FNDWRR_LOCK B
+	 			WHERE A.DUTY_CODE=B.DUTY_CODE 
+	 			AND B.IS_LOCKED='Y')
+			</if>
+		 	<if test="isLocked == 'Y'.toString()">
+		 		AND B.IS_LOCKED='Y'
+			</if>
+			<if test="dutyCode != null and '' != dutyCode and 'null' != dutyCode">
+				AND A.DUTY_CODE =  #{dutyCode ,jdbcType=VARCHAR}
+			</if>
+			<if test="dutyName != null and '' != dutyName and 'null' != dutyName" >
+				AND A.DUTY_NAME LIKE '%' || #{dutyName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="org1Code != null and '' != org1Code and 'null' != org1Code">
+				AND A.ORG1_CODE =  #{org1Code ,jdbcType=VARCHAR}
+			</if>
+			<if test="org1Name != null and '' != org1Name and 'null' != org1Name">
+				AND A.ORG1_NAME LIKE '%' || #{org1Name,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="org2Code != null and '' != org2Code and 'null' != org2Code">
+				AND A.ORG2_CODE =  #{org2Code ,jdbcType=VARCHAR}
+			</if>
+			<if test="org2Name != null and '' != org2Name and 'null' != org2Name">
+				AND A.ORG2_NAME LIKE '%' || #{org2Name,jdbcType=VARCHAR} || '%'
+			</if>
+		</where>
+		ORDER BY A.ORG1_CODE ,A.ORG2_CODE ,A.DUTY_CODE
+	</select>
+	
+</mapper>

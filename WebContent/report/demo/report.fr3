@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TfrxReport Version="3.23.7" DotMatrixReport="False" IniFile="\Software\ReportViewX" PreviewOptions.Buttons="4095" PreviewOptions.Zoom="1" PrintOptions.Printer="预设" ReportOptions.CreateDate="40422.4830846644" ReportOptions.Description.Text="" ReportOptions.LastChange="42069.6609347801" ScriptLanguage="PascalScript" ScriptText.Text="begin&#13;&#10;&#13;&#10;end." StoreInDFM="False" PropData="044C656674027603546F70024208446174617365747301010C1700000020446174615365744E616D653D22B1A8B1EDCAFDBEDD220000095661726961626C65730100055374796C650100">
+  <TfrxReportPage Name="Page1" Font.Charset="1" Font.Color="0" Font.Height="-19" Font.Name="Arial" Font.Style="0" PaperWidth="210" PaperHeight="297" PaperSize="9" LeftMargin="10" RightMargin="10" TopMargin="10" BottomMargin="10" ColumnWidth="0" ColumnPositions.Text="" HGuides.Text="" VGuides.Text="">
+    <TfrxReportTitle Name="ReportTitle1" Height="52.91342" Left="0" Top="18.89765" Width="718.1107">
+      <TfrxMemoView Name="Memo1" Left="264.5671" Top="0" Width="207.87415" Height="30.23624" Font.Charset="1" Font.Color="-16777208" Font.Height="-19" Font.Name="Arial" Font.Style="1" HAlign="haCenter" ParentFont="False" Text="浜岀淮鐮佹祴璇曟姤琛–"/>
+    </TfrxReportTitle>
+    <TfrxPageHeader Name="PageHeader1" Height="173.85838" Left="0" Top="94.48825" Width="718.1107">
+      <TfrxShapeView Name="Shape1" Left="0" Top="143.62214" Width="226.7718" Height="26.45671"/>
+      <TfrxShapeView Name="Shape3" Left="491.3389" Top="143.62214" Width="226.7718" Height="26.45671"/>
+      <TfrxShapeView Name="Shape2" Left="226.7718" Top="143.62214" Width="264.5671" Height="26.45671"/>
+      <TfrxMemoView Name="Memo2" Left="83.14966" Top="147.40167" Width="94.48825" Height="18.89765" Font.Charset="1" Font.Color="-16777208" Font.Height="-13" Font.Name="Arial" Font.Style="0" HAlign="haCenter" ParentFont="False" Text="瀹㈡埛鍚嶇О"/>
+      <TfrxMemoView Name="Memo4" Left="559.37044" Top="147.40167" Width="94.48825" Height="18.89765" Font.Charset="1" Font.Color="-16777208" Font.Height="-13" Font.Name="Arial" Font.Style="0" HAlign="haCenter" ParentFont="False" Text="缁撴伅閲戦"/>
+      <TfrxMemoView Name="Memo3" Left="287.24428" Top="147.40167" Width="154.96073" Height="18.89765" Font.Charset="1" Font.Color="-16777208" Font.Height="-13" Font.Name="Arial" Font.Style="0" HAlign="haCenter" ParentFont="False" Text="浜ゆ槗甯愬彿"/>
+      <TfrxBarCodeView Name="BarCode1" Left="498.89796" Top="18.89765" Width="46" Height="56.69295" BarType="bcCode128C" Expression="&#60;报表数据.&#34;文本内容&#34;&#62;" Rotation="0" Text="01" WideBarRatio="2" Zoom="1"/>
+    </TfrxPageHeader>
+  </TfrxReportPage>
+</TfrxReport>

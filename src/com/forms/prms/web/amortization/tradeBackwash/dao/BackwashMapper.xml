@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.tradeBackwash.dao.BackwashDAO">
+
+
+<!-- 查询列表 -->
+<select id="getBackWashList" parameterType="com.forms.prms.web.amortization.tradeBackwash.domain.BackwashBean"
+                             resultType="com.forms.prms.web.amortization.tradeBackwash.domain.BackwashBean">
+   SELECT DISTINCT T.CNT_NUM 
+     FROM TI_TRADE_TOTAL T 
+LEFT JOIN TD_CNT C 
+       ON C.CNT_NUM    = T.CNT_NUM 
+    WHERE T.fee_yyyymm = TO_CHAR(SYSDATE,'YYYYMM')
+      AND C.ORG1_CODE  = #{org1Code,jdbcType=VARCHAR}
+ <!--      AND T.FNDWRR_CHANGE_FLAG = '0'  -->
+      AND NOT EXISTS (
+                      SELECT 1 
+                        FROM TI_TRADE_BACKWASH BW 
+                       WHERE BW.CNT_NUM = T.CNT_NUM 
+                         AND BW.DATA_FLAG = '0'
+                         AND BW.FEE_YYYYMM = TO_CHAR(SYSDATE,'YYYYMM'))
+    <if test="cntNum != null and cntNum != ''">
+	  AND T.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+</select>
+
+<!-- 查询是否存在停留在预提复核状态的数据 -->
+<select id="getTradeStatus" parameterType="com.forms.prms.web.amortization.tradeBackwash.domain.BackwashBean"
+                            resultType="String">
+SELECT 'YES' FROM TD_PROVISION_MANAGE T 
+WHERE T.FEE_YYYYMM = TO_CHAR(SYSDATE,'YYYYMM')
+  AND T.DATA_FLAG = '1'
+  AND T.CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+  AND EXISTS (SELECT 1 FROM TL_CGL_BATCH B 
+               WHERE B.FEE_YYYYMM = TO_CHAR(SYSDATE,'YYYYMM')
+                 AND B.TASK_TYPE = '1'
+                 AND B.DATA_FLAG = '00'
+                 AND B.ORG1_CODE = #{org1Code,jdbcType=VARCHAR})
+</select>
+
+
+<!-- 查询本月预提待摊状态 -->
+<select id="getProPreStatus" parameterType = "String"
+                             resultType="String">
+SELECT B.DATA_FLAG FROM TL_CGL_BATCH B 
+ WHERE B.FEE_YYYYMM = TO_CHAR(SYSDATE,'yyyyMM')
+   AND B.TASK_TYPE = '1'
+   AND B.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+</select>
+
+<!-- 预提待摊数据回冲 -->
+<update id="backWash" parameterType="String">
+CALL PRC_PREPRO_CANCEL(#{org1Code, jdbcType=VARCHAR},#{cntNumList, jdbcType=VARCHAR})
+</update>
+
+<!-- 添加回冲合同信息 -->
+<insert id="addTradeBackWash" parameterType="com.forms.prms.web.amortization.tradeBackwash.domain.BackwashBean">
+INSERT INTO TI_TRADE_BACKWASH 
+(
+ID,
+FEE_YYYYMM,
+CNT_NUM,
+DATA_FLAG,
+OPER_USER,
+OPER_DATE,
+OPER_TIME
+)
+(
+SELECT SEQ_BACKWASH_ID.NEXTVAL,
+       TO_CHAR(SYSDATE,'YYYYMM'),
+       DD.CNTNUM,
+       '0',
+       #{operUser,jdbcType=VARCHAR},
+       TO_CHAR(SYSDATE,'yyyyMMdd'),
+       TO_CHAR(SYSDATE,'HH:mm:SS') 
+  FROM (
+        <foreach collection="cntNums" item="bean" open="" close="" separator="union">
+        SELECT #{bean,jdbcType=VARCHAR} AS CNTNUM
+          FROM DUAL
+        </foreach>
+         )DD
+)
+</insert>
+
+<!-- 查找回冲历史列表 -->
+<select id="getBackWashHistory" parameterType="com.forms.prms.web.amortization.tradeBackwash.domain.BackwashBean"
+                                resultType="com.forms.prms.web.amortization.tradeBackwash.domain.BackwashBean">
+   SELECT B.ID,
+          B.FEE_YYYYMM,
+          B.CNT_NUM,
+          B.DATA_FLAG,
+          B.OPER_USER,
+          B.OPER_DATE,
+          B.OPER_TIME 
+     FROM TI_TRADE_BACKWASH B 
+LEFT JOIN TD_CNT C 
+       ON C.CNT_NUM = B.CNT_NUM 
+WHERE C.ORG1_CODE  = #{org1Code,jdbcType=VARCHAR}
+    <if test="cntNum != null and cntNum != ''">
+			AND B.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="operUser != null and operUser != ''">
+			AND B.OPER_USER = #{operUser,jdbcType=VARCHAR}
+	</if>
+	<if test="befDate != null and befDate != ''">
+			AND B.OPER_DATE &gt;= to_char(to_date(#{befDate,jdbcType=VARCHAR},'yyyy-MM-dd'),'yyyymmdd')
+	</if>
+	<if test="aftDate != null and aftDate != ''">
+			AND B.OPER_DATE &lt;= to_char(to_date(#{aftDate,jdbcType=VARCHAR},'yyyy-MM-dd'),'yyyymmdd') 
+	</if>
+ORDER BY B.OPER_DATE DESC,B.OPER_TIME DESC,B.ID
+</select>
+
+<!-- 检查预提待摊上传文件是否已经回了校验文件 -->
+<select id="check33Upload" parameterType="String"
+	                       resultType="String">
+SELECT NVL(COUNT(1),0)
+	  FROM TI_UPLOAD T 
+ LEFT JOIN TB_FNDWRR F 
+        ON T.OU_CODE = F.OU_CODE
+	 WHERE T.TRADE_TYPE = '33'
+	   AND T.DATA_FLAG != '04'
+       AND F.ORG1_CODE  = #{org1Code,jdbcType=VARCHAR}
+</select>
+
+	<select id="backWashBgt" statementType="CALLABLE" parameterType ="java.util.Map">
+		CALL PRC_BGT_PREPRO_CANCEL(  
+			#{cntNum,jdbcType=VARCHAR,mode=IN}, 
+			#{retMsg,jdbcType=VARCHAR,mode=OUT}
+		)
+	</select>
+	<!--查看当前任务是否为预提待摊任务-->
+	<select id="getTaskTypeStatus" parameterType = "String" resultType = "String">
+		select t1.data_flag
+          from tl_cgl_batch t1
+         where t1.fee_yyyymm = (select max(t2.fee_yyyymm)
+                                  from tl_cgl_batch t2
+                                 where t2.org1_code = t1.org1_code
+                                   and t2.task_type = '0')
+           and t1.task_type = '1'
+           and t1.org1_code = #{org1Code,jdbcType=VARCHAR}
+	</select>
+	
+	<!--预提待摊任务时间是否为系统当前年月-->
+	<select id="isSysYYYYMM" parameterType = "String" resultType = "String">
+	select t1.fee_yyyymm
+  from tl_cgl_batch t1
+ where t1.fee_yyyymm = (select max(t2.fee_yyyymm)
+                          from tl_cgl_batch t2
+                         where t2.org1_code = t1.org1_code
+                           and t2.task_type = '1')
+   and t1.task_type = '1'
+   and t1.fee_yyyymm = to_char(sysdate,'YYYYMM')
+   and t1.org1_code = #{org1Code,jdbcType=VARCHAR}
+   </select>
+</mapper>

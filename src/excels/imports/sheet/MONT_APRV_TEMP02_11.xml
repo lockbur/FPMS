@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="0">
+		<mapping cell="A1" regExp="\u76d1\u63a7\u6307\u6807\u4ee3\u7801" formatDesc="该值应该为[监控指标代码]">bean.headInfos</mapping>
+		<mapping cell="B1" regExp="\u76d1\u63a7\u6307\u6807\u540d\u79f0" formatDesc="该值应该为[监控指标名称]">bean.headInfos</mapping>
+		<mapping cell="C1" regExp="\u7269\u6599\u7f16\u7801" formatDesc="该值应该为[物料编码]">bean.headInfos</mapping>
+		<mapping cell="D1" regExp="\u7269\u6599\u540d\u79f0" formatDesc="该值应该为[物料名称]">bean.headInfos</mapping>
+		
+		<mapping cell="E1" regExp="\u7269\u6599\u91c7\u8d2d\u90e8\u95e8\u7f16\u7801" formatDesc="该值应该为[物料采购部门编码]">bean.headInfos</mapping>
+		<mapping cell="F1" regExp="\u7269\u6599\u91c7\u8d2d\u90e8\u95e8\u540d\u79f0" formatDesc="该值应该为[物料采购部门名称]">bean.headInfos</mapping>
+		<mapping cell="G1" regExp="\u7269\u6599\u5f52\u53e3\u90e8\u95e8\u7f16\u7801" formatDesc="该值应该为[物料归口部门编码]">bean.headInfos</mapping>
+		<mapping cell="H1" regExp="\u7269\u6599\u5f52\u53e3\u90e8\u95e8\u540d\u79f0" formatDesc="该值应该为[物料归口部门名称]">bean.headInfos</mapping>
+		<mapping cell="I1" regExp="\u672c\u7ea7\u8d22\u52a1\u7ba1\u7406\u90e8\u95e8\u7f16\u7801" formatDesc="该值应该为[本级财务管理部门编码]">bean.headInfos</mapping>
+		<mapping cell="J1" regExp="\u672c\u7ea7\u8d22\u52a1\u7ba1\u7406\u90e8\u95e8\u540d\u79f0" formatDesc="该值应该为[本级财务管理部门名称]">bean.headInfos</mapping>
+		<mapping cell="K1" regExp="\u4e8c\u7ea7\u8d22\u52a1\u7ba1\u7406\u90e8\u95e8\u7f16\u7801" formatDesc="该值应该为[二级财务管理部门编码]">bean.headInfos</mapping>
+		<mapping cell="L1" regExp="\u4e8c\u7ea7\u8d22\u52a1\u7ba1\u7406\u90e8\u95e8\u540d\u79f0" formatDesc="该值应该为[二级财务管理部门名称]">bean.headInfos</mapping>
+		<mapping cell="M1" regExp="\u4e00\u7ea7\u8d22\u52a1\u7ba1\u7406\u90e8\u95e8\u7f16\u7801" formatDesc="该值应该为[一级财务管理部门编码]">bean.headInfos</mapping>
+		<mapping cell="N1" regExp="\u4e00\u7ea7\u8d22\u52a1\u7ba1\u7406\u90e8\u95e8\u540d\u79f0" formatDesc="该值应该为[一级财务管理部门名称]">bean.headInfos</mapping>
+		
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.domain.AprvChainBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" maxLength="50" nullAllowed="false" formatDesc="监控指标代码不允许为空">detail.montCode</mapping>
+			<mapping row="1" col="1"  nullAllowed="false" formatDesc="监控指标名称许为空">detail.montName</mapping>
+			<mapping row="1" col="2" maxLength="11" nullAllowed="false" formatDesc="物料编码不允许为空">detail.matrCode</mapping>
+			<mapping row="1" col="3"  nullAllowed="false" formatDesc="物料名称名称不允许为空">detail.matrName</mapping>
+			
+			
+			<mapping row="1" col="4" maxLength="6" nullAllowed="false" formatDesc="物料采购部门编码不允许为空">detail.matrBuyDept</mapping>
+			<mapping row="1" col="5"   >detail.matrBuyDeptName</mapping>
+			<mapping row="1" col="6" maxLength="6" nullAllowed="false" formatDesc="物料归口部门编码不允许为空">detail.matrAuditDept</mapping>
+			<mapping row="1" col="7"    >detail.matrAuditDeptName</mapping>
+			<mapping row="1" col="8" maxLength="6" nullAllowed="false" formatDesc="本级财管部门编码不允许为空">detail.fincDeptS</mapping>
+			<mapping row="1" col="9"   >detail.fincDeptSName</mapping>
+			<mapping row="1" col="10" maxLength="6" nullAllowed="false" formatDesc="二级财管部门编码不允许为空">detail.fincDept2</mapping>
+			<mapping row="1" col="11"  >detail.fincDept2Name</mapping>
+			<mapping row="1" col="12" maxLength="6" nullAllowed="false" formatDesc="一级财管部门编码不允许为空">detail.fincDept1</mapping>
+			<mapping row="1" col="13"   >detail.fincDept1Name</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.cleanpaydeal.cleanpayquery.dao.CleanPayQueryDao">
+	<!--查询暂收结清的列表-->
+	<select id="getList" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+		SELECT 
+			TPC.NORMAL_PAY_ID,
+			TPC.SORT_ID,
+			TPC.CLEAN_AMT,
+			TP.CNT_NUM,
+			TP.SUSPENSE_DATE,
+			TP.PROVIDER_CODE,
+			TP.PROVIDER_NAME,
+			TP.INVOICE_AMT,
+			TP.PAY_AMT,
+			TP.SUSPENSE_AMT,
+			TP.SUS_TOTAL_AMT
+		FROM TD_PAY_CLEAN TPC
+		LEFT JOIN TD_PAY TP ON　TPC.NORMAL_PAY_ID = TP.PAY_ID
+		<if test="orgFlag == 1 or orgFlag == 2">
+			LEFT JOIN TB_FNDWRR TF ON TP.INST_DUTY_CODE = TF.DUTY_CODE
+		</if>
+		WHERE 1=1
+		<if test="orgFlag == 1">
+			AND TF.ORG1_CODE=#{org1Code,jdbcType=VARCHAR}
+		</if>
+		<if test="orgFlag == 2">
+			AND TF.ORG2_CODE=#{org2Code,jdbcType=VARCHAR}
+		</if>
+		<if test="orgFlag == 3">
+			AND TP.INST_DUTY_CODE=#{dutyCode,jdbcType=VARCHAR}
+		</if>
+		<if test="normalPayId != null and '' != normalPayId">
+			AND TP.PAY_ID LIKE '%' || #{normalPayId ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="cntNum != null and '' != cntNum">
+			AND TP.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND TP.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND TP.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND TP.SUSPENSE_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND TP.SUSPENSE_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		ORDER BY TPC.NORMAL_PAY_ID,TPC.SORT_ID
+	</select>
+	
+	<!--暂收结清查询封面打印-->
+	<select id="getCleanPayReportData" parameterType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean" 
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+				SELECT 
+				to_char(sysdate,'yyyy/mm/dd') as dateTime,
+				TC.NORMAL_PAY_ID,
+					  TC.SORT_ID,
+					  (TP.SUSPENSE_AMT - CLR.TOTOL_CLEAN_AMT) as UNCLEAN_AMT,
+					  TC.CLEAN_AMT,
+					  TP.INVOICE_ID,
+					  TCN.CNT_NUM,
+					  TC.CLEAN_REASON
+					FROM TD_PAY_CLEAN TC
+					LEFT JOIN TD_PAY TP
+					ON TC.NORMAL_PAY_ID=TP.PAY_ID
+					LEFT JOIN (SELECT NORMAL_PAY_ID, SUM(CLEAN_AMT) AS TOTOL_CLEAN_AMT
+					          FROM TD_PAY_CLEAN
+					         GROUP BY NORMAL_PAY_ID
+					) CLR ON TP.PAY_ID = CLR.NORMAL_PAY_ID
+					LEFT JOIN TD_CNT TCN
+					ON TP.CNT_NUM=TCN.CNT_NUM
+				WHERE TC.SORT_ID = ${sortId} and TC.NORMAL_PAY_ID = ${normalPayId}
+	</select>
+	
+	
+	<select id="getBeforeCleanAmt" parameterType="String"
+			resultType="com.forms.prms.web.cleanpaydeal.cleanpay.domain.CleanPayBean">
+			select b.suspense_amt - a.fms_amt as befclean_amt
+			  from (select #{normalPayId,jdbcType=VARCHAR} as normal_pay_id,
+			               nvl(sum(nvl(clean_amt_fms, 0)), 0) fms_amt
+			          from td_pay_clean
+			         where normal_pay_id = #{normalPayId,jdbcType=VARCHAR}
+			           and sort_id &lt; #{sortId,jdbcType=VARCHAR}) a
+			  left join td_pay b
+			    on a.normal_pay_id = b.pay_id
+	</select>
+	
+</mapper>	

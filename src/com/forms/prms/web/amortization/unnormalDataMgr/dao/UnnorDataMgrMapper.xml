@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.unnormalDataMgr.dao.UnnorDataMgrDAO">
+
+	<!-- 1.查询：订单取消异常数据 -->
+	<select id="getOrderCancelList"  	parameterType="java.util.HashMap"
+											resultType="com.forms.prms.web.amortization.unnormalDataMgr.domain.UnnorDataMgrBean">
+		SELECT PO_NUMBER,ORDER_ID,decode(STATUS,'0','异常','1','正常','') STATUS 
+		FROM TID_ORDER_UNNORMAL T
+		WHERE STATUS = '0' 
+		<if test="queryMapObj.poNumber != null and queryMapObj.poNumber != ''">
+			AND T.PO_NUMBER = #{queryMapObj.poNumber,jdbcType=VARCHAR}
+		</if>
+		<if test="queryMapObj.orderId != null and queryMapObj.orderId != ''">
+			AND T.ORDER_ID = #{queryMapObj.orderId,jdbcType=VARCHAR}
+		</if>
+		<if test="queryMapObj.status != null and queryMapObj.status != ''">
+			AND T.STATUS = #{queryMapObj.status,jdbcType=VARCHAR}
+		</if>
+		ORDER BY ORDER_ID DESC 
+	</select>
+	
+	
+	<update id="unnormalDataUpdate" parameterType="com.forms.prms.web.amortization.unnormalDataMgr.domain.UnnorDataMgrBean">
+			update TID_ORDER_UNNORMAL A set STATUS = '1' 
+			WHERE A.ORDER_ID =#{orderId,jdbcType=VARCHAR} 
+	</update>
+	
+</mapper>

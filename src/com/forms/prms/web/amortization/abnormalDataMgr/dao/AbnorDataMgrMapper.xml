@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.abnormalDataMgr.dao.AbnorDataMgrDAO">
+
+	<!-- 1.查询：总帐凭证接口表 -->
+	<select id="getTidAccountQueryList"  	parameterType="java.util.HashMap"
+											resultType="com.forms.prms.web.amortization.abnormalDataMgr.domain.TidAccountBean">
+		SELECT 
+			BATCH_NO		,
+			SEQ_NO			,
+			VOUCHER_BATCH_NAME,
+			VOUCHER_NAME	,
+			CREATE_DATE		,
+			GL_DATE			,
+			ACCOUNT_DATE		,
+			VOUCHER_NO		,
+			VOUCHER_MEMO	,
+			CURRENCY		,
+			EXCHANGE_RATE	,
+			OU_CODE			,
+			ORG1_CODE		,
+			VOUCHER_SEQ_NO	,
+			ORG_CODE		,
+			DUTY_CODE		,
+			CGL_CODE		,
+			REFERENCE		,
+			SPECIAL			,
+			PRODUCT			,
+			COMPANY			,
+			RESERVE1		,
+			RESERVE2		,
+			DEBIT_AMT		,
+			CREDIT_AMT		,
+			ROW_MEMO		,
+			CGL_TRADE_NO	,
+			DECODE(DATA_FLAG , '0','录入','1','错误','8','忽略','9','成功')	 DATA_FLAG ,
+			DECODE(DATA_FLAG , '1' , '无效' ,'9' , '有效') USE_FLAG
+		FROM TID_ACCOUNT T
+		<where>
+			<if test="queryMapObj.useFlag != null and queryMapObj.useFlag != ''">
+				AND T.DATA_FLAG = #{queryMapObj.useFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.voucherName != null and queryMapObj.voucherName != ''">
+				AND T.VOUCHER_NAME = #{queryMapObj.voucherName,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.debitAmt != null and queryMapObj.debitAmt != ''">
+				AND T.DEBIT_AMT = #{queryMapObj.debitAmt,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.befDate != null and queryMapObj.befDate != ''">
+				AND TO_CHAR(REPLACE(T.CREATE_DATE, '-', '')) BETWEEN #{queryMapObj.befDate,jdbcType=VARCHAR} AND #{queryMapObj.aftDate,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY BATCH_NO DESC , SEQ_NO DESC
+	</select>
+	
+	<!-- 2.查询：AP发票接口表 -->
+	<select id="getTidApInvoiceQueryList" 	parameterType="java.util.HashMap"
+											resultType="com.forms.prms.web.amortization.abnormalDataMgr.domain.TidApInvoiceBean">
+		SELECT
+			BATCH_NO	,
+			SEQ_NO		,
+			CNT_NUM		,
+			PAY_ID		,
+			INVOICE_AMT	,
+			INVOICE_TYPE,
+			INVOICE_CANCEL_STATE,
+			INVOICE_CANCEL_DATE,
+			INVOICE_ROW_TYPE,
+			CANCEL_INVOICE_ID,
+			PO_LINENO	,
+			PO_NUMBER	,
+			INVOICE_NO	,
+			IVROW_SEQNO	,
+			IVROW_AMT	,
+			DECODE(DATA_FLAG , '0','录入','1','错误','8','忽略','9','成功')	 DATA_FLAG ,
+			DECODE(DATA_FLAG , '1' , '无效' ,'9' , '有效') USE_FLAG
+		FROM TID_AP_INVOICE T
+		<where>
+			<if test="queryMapObj.useFlag != null and queryMapObj.useFlag != ''">
+				AND T.DATA_FLAG = #{queryMapObj.useFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.cntNum != null and queryMapObj.cntNum != ''">
+				AND T.CNT_NUM LIKE '%' || #{queryMapObj.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.payId != null and queryMapObj.payId != ''">
+				AND T.PAY_ID LIKE '%' || #{queryMapObj.payId,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.invoiceNo != null and queryMapObj.invoiceNo != ''">
+				AND T.INVOICE_NO LIKE '%' || #{queryMapObj.invoiceNo,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.invoiceAmt != null and queryMapObj.invoiceAmt != ''">
+				AND T.INVOICE_AMT = #{queryMapObj.invoiceAmt,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY BATCH_NO DESC , SEQ_NO DESC
+	</select>
+	
+	<!-- 3.查询：AP付款接口表 -->
+	<select id="getTidApPayQueryList" 	parameterType="java.util.HashMap"
+											resultType="com.forms.prms.web.amortization.abnormalDataMgr.domain.TidApPayBean">
+		SELECT 
+			BATCH_NO	,
+			SEQ_NO		,
+			CNT_NUM		,
+			PAY_ID		,
+			PAY_AMT		,
+			PAY_CANCEL_STATE,
+			PAY_CANCEL_DATE,
+			DECODE(DATA_FLAG , '0','录入','1','错误','8','忽略','9','成功')	 DATA_FLAG ,
+			DECODE(DATA_FLAG , '1' , '无效' ,'9' , '有效') USE_FLAG
+		FROM TID_AP_PAY T
+		<where>
+			<if test="queryMapObj.useFlag != null and queryMapObj.useFlag != ''">
+				AND T.DATA_FLAG = #{queryMapObj.useFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.cntNum != null and queryMapObj.cntNum != ''">
+				AND T.CNT_NUM LIKE '%' || #{queryMapObj.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.payId != null and queryMapObj.payId != ''">
+				AND T.PAY_ID LIKE '%' || #{queryMapObj.payId,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.payAmt != null and queryMapObj.payAmt != ''">
+				AND T.PAY_AMT = #{queryMapObj.payAmt,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.befDate != null and queryMapObj.befDate != ''">
+				AND TO_CHAR(REPLACE(T.PAY_CANCEL_DATE, '-', '')) BETWEEN #{queryMapObj.befDate,jdbcType=VARCHAR} AND #{queryMapObj.aftDate,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY BATCH_NO DESC , SEQ_NO DESC
+	</select>
+	
+	<!-- 4.查询：科目余额表 -->
+	<select id="getTidCglAmtQueryList" 	parameterType="java.util.HashMap"
+											resultType="com.forms.prms.web.amortization.abnormalDataMgr.domain.TidCglAmtBean">
+		SELECT  
+			BATCH_NO	,
+			SEQ_NO  	,
+			ORG1_CODE	,
+			ORG1_NAME	,
+			OU_NAME		,
+			ORG_CODE	,
+			ORG_NAME	,
+			DUTY_CODE	,
+			DUTY_NAME	,
+			CGL_CODE	,
+			CGL_NAME	,
+			REFERENCE	,
+			REFERENCE_NAME	,
+			SPECIAL		,
+			SPECIAL_NAME,
+			PRODUCT		,
+			PRODUCT_NAME,
+			COMPANY		,
+			RESERVE1	,
+			COMPANY_NAME,
+			RESERVE1_NAME,
+			RESERVE2	,
+			RESERVE2_NAME,
+			CURRENCY	,
+			DEBIT_AMT	,
+			CREDIT_AMT	,
+			DECODE(DATA_FLAG , '0','录入','1','错误','8','忽略','9','成功')	 DATA_FLAG ,
+			DECODE(DATA_FLAG , '1' , '无效' ,'9' , '有效') USE_FLAG
+		FROM TID_CGL_AMT T
+		<where>
+			<if test="queryMapObj.useFlag != null and queryMapObj.useFlag != ''">
+				AND T.DATA_FLAG = #{queryMapObj.useFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.orgName != null and queryMapObj.orgName != ''">
+				AND T.ORG_NAME = #{queryMapObj.orgName,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.cglName != null and queryMapObj.cglName != ''">
+				AND T.CGL_NAME = #{queryMapObj.cglName,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.productName != null and queryMapObj.productName != ''">
+				AND T.PRODUCT_NAME = #{queryMapObj.productName,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.debitAmt != null and queryMapObj.debitAmt != ''">
+				AND T.DEBIT_AMT = #{queryMapObj.debitAmt,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY BATCH_NO DESC , SEQ_NO DESC
+	</select>
+	
+	<!-- 5.查询：订单接口表 -->
+	<select id="getTidOrderQueryList" 	parameterType="java.util.HashMap"
+											resultType="com.forms.prms.web.amortization.abnormalDataMgr.domain.TidOrderBean">
+		SELECT
+			 BATCH_NO	,
+			 SEQ_NO  	,
+			 PO_NUMBER	,
+			 ORDER_USER	,
+			 STOCK_NUM	,
+			 CNT_NUM	,
+			 ORDER_ID	,
+			 STATUS		,
+			 ROW_SEQNO	,
+			 DECODE(DATA_FLAG , '0','录入','1','错误','8','忽略','9','成功')	 DATA_FLAG ,
+			 DECODE(DATA_FLAG , '1' , '无效' ,'9' , '有效') USE_FLAG
+		FROM TID_ORDER T
+		<where>
+			<if test="queryMapObj.useFlag != null and queryMapObj.useFlag != ''">
+				AND T.DATA_FLAG = #{queryMapObj.useFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.cntNum != null and queryMapObj.cntNum != ''">
+				AND T.CNT_NUM LIKE '%' || #{queryMapObj.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.poNumber != null and queryMapObj.poNumber != ''">
+				AND T.PO_NUMBER LIKE '%' || #{queryMapObj.poNumber,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="queryMapObj.stockNum != null and queryMapObj.stockNum != ''">
+				AND T.STOCK_NUM = #{queryMapObj.stockNum,jdbcType=VARCHAR}
+			</if>
+			<if test="queryMapObj.orderId != null and queryMapObj.orderId != ''">
+				AND T.ORDER_ID LIKE '%' || #{queryMapObj.orderId,jdbcType=VARCHAR} || '%'
+			</if>
+		</where>
+		ORDER BY BATCH_NO DESC , SEQ_NO DESC , ROW_SEQNO ASC
+	</select>
+	
+</mapper>

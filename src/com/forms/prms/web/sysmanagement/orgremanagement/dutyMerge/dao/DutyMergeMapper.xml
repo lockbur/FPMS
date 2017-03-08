@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.dao.DutyMergeDao">
+	
+	<!--手工撤并列表查询-->
+	<select id="mergeHandleList" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		SELECT 
+		B.STATUS,A.*
+		FROM TB_FNDWRR_CHANGE_DETAIL A 
+		LEFT JOIN TB_FNDWRR_CHANGE B ON B.BATCH_NO = A.BATCH_NO 
+		<where>
+			<if test="modiYyyymmS != null and '' != modiYyyymmS">
+				AND HANDLE_DATE &gt;= #{modiYyyymmS ,jdbcType=VARCHAR}
+			</if>
+			<if test="modiYyyymmE != null and '' != modiYyyymmE">
+				AND HANDLE_DATE &lt;=  #{modiYyyymmE ,jdbcType=VARCHAR}
+			</if>
+			<if test="codeBef != null and '' != codeBef">
+				AND CODE_BEF = #{codeBef ,jdbcType=VARCHAR}  
+			</if>
+			<if test="codeCur != null and '' != codeCur">
+				AND CODE_CUR =   #{codeCur ,jdbcType=VARCHAR}  
+			</if>
+			<if test="changeType != null and '' != changeType">
+				AND CHANGE_TYPE = #{changeType ,jdbcType=VARCHAR}  
+			</if>
+			<if test="status != null and '' != status">
+				AND STATUS = #{status ,jdbcType=VARCHAR}  
+			</if>
+		</where>
+		<if test="menuTag == 02">
+			order by  A.BATCH_NO , A.seq  asc
+		</if>
+		<if test="menuTag != 02">
+			order by  A.BATCH_NO , A.seq asc
+		</if>
+		
+	</select>
+	<select id="getBean"  parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		SELECT * FROM TB_FNDWRR_CHANGE WHERE 
+	 	id =  #{id ,jdbcType=VARCHAR}
+	</select>
+	<select id="getDutyBean"  parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		SELECT DUTY_CODE as code_cur,DUTY_NAME as nameCur FROM TB_FNDWRR WHERE 
+	 	DUTY_CODE =  #{codeCur,jdbcType=VARCHAR}
+	</select>
+	<!--生成主键-->
+	<select id="getId"  parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="String">
+		select nvl(max(id)+1,1) id   from tb_fndwrr_change
+	</select>
+	<!--经办新增--> 
+	<insert id="handleAdd" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+				INSERT INTO TB_FNDWRR_CHANGE 
+				(ID,HANDLE_DATE,TYPE,STATUS,HANDLE_TIME,HANDLE_USER)
+				values(	 
+					 #{id ,jdbcType=VARCHAR},
+					to_char(sysdate,'YYYYMMDD'),
+				    #{type ,jdbcType=VARCHAR},
+				    '01',
+				   to_char(sysdate, 'HH24:MI:SS'),
+				   #{handleUser ,jdbcType=VARCHAR}
+				)
+		
+	</insert>
+	<!--经办新增明细-->
+	<insert id="handleDetailAdd" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+				INSERT INTO TB_FNDWRR_CHANGE_DETAIL 
+				(ID,SEQ,CODE_BEF,CODE_CUR,INVALID_DATE)
+				 (	 
+					select
+					 #{id ,jdbcType=VARCHAR},
+					 #{seq ,jdbcType=VARCHAR},
+					 #{codeBef ,jdbcType=VARCHAR},
+				    #{codeCur ,jdbcType=VARCHAR},
+				    a.INVALID_DATE
+				   from TB_FNDWRR_BATCH    a 
+				   where  DUTY_CODE =  #{codeBef ,jdbcType=VARCHAR} and a.CHANGE_TYPE = '02'
+				)
+		
+	</insert>
+	<!--经办新增2-->
+	<update id="updateSeq" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+	 	update tb_fndwrr_change set seq = #{seq ,jdbcType=VARCHAR} 
+	 	where  id=#{id ,jdbcType=VARCHAR}  
+	 	and  seq =#{seqP ,jdbcType=VARCHAR}
+	</update>
+	<!--经办删除-->
+	<delete id="handleDel" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+	 	DELETE FROM TB_FNDWRR_CHANGE_DETAIL WHERE 
+	 	ID =  #{id ,jdbcType=VARCHAR}
+	</delete>
+	<!--经办编辑-->
+	<update id="edit" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+ 			UPDATE TB_FNDWRR_CHANGE 
+ 			set
+		 	MODI_DATE= to_char(sysdate,'YYYY-MM-DD'),
+		 	MODI_TIME= to_char(sysdate,'HH24:MI:SS'),
+		 	MODI_USER = #{modiUser ,jdbcType=VARCHAR}
+		 	WHERE ID =  #{id ,jdbcType=VARCHAR}
+	</update>
+	<!--复核提交-->
+	<update id="aprv" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		UPDATE TB_FNDWRR_CHANGE 
+		SET STATUS =  #{status ,jdbcType=VARCHAR},
+		MEMO =  #{memo ,jdbcType=VARCHAR},
+	 	APRV_DATE= to_char(sysdate,'YYYY-MM-DD'),
+	 	APRV_TIME= to_char(sysdate,'HH24:MI:SS'),
+	 	APRV_USER = #{aprvUser ,jdbcType=VARCHAR},
+	 	IP_ADDRESS = NULL 
+	 	WHERE BATCH_NO =  #{batchNo ,jdbcType=VARCHAR}
+	</update>
+	<select id="getCount" parameterType="String"
+		resultType="String">
+	 	select count(*) from TB_FNDWRR_BATCH WHERE DUTY_CODE = #{codeBef ,jdbcType=VARCHAR}
+	</select>
+	<!--关联信息-->
+	<select id="glxx"  parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		SELECT * FROM TB_FNDWRR_CHANGE WHERE  
+	 	 
+	 	  TYPE = '01' and status = '01'
+	 	AND(
+	 	
+	 		CODE_BEF = #{codeBef ,jdbcType=VARCHAR} or
+	 		CODE_CUR = #{codeBef ,jdbcType=VARCHAR} or
+	 		CODE_BEF = #{codeCur ,jdbcType=VARCHAR}  
+	 		
+	 	)
+		<if test="aprvTag == 01">
+	 		AND CODE_BEF != #{codeBef ,jdbcType=VARCHAR}
+	 		AND CODE_CUR != #{codeCur ,jdbcType=VARCHAR}
+		</if>
+	 	order by ID DESC,SEQ ASC 
+	</select>
+	<!--撤并前责任中心列表-->
+	<select id="getMergeDutys" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		<if test="type==01">
+			select DUTY_CODE AS DUTY_CODE,DUTY_NAME AS DUTY_NAME from TB_FNDWRR_BATCH where CHANGE_TYPE='02' and status='00'
+		</if>
+		<if test="type==02">
+			select ORG_CODE as DUTY_CODE ,ORG_NAME AS DUTY_NAME  from TB_FNDWRR_ORG_BATCH where CHANGE_TYPE='02' and status='00'
+		</if>
+	</select>
+	<select id="existFndwrr" parameterType="String"
+		resultType="String">
+		<if test="type == 01">
+		select COUNT(1) from TB_FNDWRR where duty_code=#{dutyCode ,jdbcType=VARCHAR}
+		</if>
+		<if test="type == 02">
+		select COUNT(1) from TB_FNDWRR where ORG_CODE=#{dutyCode ,jdbcType=VARCHAR}
+		</if>
+		
+	</select>
+	<select id="existBatch" parameterType="String"
+		resultType="String">
+		<if test="type == 01">
+			select COUNT(1) from TB_FNDWRR_BATCH where duty_code = #{dutyCode ,jdbcType=VARCHAR} and CHANGE_TYPE='02'
+		</if>
+		<if test="type == 02">
+			select COUNT(1) from TB_FNDWRR_ORG_BATCH where ORG_CODE = #{dutyCode ,jdbcType=VARCHAR} and CHANGE_TYPE='02'
+		</if>
+		
+	</select>
+	<select id="isHaveMerge" parameterType="String"
+		resultType="String">
+		select COUNT(1) from TB_FNDWRR_CHANGE where code_Bef = #{dutyCode ,jdbcType=VARCHAR} and TYPE='01' and status='01'
+	</select>
+	<select id="selectGlgxList"  parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+	 	select b.*,a.code_Bef,a.code_Cur,a.INVALID_DATE from tb_fndwrr_change_detail a
+	 	left join tb_fndwrr_change b on b.id = a.id
+	 	   where a.id=#{id ,jdbcType=VARCHAR}
+	</select>
+	 	
+	
+	<!-- 查看ti_download 责任中心同步是否成功 -->
+	<select id="checkDownload12" resultType="String">
+	select 1 
+      from ti_download td 
+     where td.TRADE_TYPE = '12' 
+       and td.TRADE_DATE = to_char(sysdate-1,'yyyyMMdd')
+       and td.DATA_FLAG != '02'
+	</select>
+	
+	<!-- 查看 tb_fndwrr_batch 处理状态-->
+	<select id="checkBatchStatus" parameterType="String"
+		resultType="String">
+	select DISTINCT 1 
+	  from tb_fndwrr_batch f 
+	 where f.ORG1_CODE = #{org1Code ,jdbcType=VARCHAR}
+	   and f.STATUS != '02'
+	   and f.CHANGE_TYPE='02'
+	</select>
+	<!--查询出 没有经办的撤并的责任中心-->
+	<select id="getNoMergeDuty" parameterType="String"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		<if test="type == 01">
+	 	select DISTINCT A.INVALID_DATE from tb_fndwrr_batch a where 
+    	a.invalid_date &lt; #{invalidDate ,jdbcType=VARCHAR} and a.change_type ='02' and a.status='00'
+		</if>
+		<if test="type != 01">
+	 	select DISTINCT A.INST_DATE from TB_FNDWRR_ORG_BATCH a where 
+    	a.INST_DATE &lt; #{invalidDate ,jdbcType=VARCHAR} and a.change_type ='02' and a.status='00'
+		</if>
+	</select>
+	<!--查询出 没有审核通过的撤并的责任中心-->
+	<select id="getNoAprvDuty" parameterType="String"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		
+		select DISTINCT A.INVALID_DATE from tb_fndwrr_batch a where 
+    a.invalid_date &lt; #{invalidDate ,jdbcType=VARCHAR} and a.change_type ='02' and a.status !='02'
+	</select>
+	<!--更新撤并批次表状态-->
+	<update id="updateStatusForBatch" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		update tb_fndwrr_batch a
+		set (
+			status,
+			DUTY_CODE_AFTER,
+			DUTY_NAME_AFTER
+			)=(
+				select
+				#{status ,jdbcType=VARCHAR},
+				#{codeCur ,jdbcType=VARCHAR},
+				NVL(b.duty_name,#{codeCur ,jdbcType=VARCHAR})
+				FROM DUAL C 
+				LEFT JOIN  TB_FNDWRR B ON B.DUTY_CODE = #{codeCur ,jdbcType=VARCHAR}
+			)
+		
+		where a.duty_code = #{codeBef ,jdbcType=VARCHAR} 
+		and a.status =#{batchStatus ,jdbcType=VARCHAR} 
+		and batch_no = #{batchNo ,jdbcType=VARCHAR} 
+	</update>
+	<!--查看这个编码是否存在-->
+	<select id="existsCode" parameterType="String"
+		resultType="Integer">
+		<if test="type == 01">
+			WITH TEMP_FNDW AS(
+			     SELECT A.DUTY_CODE,'0' as type FROM TB_FNDWRR A where a.duty_code=#{code ,jdbcType=VARCHAR}
+			     UNION
+			     SELECT b.duty_code,'1' as type FROM TB_FNDWRR_BATCH b where b.change_type='02' and b.duty_code =#{code ,jdbcType=VARCHAR}
+			)
+		</if>
+		<if test="type == 02">
+			WITH TEMP_FNDW AS(
+			     SELECT A.ORG_CODE,'0' as type FROM TB_FNDWRR A where a.ORG_CODE=#{code ,jdbcType=VARCHAR}
+			     UNION
+			     SELECT b.ORG_CODE,'1' as type FROM TB_FNDWRR_ORG_BATCH b where b.change_type='02' and b.ORG_CODE =#{code ,jdbcType=VARCHAR}
+			)
+		</if>
+		select count(1) from temp_fndw 
+	</select>
+	<!--根据撤并前责任中心得到撤并的集合-->
+	<select id="getInvalidDutys" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean"
+		resultType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		<foreach collection="codeBefs" item="item" index="index" separator="union all" >
+			<if test="type == 01">
+				SELECT 
+				 duty_code,
+				 INVALID_DATE
+			     FROM TB_FNDWRR_BATCH WHERE DUTY_CODE = #{item ,jdbcType=VARCHAR} and CHANGE_TYPE = '02'
+			</if>
+			<if test="type != 01">
+				SELECT 
+				 duty_code,
+				 INVALID_DATE
+			     FROM TB_FNDWRR_ORG_BATCH WHERE org_CODE = #{item ,jdbcType=VARCHAR} and CHANGE_TYPE = '02'
+			</if>
+		</foreach>
+		
+	</select>
+	<!--删除的时候反向更新批次表里的状态-->
+	<update id="updateStatusForDel" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		UPDATE TB_fndwrr_batch a set a.status ='00'
+		where exists(
+			select 1 from TB_FNDWRR_CHANGE_DETAIL b
+			left join  tb_fndwrr_change c on c.id =b.id
+			where b.id = #{id ,jdbcType=VARCHAR}
+			and a.duty_code = b.CODE_BEF 
+			and c.type='01' 
+			and c.status ='01'
+			and a.INVALID_DATE= b.INVALID_DATE 
+		)
+	</update>
+	
+	<!--待处理数据日期-->
+	<select id="getDealDate" resultType = "string">
+		select to_char(WM_CONCAT(substr(batch_no, 3, 8))) from(
+		select t.batch_no
+		  from tb_fndwrr_change t
+		 where t.status != '02'
+		 order by t.batch_no asc
+		)
+	</select>
+	<!--以下数据日期-->
+	<select id="getListDate" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select
+		t2.data_date,t2.batch_no,t3.status
+		 from (
+		select min(substr(batch_no, 3, 8)) as data_date, 
+		       min(batch_no) as batch_no 
+		  from tb_fndwrr_change t
+		 where t.status != '02'
+		 order by t.batch_no) t2 left join tb_fndwrr_change t3 on t3.batch_no = t2.batch_no 
+		 
+	</select>
+	<!--查询经办列表-->
+	<select id="list" parameterType="string" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select * from tb_fndwrr_change_detail t where t.batch_no = #{batchNo,jdbcType=VARCHAR} order by t.change_type
+	</select>
+	<!--通过撤并后的查询-->
+	<select id="queryFndwrr" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		<if test="changeType == 01">
+			select DUTY_CODE,DUTY_NAME
+			from tb_fndwrr
+			where DUTY_CODE = #{codeCur,jdbcType=VARCHAR} 
+		</if>
+		<if test="changeType == 02">
+			select distinct ORG_CODE,ORG_NAME
+			from tb_fndwrr
+			where ORG_CODE = #{codeCur,jdbcType=VARCHAR} 
+		</if>
+	</select>
+	
+	<update id="updateFndChangeDetail" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		update TB_FNDWRR_CHANGE_DETAIL
+		set 
+			CODE_CUR = #{codeCur,jdbcType=VARCHAR},
+			NAME_CUR = (SELECT DUTY_NAME FROM TB_FNDWRR WHERE DUTY_CODE =  #{codeCur,jdbcType=VARCHAR})
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		and	SEQ = #{seq,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateFndBatch" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		UPDATE    TB_FNDWRR_BATCH A SET a.status='01', A.DUTY_CODE_AFTER =#{codeCur,jdbcType=VARCHAR} ,A.DUTY_NAME_AFTER=(SELECT DUTY_NAME FROM TB_FNDWRR WHERE DUTY_CODE =  #{codeCur,jdbcType=VARCHAR})
+	WHERE A.BATCH_NO= #{batchNo,jdbcType=VARCHAR} AND A.DUTY_CODE=#{codeBef,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateFndChange" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		update TB_FNDWRR_CHANGE
+		set LAST_UPDTIME =  to_char(sysdate, 'YYYY-MM-DD HH24:MI:SS')
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</update>
+	<update id="updateBatch" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		    
+    UPDATE TB_FNDWRR_BATCH A 
+    SET A.STATUS='02'
+    WHERE A.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</update>
+	
+	<!--查询是否还没有撤并的-->
+	<select id="queryFndwrrChnageDetail" parameterType="string" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select * 
+		from tb_fndwrr_change_detail t 
+		where t.batch_no = #{batchNo,jdbcType=VARCHAR} 
+		and t.CODE_CUR is null or t.CODE_CUR = ''
+	</select>
+	
+	<update id="updateStatus" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		update TB_FNDWRR_CHANGE
+		set STATUS =  #{curStatus,jdbcType=VARCHAR}
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</update>
+	
+	<select id="getFndwrrChangeInfo" parameterType="string" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select * 
+		from TB_FNDWRR_CHANGE
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	<select id="checkList" parameterType="string" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select 
+			t.BATCH_NO,
+			t.STATUS,
+			t.MEMO,
+			t.LAST_UPDTIME,
+			t.APRV_USER,
+			t.APRV_DATE,
+			t.APRV_TIME,
+			tf.CODE_BEF,
+			tf.NAME_BEF,
+			tf.CODE_CUR,
+			tf.NAME_CUR,
+			tf.INVALID_DATE,
+			tf.CHANGE_TYPE
+		from TB_FNDWRR_CHANGE t
+		left join TB_FNDWRR_CHANGE_DETAIL tf on t.batch_no = tf.batch_no
+		where t.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		and t.STATUS in( '01','04')
+		order by tf.change_type
+	</select>
+	<select id="queryDetail" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select 
+			t.BATCH_NO,
+			t.STATUS,
+			t.MEMO,
+			t.LAST_UPDTIME,
+			t.APRV_USER,
+			t.APRV_DATE,
+			t.APRV_TIME,
+			tf.CODE_BEF,
+			tf.NAME_BEF,
+			tf.CODE_CUR,
+			tf.NAME_CUR,
+			tf.INVALID_DATE,
+			tf.CHANGE_TYPE
+		from TB_FNDWRR_CHANGE_DETAIL tf 
+		left join TB_FNDWRR_CHANGE t on tf.batch_no = t.batch_no
+		where tf.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		and tf.SEQ = #{seq,jdbcType=VARCHAR}
+	</select>
+	<delete id="deleteLock" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean" >
+		  delete from tb_fndwrr_lock a where exists(
+                 select 1 from tb_fndwrr_change_detail b 
+                 where b.batch_no = #{batchNo,jdbcType=VARCHAR}
+                 and b.code_bef = a.duty_code
+          )
+	</delete>
+	<select id="getMergeList" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean" resultType = "com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean">
+		select
+		a.code_bef,
+		a.code_cur,
+		a.CHANGE_TYPE
+		 from tb_fndwrr_change_detail a where a.batch_no = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	<update id="callDutyMerge" parameterType="String">
+		CALL PRC_MADB_DUTY(#{codeBef,jdbcType=VARCHAR},#{codeCur,jdbcType=VARCHAR})
+	</update>
+	<update id="callOrgMerge" parameterType="String">
+		CALL PRC_MADB_ORG(#{codeBef,jdbcType=VARCHAR},#{codeCur,jdbcType=VARCHAR})
+	</update>
+	
+	<update id="update5IpAddress" parameterType="com.forms.prms.web.sysmanagement.orgremanagement.dutyMerge.domain.DutyMergeBean" >
+		update TB_FNDWRR_CHANGE
+		set STATUS =  #{curStatus,jdbcType=VARCHAR},
+		IP_ADDRESS =  #{ipAddress,jdbcType=VARCHAR}
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR} 
+	</update>
+</mapper>

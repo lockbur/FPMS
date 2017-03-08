@@ -1,0 +1,371 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.budgetInspect.dao.BudgetInspectDao">
+	
+	<!-- 根据合同查询预算信息 -->
+	<select id="getSumCntInfo" parameterType="java.util.HashMap"
+		 resultType="com.forms.prms.web.budget.budgetInspect.domain.SumCnt">
+		 SELECT DISTINCT B.SC_ID,B.BGT_YEAR,B.CNT_NUM,F.DUTY_NAME,T.MONT_NAME,M.MATR_NAME,
+		 	R.REFERENCE_NAME,S.SPECIAL_NAME,B.BGT_FROZEN,B.BGT_OVERDRAW,B.BGT_USED_SUM,B.BGT_USED_THISYEAR,
+		 	B.BGT_FREE,B.BGT_WAIT_FREE,B.FROZENBGT_FREE,B.FROZENBGT_WAIT_FREE,B.BGT_ID
+		FROM ERP_BUDGET_SUM_CNT B LEFT JOIN TB_FNDWRR F ON B.FEE_DEPT=F.DUTY_CODE 
+  			LEFT JOIN TB_MATR_TYPE M ON B.MATR_CODE=M.MATR_CODE
+  			LEFT JOIN TB_REFERENCE R ON B.REFERENCE=R.REFERENCE_ID
+  			LEFT JOIN TB_SPECIAL S ON B.SPECIAL=S.SPECIAL_ID 
+  			LEFT JOIN TD_CNT CNT ON B.CNT_NUM=CNT.CNT_NUM
+  			LEFT JOIN TD_CNT_DEVICE TCD ON B.CNT_NUM=TCD.CNT_NUM AND B.MONT_CODE = TCD.MONT_CODE AND B.MATR_CODE = TCD.MATR_CODE
+  			LEFT JOIN TB_MONT_NAME T  ON   T.MONT_CODE = decode(to_char(sysdate,'yyyy'),tcd.curr_year,tcd.curr_mont_code,nvl2(tcd.next_mont_code,tcd.next_mont_code,tcd.curr_mont_code))
+  		<if test="sumCnt.orgFlag == 2 or sumCnt.orgFlag == 3">
+  			
+  			LEFT JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = TCD.FEE_DEPT
+  			
+  			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+  				AND TACN.FEE_CODE = TCD.FEE_DEPT AND TACN.MONT_CODE = T.MONT_CODE 
+  				AND TACN.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+  				AND TACN.FEE_CODE IS NOT NULL
+  				
+  			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+ 				 AND TACN2.MONT_CODE = T.MONT_CODE 
+ 				AND TACN2.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy')
+ 				AND TACN2.ORG_CODE =  TF2.ORG_CODE
+ 				
+  			LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+  				AND TAC.MONT_CODE = T.MONT_CODE AND TAC.DATA_YEAR = TO_CHAR(SYSDATE,'yyyy') 
+  		</if>
+		WHERE 1=1 
+		<!-- 一级行 -->
+		<if test="sumCnt.orgFlag == 1">
+			AND CNT.ORG1_CODE=#{org1Code,jdbcType=VARCHAR}
+		</if>
+		<!-- 二级行 -->
+		<if test="sumCnt.orgFlag == 2">
+			and exists
+			(
+			   select 1 from tb_fndwrr tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+			   (
+			   	    tbf.duty_code = cnt.create_dept or 
+			   		tbf.duty_code = cnt.pay_duty_code or 
+			   		tbf.duty_code = tcd.fee_dept or 
+			   		tbf.duty_code = tac.matr_buy_dept or 
+			   	    tbf.duty_code = tac.matr_audit_dept or 
+			   	    tbf.duty_code = NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept) or 
+			   	    tbf.duty_code = NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept) 
+			   )
+			)
+		</if>
+		<!-- 业务部门 -->
+		<if test="sumCnt.orgFlag == 3 ">
+			and (cnt.create_dept      = #{dutyCode,jdbcType=VARCHAR} or
+				 cnt.pay_duty_code    = #{dutyCode,jdbcType=VARCHAR} or
+				 tcd.fee_dept         = #{dutyCode,jdbcType=VARCHAR} or
+				 tac.matr_buy_dept    = #{dutyCode,jdbcType=VARCHAR} or
+				 tac.matr_audit_dept  = #{dutyCode,jdbcType=VARCHAR} or
+				 NVL(tacn.matr_buy_dept,TACN2.matr_buy_dept)   = #{dutyCode,jdbcType=VARCHAR} or
+				 NVL(tacn.matr_audit_dept,TACN2.matr_audit_dept) = #{dutyCode,jdbcType=VARCHAR} 
+				)
+		</if>
+		<if test="sumCnt.cntNum != null and '' != sumCnt.cntNum and 'null' != sumCnt.cntNum">
+			AND B.CNT_NUM LIKE '%' || #{sumCnt.cntNum,jdbcType=VARCHAR} || '%'
+		</if> 
+		<if test="sumCnt.bgtYear != null and '' != sumCnt.bgtYear and 'null' != sumCnt.bgtYear">
+			AND B.BGT_YEAR=#{sumCnt.bgtYear,jdbcType=CHAR}
+		</if> 
+		<if test="sumCnt.bgtId != null and '' != sumCnt.bgtId and 'null' != sumCnt.bgtId">
+			AND B.BGT_ID LIKE '%' || #{sumCnt.bgtId,jdbcType=VARCHAR} || '%' 
+		</if>
+		ORDER BY B.BGT_YEAR DESC,B.CNT_NUM DESC,F.DUTY_NAME,T.MONT_NAME,M.MATR_NAME,
+			R.REFERENCE_NAME,S.SPECIAL_NAME		 	
+	</select>
+	
+	<!-- 查询预算合同的详细信息 -->
+	<select id="getCntDetail" parameterType="String" 
+		resultType="com.forms.prms.web.budget.budgetInspect.domain.SumCntDetail">
+		SELECT SCD_ID,SC_ID,
+			DECODE(BGT_TYPE,
+  					'00','冻结',
+  					'01','冻结转占用',
+  					'02','占用转冻结',
+  					'03','冻结转释放',
+  					'04','占用转释放',
+  					'05','占用冻结同时释放') BGT_TYPE,PAY_ID,BGT_VAL,MEMO,INST_DATE 
+		FROM ERP_BUDGET_SUM_CNT_DETAIL 
+			WHERE SC_ID=#{scId, jdbcType=VARCHAR}
+			order by scd_id desc 
+	</select>
+	
+	<!-- 查询预算信息 -->
+	<select id="queryBudgetmanageBeans"
+		parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+		resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+			SELECT  NVL2(F.DUTY_NAME, F.DUTY_NAME, NVL2(F2.ORG2_NAME, F2.ORG2_NAME, F3.ORG1_NAME)) AS DUTY_NAME,
+                 E.bgt_year      ,
+				 E.bgt_orgcode   ,
+				 E.bgt_montcode  ,
+				 DECODE(E.bgt_matrcode  ,'00000000000',NULL,E.bgt_matrcode)bgt_matrcode,
+				 DECODE(E.bgt_matrcode  ,'00000000000','-',E.bgt_matrcode)bgt_matrcode1,
+				 E.bgt_id        ,
+				 E.bgt_sum       ,
+				 E.bgt_sum_valid ,
+				 E.bgt_overdraw  ,
+				 E.bgt_frozen    ,
+				 E.bgt_used      ,
+				 E.bgt_temp      ,
+				 E.bgt_id_temp   ,
+				 E.org21_code    ,
+				 E.sub_type      ,
+                T.MATR_NAME,
+                M.MONT_NAME,
+                T.CGL_CODE,
+                DECODE(E.SUB_TYPE,'11','专项包','12','省行统购资产','21','非省行统购资产','22','非专项包费用')AS BGT_TYPE,
+                NVL2(F.DUTY_CODE,F.DUTY_CODE,'-') AS DUTY_CODE,
+                NVL2(F.DUTY_CODE,F.DUTY_NAME,'') AS DUTY_NAME2,
+        NVL2(F.DUTY_CODE,F.ORG_CODE,'-') ORG_CODE,
+        NVL2(F.DUTY_CODE,F.ORG_NAME,'') ORG_NAME,
+        NVL2(F.DUTY_CODE,F.ORG2_CODE,NVL2(F2.ORG2_CODE,F2.ORG2_CODE,'-'))ORG2_CODE,
+        NVL2(F.DUTY_CODE,F.ORG2_NAME,NVL2(F2.ORG2_CODE,F2.ORG2_NAME,''))ORG2_NAME,
+        NVL2(F.DUTY_CODE,F.ORG1_CODE,NVL2(F2.ORG2_CODE,F2.ORG1_CODE,F3.ORG1_CODE)) ORG1_CODE,
+        NVL2(F.DUTY_CODE,F.ORG1_NAME,NVL2(F2.ORG2_CODE,F2.ORG1_NAME,F3.ORG1_NAME)) ORG1_NAME
+			  FROM ERP_BUDGET_SUM E
+			  LEFT JOIN TB_MATR_TYPE T
+			    ON E.BGT_MATRCODE = T.MATR_CODE
+			  LEFT JOIN TB_MONT_NAME M
+			    ON E.BGT_MONTCODE = M.MONT_CODE 
+			  LEFT JOIN tB_FNDWRR F
+			    ON F.DUTY_CODE = E.BGT_ORGCODE    
+			  left join (select distinct ORG1_CODE,ORG1_NAME, org2_code, org2_name from TB_FNDWRR where org1_code = #{org1Code,jdbcType=VARCHAR })  F2
+			    ON F2.org2_code = E.BGT_ORGCODE
+			  left join (select distinct org1_code, org1_name from TB_FNDWRR where org1_code = #{org1Code,jdbcType=VARCHAR }) F3
+			    ON F3.org1_code = E.BGT_ORGCODE
+			 where
+			  exists  (select 1
+			            from tb_fndwrr a
+			           where a.org1_code = #{org1Code,jdbcType=VARCHAR }
+			            and (a.org1_code = e.bgt_orgcode or a.org2_code = e.bgt_orgcode or
+			               a.duty_code = e.bgt_orgcode               
+			               ))
+			<if test="bgtId != null and '' != bgtId and 'null' != bgtId">
+				AND E.BGT_ID LIKE '%' || #{bgtId,jdbcType=VARCHAR} || '%'    
+			</if>
+			<if test="bgtYear != null and '' != bgtYear and 'null' != bgtYear">
+				AND E.BGT_YEAR = #{bgtYear,jdbcType=VARCHAR}
+			</if>			
+			<if test="overDrawType == 1">
+			    AND E.BGT_OVERDRAW != 0
+			</if>
+			<if test="overDrawType == 2 ">
+			    AND E.BGT_OVERDRAW = 0
+			</if>               
+			<if test="bgtOrgcode != null and '' != bgtOrgcode and 'null' != bgtOrgcode">
+				AND E.BGT_ORGCODE =#{bgtOrgcode,jdbcType=VARCHAR }
+			</if> 
+			<if test="montName != null and '' != montName and 'null' != montName">
+			    AND M.MONT_NAME = #{montName,jdbcType=VARCHAR}
+			</if>	
+			<if test="bgtMatrcode != null and '' != bgtMatrcode and 'null' != bgtMatrcode">
+			    AND E.BGT_MATRCODE = #{bgtMatrcode,jdbcType=VARCHAR}
+			</if>	
+			<if test="montType != 0 and montType != null and '' != montType and 'null' != montType">
+			    AND M.MONT_TYPE = #{montType,jdbcType=VARCHAR}
+			</if>						
+			<if test="orgType == 1">
+			    AND M.MONT_TYPE IN ('11', '12')
+			</if>
+			<if test="orgType ==2">
+			    AND M.MONT_TYPE IN ('21', '22')
+			</if>
+			<!--分行-->
+			<if test="orgType == 2 ">
+				AND EXISTS(
+					SELECT 1 FROM TB_fndwrr TF2 WHERE TF2.ORG2_CODE = #{org2Code,jdbcType=VARCHAR }
+					AND (E.BGT_ORGCODE = TF2.ORG2_CODE OR E.BGT_ORGCODE = TF2.DUTY_CODE)
+				)
+			</if>
+			ORDER BY E.BGT_YEAR, E.BGT_ORGCODE, E.BGT_MONTCODE, E.BGT_MATRCODE
+	</select>
+	
+	<!-- 查询预算列表-->
+	<select id="view" parameterType="String"
+	                  resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		 SELECT SD_ID,
+		 		bgt_Id,
+		 		DECODE(bgt_Type,
+		 		'01','正式',
+		 		'02','追加(多次)',
+		 		'03','调整(多次,页面)',
+		 		'04','撤并(产生撤出、并入两条记录)',
+		 		'05','释放(多次)',
+		 		'06','监控指标变化',
+		 		'00','临时') bgt_Type,
+                bgt_Value,
+                inst_Oper,
+                inst_Date,
+                inst_Time,
+                memo
+           FROM ERP_BUDGET_SUM_DETAIL
+          WHERE bgt_Id = #{bgtId, jdbcType=VARCHAR}
+          ORDER BY INST_DATE DESC
+	</select> 
+	
+	<!-- 查询预算详细信息-->
+	<select id="sumDetail" parameterType="String"
+	                  resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		 SELECT SD_ID,
+		 		bgt_Id,
+                DECODE(bgt_Type,
+		 		'01','正式',
+		 		'02','追加(多次)',
+		 		'03','调整(多次,页面)',
+		 		'04','撤并(产生撤出、并入两条记录)',
+		 		'05','释放(多次)',
+		 		'06','监控指标变化',
+		 		'00','临时') bgt_Type,
+                bgt_Value,
+                inst_Oper,
+                inst_Date,
+                inst_Time,
+                memo
+           FROM ERP_BUDGET_SUM_DETAIL
+          WHERE SD_ID = #{sdId, jdbcType=VARCHAR}
+	</select> 
+	<!-- 查询预算详细信息-->
+	<select id="cntInspectDetail" parameterType="String"
+	                  resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		SELECT SCD_ID,SC_ID,
+			DECODE(BGT_TYPE,
+  					'00','冻结',
+  					'01','冻结转占用',
+  					'02','占用转冻结',
+  					'03','冻结转释放',
+  					'04','占用转释放',
+  					'05','占用冻结同时释放') BGT_TYPE,PAY_ID,BGT_VAL AS BGT_VALUE,MEMO,INST_DATE 
+		FROM ERP_BUDGET_SUM_CNT_DETAIL 
+			WHERE SCD_ID=#{scdId, jdbcType=VARCHAR}
+			order by scd_id desc
+	</select> 
+	<!-- 查询指标名称 -->
+	<select id="getMontName" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+	resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+	      SELECT MONT_CODE,MONT_NAME 
+	      FROM TB_MONT_NAME 
+	      WHERE ORG21_CODE = #{bgtOrgcode,jdbcType=VARCHAR} AND MONT_TYPE = #{montType,jdbcType=VARCHAR}
+	</select>
+	<!-- 查询物料 -->
+	<select id="getMatrName" parameterType="com.forms.prms.web.budget.budgetInspect.domain.MatrBean"
+	resultType="com.forms.prms.web.budget.budgetInspect.domain.MatrBean">
+	      SELECT MATR_NAME,MATR_CODE,DECODE(MATR_TYPE,
+  					'1','资产',
+  					'3','费用') MATR_TYPE,CGL_CODE 
+	      FROM TB_MATR_TYPE 
+	      <where>
+			<if test="matrName != null and '' != matrName">
+				AND MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="matrCode != null and '' != matrCode">
+			    AND MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+			</if>
+			<if test="cglCode != null and '' != cglCode">
+			    AND CGL_CODE = #{cglCode,jdbcType=VARCHAR}
+			</if>
+			<if test="matrType == 0">
+			</if>	
+			<if test="matrType == 1">
+			    AND MATR_TYPE = 1
+			</if>
+			<if test="matrType == 3">
+			    AND MATR_TYPE = 3
+			</if>	
+			</where>
+	</select>
+	<select id="selectRole" parameterType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean"
+		resultType="com.forms.prms.web.sysmanagement.montindex.domain.MontIndexBean">
+		select mont_type,mont_name,mont_code from tb_mont_name a where exists(
+			select 1 from tb_fndwrr b where b.org1_code = #{org21Code,jdbcType=VARCHAR}
+			and (b.org1_code = a.org21_code or b.org2_code = a.org21_code)
+		) AND DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			<if test="montCode != null and '' != montCode">
+					AND A.MONT_CODE = #{montCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="montType != null and '' != montType">
+					AND A.MONT_Type = #{montType,jdbcType=VARCHAR} 
+			</if>
+			<if test="montName != null and '' != montName">
+					AND A.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+			</if>
+			
+	</select>
+	<select id="exportByBgtId" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+		 resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		 SELECT DISTINCT B.SC_ID,B.BGT_YEAR,B.CNT_NUM,F.DUTY_NAME,T.MONT_NAME,M.MATR_NAME,
+		 	R.REFERENCE_NAME,S.SPECIAL_NAME,B.BGT_FROZEN,B.BGT_OVERDRAW,B.BGT_USED_SUM,B.BGT_USED_THISYEAR,
+		 	B.BGT_FREE,B.BGT_WAIT_FREE,B.FROZENBGT_FREE,B.FROZENBGT_WAIT_FREE,B.BGT_ID
+		FROM ERP_BUDGET_SUM_CNT B LEFT JOIN TB_FNDWRR F ON B.FEE_DEPT=F.DUTY_CODE 
+  			LEFT JOIN TB_MATR_TYPE M ON B.MATR_CODE=M.MATR_CODE
+  			LEFT JOIN TB_REFERENCE R ON B.REFERENCE=R.REFERENCE_ID
+  			LEFT JOIN TB_SPECIAL S ON B.SPECIAL=S.SPECIAL_ID 
+  			LEFT JOIN TD_CNT CNT ON B.CNT_NUM=CNT.CNT_NUM
+  			LEFT JOIN TD_CNT_DEVICE TCD ON B.CNT_NUM=TCD.CNT_NUM AND B.MONT_CODE = TCD.MONT_CODE AND B.MATR_CODE = TCD.MATR_CODE
+  			LEFT JOIN TB_MONT_NAME T  ON   T.MONT_CODE = decode(to_char(sysdate,'yyyy'),tcd.curr_year,tcd.curr_mont_code,nvl2(tcd.next_mont_code,tcd.next_mont_code,tcd.curr_mont_code))
+  			where B.BGT_ID=#{bgtId,jdbcType=VARCHAR}
+	</select>
+	<select id="bugetAdjustLog" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+		resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		select * from ERP_BUDGET_SUM_MAN_LOG
+		where BGT_ID=#{bgtId,jdbcType=VARCHAR}
+		<if test="type != null and '' != type">
+			AND TYPE = #{type,jdbcType=VARCHAR}
+		</if>
+		order by BGT_ID_SEQ desc
+	</select>
+	<select id="getBugetInfo" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+		resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		SELECT  
+                E.*,
+                T.MATR_NAME,
+                M.MONT_NAME
+			  FROM ERP_BUDGET_SUM E
+			  LEFT JOIN TB_MATR_TYPE T
+			    ON E.BGT_MATRCODE = T.MATR_CODE
+			  LEFT JOIN TB_MONT_NAME M
+			    ON E.BGT_MONTCODE = M.MONT_CODE 
+		where E.BGT_ID=#{bgtId,jdbcType=VARCHAR}
+	</select>
+	<!-- 查询指标名称 -->
+	<select id="getMontNameList" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+	resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		<if test="orgType == 1">
+		  SELECT MONT_CODE,MONT_NAME 
+	      FROM TB_MONT_NAME 
+	      WHERE ORG21_CODE = #{bgtOrgcode,jdbcType=VARCHAR} AND MONT_TYPE = #{montType,jdbcType=VARCHAR}
+		</if>
+	     <if test="orgType == 2">
+		  SELECT MONT_CODE,MONT_NAME 
+	      FROM TB_MONT_NAME 
+	      WHERE  MONT_TYPE = #{montType,jdbcType=VARCHAR}
+	      and  ORG21_CODE IN (
+	      	SELECT DISTINCT TF.ORG2_CODE FROM TB_FNDWRR TF WHERE TF.ORG1_CODE = #{bgtOrgcode,jdbcType=VARCHAR}
+	      )
+		</if> 
+			<if test="montCode != null and '' != montCode">
+					AND MONT_CODE = #{montCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="montName != null and '' != montName">
+					AND MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+			</if>
+			
+	</select>
+	<select id="getBean" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean"
+	resultType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		SELECT a.* FROM ERP_BUDGET_sum a where a.bgt_id = #{bgtId,jdbcType=VARCHAR} 
+	</select>
+	<update id="adjustValidBgt" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		UPDATE ERP_BUDGET_SUM A SET A.BGT_SUM = (A.BGT_SUM +#{tzjy,jdbcType=VARCHAR}),A.BGT_SUM_VALID =( A.BGT_SUM_VALID +#{tzjy,jdbcType=VARCHAR})
+		WHERE ((A.BGT_SUM_VALID + #{tzjy,jdbcType=VARCHAR}) &gt; 0 or (A.BGT_SUM_VALID + #{tzjy,jdbcType=VARCHAR}) = 0)
+		  AND A.BGT_ID = #{bgtId,jdbcType=VARCHAR}
+	</update>
+	<delete id="delBgt" parameterType="com.forms.prms.web.budget.budgetInspect.domain.BudgetManageBean">
+		DELETE FROM ERP_BUDGET_SUM A 
+		WHERE A.BGT_ID =  #{bgtId,jdbcType=VARCHAR}
+		AND A.BGT_FROZEN = 0 AND A.BGT_USED = 0
+	</delete>
+</mapper>

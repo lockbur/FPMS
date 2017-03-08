@@ -1,0 +1,503 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.tool.fms.parse.dao.IFMSDAO">
+	<!-- 获取数据库日期 -->
+	<select id="getSysdate" parameterType="String" resultType="String">
+		SELECT TO_CHAR(SYSDATE, #{format, jdbcType=VARCHAR}) AS SYS_DATE FROM DUAL
+	</select>
+	
+	<!-- 获取下载汇总表批次号 -->
+	<select id="getDownloadBatchNo" parameterType="String" resultType="String">
+		SELECT LPAD(COUNT(1) + 1, 10, '0') AS BATCH_NO
+		  FROM TI_DOWNLOAD 
+     	 WHERE TRADE_TYPE = #{tradeType, jdbcType=VARCHAR}
+           AND TRADE_DATE = #{tradeDate, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取明细数据列表 -->
+	<select id="getFmsDataList" parameterType="com.forms.prms.tool.fms.UpLoadBean" resultType="java.util.HashMap">
+		${sqlStr}
+	</select>
+	
+	<!-- 更新明细数据状态 -->
+	<update id="updateFms" parameterType="java.util.HashMap">
+		<foreach item="bean1" index="index1" collection="lists" separator="union">
+			UPDATE ${tableName} SET 
+			<foreach item="bean" index="index" collection="bean1.updateColumns" separator=",">
+				${bean.col} = #{bean.value, jdbcType=VARCHAR}
+			</foreach>
+			WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR} AND
+			<foreach item="bean" index="index" collection="bean1.primaryColumns" separator=" AND ">
+				${bean.col} = #{bean.value, jdbcType=VARCHAR}
+			</foreach>
+		</foreach>
+	</update>
+	
+	<!-- 获取上传汇总列表 -->
+	<select id="getSummaryList" parameterType="com.forms.prms.tool.fms.UpLoadBean" 
+								resultType="com.forms.prms.tool.fms.UpLoadBean">
+		SELECT BATCH_NO,
+			   OU_CODE,
+			   TRADE_TYPE,
+			   ALL_CNT,
+			   UPLOAD_PATH,
+			   UPLOAD_DATE,
+			   UPLOAD_TIME,
+			   DOWNLOAD_PATH,
+			   DOWNLOAD_DATE,
+			   DOWNLOAD_TIME,
+			   DATA_FLAG,
+			   TRADE_DATE,
+			   SEQ_NO
+		FROM TI_UPLOAD
+		<where>
+			 <if test="dataFlags != null and '' != dataFlags">
+			   	<foreach item="dataFlag1" index="index" collection="dataFlags" open="(" separator=" OR " close=")">
+					DATA_FLAG = #{dataFlag1, jdbcType=VARCHAR}
+				</foreach>
+			 </if>
+			 <if test="dataFlag != null and '' != dataFlag">
+			    DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}
+			 </if>
+			<!--  <if test="tradeDate != null and '' != tradeDate">
+			   AND TRADE_DATE = TO_CHAR(SYSDATE, 'YYYYMMDD')
+			 </if> -->
+			 <if test="batchNo != null and '' != batchNo">
+			   AND BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+			 </if>
+		</where>
+		 ORDER BY TRADE_DATE, TRADE_TYPE, SEQ_NO
+	</select>
+	
+	<!-- 更新上传明细数据状态 -->
+	<update id="updateStatus" parameterType="com.forms.prms.tool.fms.UpLoadBean">
+		UPDATE TI_UPLOAD SET 
+		<if test="uploadPath != null and '' != uploadPath">
+			UPLOAD_PATH = #{uploadPath, jdbcType=VARCHAR},
+			UPLOAD_DATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			UPLOAD_TIME = TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+		</if>
+		<if test="downloadPath != null and '' != downloadPath">
+			DOWNLOAD_PATH = #{downloadPath, jdbcType=VARCHAR},
+		</if>
+		<if test="dealLog != null and '' != dealLog">
+		    DEAL_LOG = #{dealLog, jdbcType=VARCHAR},
+		</if>
+			DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateUploadDownPath" parameterType="com.forms.prms.tool.fms.UpLoadBean">
+		UPDATE TI_UPLOAD SET 
+		<if test="downloadPath != null and '' != downloadPath">
+			DOWNLOAD_PATH = #{downloadPath, jdbcType=VARCHAR} 
+		</if>
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateDownDownPath" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		UPDATE TI_DOWNLOAD SET 
+		<if test="downloadPath != null and '' != downloadPath">
+			DOWNLOAD_PATH = #{downloadPath, jdbcType=VARCHAR} 
+		</if>
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 添加校验的信息 -->
+	<update id="addCheckLog" parameterType="com.forms.prms.tool.fms.UpLoadBean">
+		UPDATE TI_UPLOAD 
+		SET DEAL_LOG = #{dealLog, jdbcType=VARCHAR}
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	<!-- 添加结果文件的信息 -->
+	<update id="addDealLog" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		UPDATE TI_DOWNLOAD 
+		SET DEAL_LOG = #{dealLog, jdbcType=VARCHAR}
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 新增下载明细数据 -->
+	
+	<insert id="insertDetails" parameterType="java.util.HashMap">
+		INSERT INTO ${tableName} ( 
+				BATCH_NO,
+			<foreach item="bean" index="index" collection="fileColumns" separator=",">
+				${bean.col}
+			</foreach>
+		) 
+		<foreach item="bean"  collection="lists" separator="union" open="("  close = ")">
+			SELECT 
+				#{bean.batchNo, jdbcType=VARCHAR},
+				<foreach item="bean1"  collection="bean.fileColumns" separator=",">
+					#{bean1.value, jdbcType=VARCHAR}
+				</foreach>
+			FROM DUAL
+		</foreach>
+	</insert>
+	
+	<!--
+	<insert id="insertDetails" parameterType="com.forms.prms.tool.fms.parse.domain.FMSBean">
+		INSERT INTO ${tableName} ( 
+				BATCH_NO,
+			<foreach item="bean" index="index" collection="fileColumns" separator=",">
+				${bean.col}
+			</foreach>
+		) VALUES (
+				#{batchNo, jdbcType=VARCHAR}, 
+			<foreach item="bean" index="index" collection="fileColumns" separator=",">
+				#{bean.value, jdbcType=VARCHAR}
+			</foreach>
+		)
+	</insert>
+	-->
+	<!-- 新增下载明细数据 -->
+	<insert id="insertCheckDetails" parameterType="java.util.HashMap">
+		INSERT INTO ${checkTableName} ( 
+				BATCH_NO,
+			<foreach item="bean"  collection="fileColumns" separator=",">
+				${bean.col}
+			</foreach>
+		) 
+		<foreach item="bean"  collection="lists" separator="union" open="("  close = ")">
+				SELECT 
+					#{bean.batchNo, jdbcType=VARCHAR},
+					<foreach item="bean1"  collection="bean.fileColumns" separator=",">
+						#{bean1.value, jdbcType=VARCHAR}
+					</foreach>
+				FROM DUAL
+		</foreach>
+	</insert>
+	
+	<!-- 新增下载汇总数据 -->
+	<insert id="insertSummary" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		INSERT INTO TI_DOWNLOAD ( 
+			BATCH_NO, 
+			TRADE_TYPE, 
+			ALL_CNT, 
+			DOWNLOAD_PATH, 
+			DOWNLOAD_DATE, 
+			DOWNLOAD_TIME, 
+			DATA_FLAG, 
+			TRADE_DATE,
+			MD5_STR 
+		) VALUES (
+			#{batchNo, jdbcType=VARCHAR}, 
+			#{tradeType, jdbcType=VARCHAR}, 
+			#{allCnt, jdbcType=VARCHAR}, 
+			#{downloadPath, jdbcType=VARCHAR}, 
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD'), 
+			TO_CHAR(SYSDATE, 'HH24:MI:SS'), 
+			#{dataFlag, jdbcType=VARCHAR}, 
+			substr(#{downloadPath, jdbcType=VARCHAR}, instr(#{downloadPath, jdbcType=VARCHAR},'20'),8),
+			#{md5Str, jdbcType=VARCHAR}
+		)
+								  
+	</insert>
+	
+	<delete id="deleteSummary" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		DELETE FROM TI_DOWNLOAD WHERE TRADE_TYPE = #{tradeType, jdbcType=VARCHAR} and TRADE_DATE = #{tradeDate, jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="deleteExceInfo" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean">
+		DELETE FROM SYS_EXCEP_INFO WHERE EXCEP_TYPE = #{excepType, jdbcType=VARCHAR} and to_char(ADD_TIME,'yyyymmdd') = to_char(sysdate,'yyyymmdd')
+	</delete>
+	
+	<!-- 新增首页异常滚动信息 -->
+	<insert id="insertExceInfo" parameterType="com.forms.prms.web.sysmanagement.homepage.domain.ExcepInfoBean">
+		<selectKey keyProperty="excepId" resultType="String" order="BEFORE" >
+			SELECT RM_GET_COMMON_ID('EXCEINFO') FROM DUAL
+		</selectKey>
+		INSERT INTO SYS_EXCEP_INFO ( 
+			EXCEP_ID, 
+			EXCEP_TITLE, 
+			EXCEP_INFO, 
+			EXCEP_ORG_ID, 
+			ADD_UID, 
+			ADD_TIME,
+			EXCEP_TYPE
+		) VALUES (
+			#{excepId, jdbcType=VARCHAR}, 
+			#{excepTitle, jdbcType=VARCHAR}, 
+			#{excepInfo, jdbcType=VARCHAR}, 
+			#{excepOrgId, jdbcType=VARCHAR}, 
+			#{addUid, jdbcType=VARCHAR},
+			SYSDATE,
+			#{excepType, jdbcType=VARCHAR}
+		)
+								  
+	</insert>
+	
+	<!-- 更新下载明细数据状态 -->
+	<update id="updateDlStatus" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		UPDATE TI_DOWNLOAD SET 
+		<if test="allCnt != null and '' != allCnt">
+			ALL_CNT = #{allCnt, jdbcType=VARCHAR},
+		</if>
+		<if test="dealLog != null and '' != dealLog">
+		    DEAL_LOG = #{dealLog, jdbcType=VARCHAR},
+		</if> 
+			DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}
+		WHERE 1=1 
+		<if test="batchNo != null and '' != batchNo">
+			AND BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+		</if>
+		<if test="tradeDate != null and '' != tradeDate">
+			AND TRADE_DATE = #{tradeDate, jdbcType=VARCHAR}
+		</if>
+		<if test="tradeType != null and '' != tradeType">
+			AND TRADE_TYPE = #{tradeType, jdbcType=VARCHAR}
+		</if>
+	</update>
+	
+	<update id="updateDownload" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		UPDATE TI_DOWNLOAD SET 
+			ALL_CNT = #{allCnt, jdbcType=VARCHAR},
+			DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<!--根据文件名得到批次号
+	<select id ="getBathch" parameterType="String" resultType = "com.forms.prms.tool.fms.FMSDownloadBean">
+			select a.batch_no,b.data_flag from ti_download a left join 
+			(
+				select t.batch_no,t.data_flag,
+				 substr(t.download_path,INSTR(t.download_path,'\',-1,1)+1,length(t.download_path)) file_name from TI_DOWNLOAD t
+			) b
+			 on a.batch_no = b.batch_no
+			 where b.file_name =	#{tempFileName, jdbcType=VARCHAR}
+	</select>-->
+	<!-- 存在批次 更新汇总数据-->
+	<update id="updateSummary" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		update TI_DOWNLOAD set 
+		DOWNLOAD_DATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD'), 
+		DOWNLOAD_TIME = TO_CHAR(SYSDATE, 'HH24:MI:SS'),  
+		DATA_FLAG = #{dataFlag, jdbcType=VARCHAR}, 
+		TRADE_DATE = #{tradeDate, jdbcType=VARCHAR}
+		where batch_no =#{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<!--查询失败任务-->
+	<select id ="getFirstFailJob" resultType = "com.forms.prms.tool.fms.FMSDownloadBean">
+		select BATCH_NO,TRADE_TYPE,DOWNLOAD_DATE,DATA_FLAG,TRADE_DATE from 
+		(
+		 	select BATCH_NO,TRADE_TYPE,DOWNLOAD_DATE,DATA_FLAG,TRADE_DATE 
+		    from TI_DOWNLOAD  where TRADE_DATE &gt;= to_char(sysdate-7,'yyyymmdd') and DATA_FLAG != '02' 
+		    order by TRADE_DATE 
+		)
+		where rownum=1
+	</select>
+	
+	
+	<select id ="getDownloadFileBymd5" parameterType="String" resultType = "com.forms.prms.tool.fms.FMSDownloadBean">
+	 	select BATCH_NO,TRADE_TYPE,DOWNLOAD_DATE,DATA_FLAG,TRADE_DATE 
+	    from TI_DOWNLOAD  where MD5_STR = #{md5Str, jdbcType=VARCHAR} 
+	</select>
+	
+	<delete id="deleteErrorLog" parameterType="String">
+		DELETE FROM TI_DOWNLOAD_LOG WHERE TRADE_TYPE = #{tardeType, jdbcType=VARCHAR}
+	</delete>
+	
+	<insert id="addErrorLog" parameterType="String">
+		INSERT INTO TI_DOWNLOAD_LOG (TRADE_TYPE,ERROR_INFO) VALUES 
+		(
+			#{tardeType, jdbcType=VARCHAR},#{errlog, jdbcType=VARCHAR} 
+		)
+	</insert>
+	
+	<delete id="delDwnByBatchNO" parameterType="String">
+		DELETE FROM TI_DOWNLOAD WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<delete id="delDetailByBatchNO" parameterType="String">
+		DELETE FROM ${tableName} WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<!--删除文件对应数据库的数据-->
+	<delete id="deleteCheckData" parameterType="com.forms.prms.tool.fms.parse.domain.FMSBean">
+		DELETE FROM ${checkTableName} WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<!--删除文件对应数据库的数据-->
+	<delete id="delCheckData" parameterType="String">
+		DELETE FROM ${checkTableName} WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<!--从check表进行批量更新-->
+	<update id="updateBatchFms" parameterType="com.forms.prms.tool.fms.parse.domain.FMSBean">
+		UPDATE ${tableName} T
+		SET (T.IMPORT_STATUS,T.ERROR_REASON) = (
+			SELECT TAIC.IMPORT_STATUS,TAIC.ERROR_REASON
+			FROM ${checkTableName} TAIC
+			WHERE T.BATCH_NO = TAIC.BATCH_NO
+			AND T.SEQ_NO = TAIC.SEQ_NO
+		)
+		WHERE T.BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+		AND EXISTS(
+			SELECT 1
+			FROM ${checkTableName} TAIC
+			WHERE T.BATCH_NO = TAIC.BATCH_NO
+			AND T.SEQ_NO = TAIC.SEQ_NO
+		)
+	</update>
+	
+	<insert id="updateCheckStatus" parameterType="String">
+		${mergeSql}
+	</insert>
+	
+	<select id="checkFileData" statementType="CALLABLE"  parameterType="java.util.Map" >
+		CALL PRC_FMS2ERP_CHECKDATA(
+			#{typeName,jdbcType=VARCHAR,mode=IN},  
+			#{fId,jdbcType=VARCHAR,mode=IN},  
+			#{batchNo ,jdbcType=VARCHAR,mode=IN},  
+			#{tableName,jdbcType=VARCHAR,mode=IN},  
+			#{checkTableName,jdbcType=VARCHAR,mode=IN},  
+			#{infoMsg,jdbcType=VARCHAR,mode=OUT}
+		)
+	</select>
+	
+	
+	<select id="getDownLoadCount"  resultType="Integer">
+		select count(*) from ti_download
+	</select>
+	
+	<insert id="mergeDownload" parameterType="com.forms.prms.tool.fms.FMSDownloadBean">
+		MERGE INTO TI_DOWNLOAD T1
+			USING
+			(
+				<foreach collection="tradeTypeList" item="item"  separator="union">
+					SELECT #{item.batchNo ,jdbcType=VARCHAR} AS BATCH_NO,
+					#{item.tradeDate ,jdbcType=VARCHAR} AS TRADE_DATE,
+					#{item.tradeType ,jdbcType=VARCHAR} AS TRADE_TYPE,
+					#{item.dealType ,jdbcType=VARCHAR} AS DEAL_TYPE 
+					FROM DUAL 
+			    </foreach>
+			) T2 
+			ON (T1.TRADE_DATE = T2.TRADE_DATE AND T1.TRADE_TYPE = T2.TRADE_TYPE) 
+	    WHEN NOT MATCHED THEN 
+	        INSERT 
+	            (
+	                BATCH_NO,
+	                TRADE_TYPE,
+	                TRADE_DATE,
+	                DEAL_TYPE 
+	            )
+	        VALUES
+				(
+					T2.BATCH_NO,
+					T2.TRADE_TYPE,
+					T2.TRADE_DATE,
+					T2.DEAL_TYPE
+				)
+	        
+	</insert>
+	
+	<select id="getDealDate" parameterType="java.util.HashMap" resultType="String" >
+		select max(trade_date) from 
+		(
+		select to_char(to_date(trade_date,'yyyymmdd')+1,'yyyymmdd') trade_date from ti_download 
+		where data_flag = '02' and trade_type in
+		<foreach collection="tradeTypes" item="tradeType" open="(" close=")"  separator="," > 
+          	#{tradeType,jdbcType=VARCHAR}
+        </foreach>
+        group by trade_date having count(1)=#{cnt,jdbcType=VARCHAR}
+        )
+	</select>
+	
+	<select id="getFirstTradeDate" parameterType="java.util.HashMap" resultType="String">
+		select trade_date from ti_download 
+		where data_flag != '02' and trade_type in
+		<foreach collection="tradeTypes" item="tradeType" open="(" close=")"  separator="," > 
+          	#{tradeType,jdbcType=VARCHAR}
+        </foreach>
+        and rownum=1
+	</select>
+	
+	<select id="getDealBatchNo" parameterType="String" resultType="String">
+		select batch_no from ti_download where trade_type = #{tradeType ,jdbcType=VARCHAR} and trade_date = #{tradeDate ,jdbcType=VARCHAR}
+	</select>
+	
+	<insert id="callProcedure" parameterType="String">
+		CALL ${prcName}
+	</insert>
+	
+	<select id="unsuccTask" parameterType="String" resultType="com.forms.prms.tool.fms.FMSDownloadBean">
+		select batch_no,trade_type,data_flag,trade_date,deal_type 
+		 from ti_download where trade_date = #{tradeDate, jdbcType=VARCHAR} and deal_type = '1' and (data_flag != '02' or data_flag is null) order by trade_type
+	</select>
+	
+	<insert id="transTmpData" parameterType="String">
+		${tranTmpSql}
+	</insert>
+	
+	<delete id="truncateTmpData" parameterType="String">
+		${truncateTmpSql}
+	</delete>
+	
+	<delete id="delTmpData" parameterType="String">
+		truncate table ${tableNameTmp} 
+	</delete>
+	
+	<select id="getLoadCount"  parameterType="String" resultType="Integer">
+		select count(1) from ${tableNameTmp}
+	</select>
+	
+	<select id="getUploadTask" resultType="com.forms.prms.tool.fms.UpLoadBean">
+		SELECT BATCH_NO,
+			   OU_CODE,
+			   TRADE_TYPE,
+			   ALL_CNT,
+			   UPLOAD_PATH,
+			   UPLOAD_DATE,
+			   UPLOAD_TIME,
+			   DOWNLOAD_PATH,
+			   DOWNLOAD_DATE,
+			   DOWNLOAD_TIME,
+			   DATA_FLAG,
+			   TRADE_DATE,
+			   SEQ_NO
+		FROM TI_UPLOAD WHERE DATA_FLAG = '10' 
+	</select>
+	
+	<delete id="delCleanLog" parameterType="String">
+		DELETE FROM TD_PAY_CLEAN_LOG WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</delete>
+
+	<insert id="insertCleanLog" parameterType="String">
+		INSERT INTO TD_PAY_CLEAN_LOG (BATCH_NO, SEQ_NO, CNT_NUM, PAY_ID,
+   			PAY_DATE, PAY_AMT, IMAGE_ID, PAY_CANCEL_STATE, PAY_CANCEL_DATE)
+  		SELECT #{batchNo, jdbcType=VARCHAR}, SEQ_NO, CNT_NUM, PAY_ID, 
+  			PAY_DATE, PAY_AMT, IMAGE_ID, PAY_CANCEL_STATE, PAY_CANCEL_DATE
+    	FROM TID_AP_PAY_TMP
+	</insert>
+	
+	<delete id="delFormalTableData" parameterType="String">
+		DELETE FROM ${tableName} WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</delete>
+	
+	<select id="getDataFlagByBatchNo" parameterType="String" resultType="String">
+		select data_flag from ti_upload where batch_no = #{batchNo ,jdbcType=VARCHAR}
+	</select>
+	
+	<update id="uploadInitStatus" parameterType="String">
+		UPDATE TI_UPLOAD SET 
+			DOWNLOAD_DATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			DOWNLOAD_TIME = TO_CHAR(SYSDATE, 'HH24:MI:SS') 
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="downloadInitStatus" parameterType="String">
+		UPDATE TI_DOWNLOAD SET 
+			DATA_FLAG = #{fmsDownloadFordeal, jdbcType=VARCHAR},
+			DOWNLOAD_DATE = TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			DOWNLOAD_TIME = TO_CHAR(SYSDATE, 'HH24:MI:SS') 
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateCostTime" parameterType="String">
+		UPDATE TI_DOWNLOAD SET 
+			DEAL_LOG =  DEAL_LOG || #{costMills, jdbcType=VARCHAR} 
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</update>
+	
+</mapper>

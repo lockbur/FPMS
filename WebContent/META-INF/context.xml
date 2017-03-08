@@ -1,0 +1,115 @@
+<!-- The contents of this file will be loaded for each web application -->
+
+
+<Context antiResourceLocking="false" privileged="true">
+		
+    <!-- Default set of monitored resources -->
+    <WatchedResource>WEB-INF/web.xml</WatchedResource>
+	
+    <!-- Uncomment this to disable session persistence across Tomcat restarts -->
+    <!--
+    <Manager pathname="" />
+    -->
+
+    <!-- Uncomment this to enable Comet connection tacking (provides events
+         on session expiration as well as webapp lifecycle) -->
+    <!--
+    <Valve className="org.apache.catalina.valves.CometConnectionManagerValve" />
+    -->
+    
+    <Resource
+	name="jdbc/fpms"
+	type="javax.sql.DataSource"
+	auth="Container"
+	driverClassName="oracle.jdbc.driver.OracleDriver" 
+	username="FPMS"
+	password="FPMS"
+	maxActive="300"
+	maxIdle="2"
+	initialSize="3"
+	maxWait="10000"
+	removeAbandoned="true"
+	removeAbandonedTimeout="100"
+	logAbandoned="true"
+	validationQuery="select 1 from dual"
+	testOnBorrow="true"
+	url="jdbc:oracle:thin:@127.0.0.1:1521:fpmstest"/>
+	<!--
+	<Resource
+	name="jdbc/fpms"
+	type="javax.sql.DataSource"
+	auth="Container"
+	driverClassName="oracle.jdbc.driver.OracleDriver" 
+	username="FPMS_T2"
+	password="FPMS_T2"
+	maxActive="300"
+	maxIdle="2"
+	initialSize="3"
+	maxWait="10000"
+	removeAbandoned="true"
+	removeAbandonedTimeout="100"
+	logAbandoned="true"
+	validationQuery="select 1 from dual"
+	testOnBorrow="true"
+	url="jdbc:oracle:thin:@172.16.8.241:1521:orcl"/>
+	-->
+	
+ <!--
+	<Resource
+	name="jdbc/fpms"
+	type="javax.sql.DataSource"
+	auth="Container"
+	driverClassName="oracle.jdbc.driver.OracleDriver" 
+	username="HQERP"
+	password="HQERP"
+	maxActive="300"
+	maxIdle="2"
+	initialSize="3"
+	maxWait="10000"
+	removeAbandoned="true"
+	removeAbandonedTimeout="100"
+	logAbandoned="true"
+	validationQuery="select 1 from dual"
+	testOnBorrow="true"
+	url="jdbc:oracle:thin:@172.21.1.18:1521:orcl"/>
+	
+	
+	<Resource
+	name="jdbc/fpms"
+	type="javax.sql.DataSource"
+	auth="Container"
+	driverClassName="oracle.jdbc.driver.OracleDriver" 
+	username="FPMS_YGZ"
+	password="FPMS_YGZ"
+	maxActive="300"
+	maxIdle="2"
+	initialSize="3"
+	maxWait="10000"
+	removeAbandoned="true"
+	removeAbandonedTimeout="100"
+	logAbandoned="true"
+	validationQuery="select 1 from dual"
+	testOnBorrow="true"
+	url="jdbc:oracle:thin:@22.1.249.82:1521:orcl"/>
+-->
+<!--
+	<Resource
+	name="jdbc/fpms"
+	type="javax.sql.DataSource"
+	auth="Container"
+	driverClassName="oracle.jdbc.driver.OracleDriver" 
+	username="FPMS"
+	password="FPMS"
+	maxActive="300"
+	maxIdle="2"
+	initialSize="3"
+	maxWait="10000"
+	removeAbandoned="true"
+	removeAbandonedTimeout="100"
+	logAbandoned="true"
+	validationQuery="select 1 from dual"
+	testOnBorrow="true"
+	url="jdbc:oracle:thin:@(DESCRIPTION = (ADDRESS_LIST= (LOAD_BALANCE=yes)(ADDRESS=(PROTOCOL=TCP)(HOST=22.188.44.241)(PORT=1521))(ADDRESS=(PROTOCOL=TCP)(HOST=22.188.44.242)(PORT=1521)))(CONNECT_DATA =(SERVER = DEDICATED)(SERVICE_NAME = FPMSDB)(FAILOVER_MODE=(TYPE=SESSION)(METHOD=BASIC)(RETRIES=1)(DELAY=3))))"/>
+
+-->
+</Context>

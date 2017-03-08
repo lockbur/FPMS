@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.change.dao.ChangeDAO">
+
+	<!-- 查看合同列表 -->
+	<select id="list" parameterType="com.forms.prms.web.contract.change.domain.ChangeForm"
+							resultType="com.forms.prms.web.contract.change.domain.ChangeForm">
+		SELECT CNT.*,TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '20' 
+	    <if test="cntNum != null and '' != cntNum">
+			AND CNT.CNT_NUM LIKE '%' || #{cntNum, jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND CNT.CNT_TYPE = #{cntType, jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND CNT.PROVIDER_NAME LIKE '%' || #{providerName, jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="startDate != null and '' != startDate">
+			AND CNT.SIGN_DATE &gt;= #{startDate, jdbcType=VARCHAR}
+		</if>
+		<if test="endDate != null and '' != endDate">
+			AND #{endDate, jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+		</if>
+		<if test="createDept != null and '' != createDept">
+			AND CNT.PAY_DUTY_CODE = #{dutyCode, jdbcType=VARCHAR}
+		</if>
+		<!-- 省行 -->
+		<if test="orgFlag == 1">
+			AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+		</if>
+		<!-- 二级行 -->
+		<if test="orgFlag == 2">
+			AND EXISTS
+			(
+			   SELECT 1 FROM TB_FNDWRR TBF WHERE TBF.ORG2_CODE = #{org2Code,jdbcType=VARCHAR} AND 
+			   (
+			   	    TBF.DUTY_CODE = CNT.CREATE_DEPT OR 
+			   		TBF.DUTY_CODE = CNT.PAY_DUTY_CODE
+			   )
+			)
+		</if>
+		<!-- 业务部门 -->		
+		<if test="orgFlag == 3">
+			AND (CNT.CREATE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+				OR CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+				)
+		</if>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 合同发起变更 -->
+	<update id="toChange" parameterType="com.forms.prms.web.contract.change.domain.ChangeForm">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '21',
+		       APPLY_EDIT_USER = #{operUser,jdbcType=VARCHAR}
+	     WHERE DATA_FLAG = '20'
+	       AND CNT_NUM = #{cntNum, jdbcType=VARCHAR} 
+	</update>
+</mapper>

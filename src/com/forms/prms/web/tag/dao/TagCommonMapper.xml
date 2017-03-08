@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.tag.dao.TagCommonDao">
+	<select id="getOptionList" parameterType="com.forms.prms.web.tag.domain.TagCommon" 
+	resultType="HashMap">
+		SELECT ${selectColumn}
+  		FROM ${tableName}
+ 		WHERE 1=1 
+		<if test="conditionStr != null and '' != conditionStr">
+			AND ${conditionStr} 
+		</if>
+		<if test="orderColumn != null and '' != orderColumn">
+			ORDER BY ${orderColumn} ${orderType} 
+		</if>
+	</select>
+	
+	<select id="getList" parameterType="HashMap" resultType="HashMap">
+		SELECT ${selectColumn}
+  		FROM ${tableName}
+ 		WHERE 1=1 
+		<if test="conditionStr != null and '' != conditionStr">
+			AND ${conditionStr} 
+		</if>
+		<if test="orderColumn != null and '' != orderColumn">
+			ORDER BY ${orderColumn} ${orderType} 
+		</if>
+	</select>
+	<!--得到所有一级行-->
+	<select id="getOrg1List" parameterType="com.forms.prms.web.sysmanagement.org.domain.BaseBean"
+		resultType="String">
+		select distinct org1_Code from tb_fndwrr order by org1_code
+	</select>
+	<select id="getDetailList" parameterType="com.forms.prms.web.sysmanagement.org.domain.BaseBean"
+		resultType="com.forms.prms.web.sysmanagement.org.domain.Duty">
+		select distinct  
+			  DUTY_CODE,
+			  DUTY_NAME,
+			  OU_CODE,
+			  OU_NAME,
+			  ORG1_CODE || ORG2_CODE || ORG_CODE AS ORG_CODE,
+			  ORG_NAME,
+			  ORG2_CODE,
+			  ORG2_NAME,
+			  ORG1_CODE,
+			  ORG1_NAME
+			FROM TB_FNDWRR 
+		   where org1_code = #{org1Code, jdbcType = VARCHAR} 
+		   order by duty_code
+	</select>
+	<select id="getParamterNameCount" parameterType="String" resultType="String">
+		SELECT
+		PARAM_VALUE
+		FROM SYS_PARAMETER WHERE PARAM_VAR_NAME = ${paramterName}
+	</select>
+</mapper>

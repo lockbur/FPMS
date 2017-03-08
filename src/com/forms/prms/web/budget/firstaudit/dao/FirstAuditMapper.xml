@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.firstaudit.dao.FirstAuditDAO">
+
+	<!-- 新增预算申报的模板查询 (状态必须为03可申报状态；责任中心必须为当前登录网点；所属二级机构必须为当前网点所属二级机构)-->
+	<select id="queryTemp" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" 
+			resultType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean">
+		select distinct A.*,
+                A.DATA_YEAR || ' - ' || D.PARAM_NAME || ' - ' ||
+                case A.DATA_TYPE
+                  when '0' then
+                   '年初预算'
+                  when '1' then
+                   '追加预算'
+                end TMPLT_NAME,
+               #{org2Name, jdbcType = VARCHAR} org2Name
+		  from TB_BUDGET_TMPLT A
+		  
+		  left join SYS_SELECT D
+		    on D.PARAM_VALUE = A.DATA_ATTR
+		       and D.CATEGORY_ID = 'CNT_TYPE'
+		 where
+		 --已提交状态
+		 A.DATA_FLAG = '04'
+		 and (A.ORG21_CODE = #{org21Code, jdbcType = VARCHAR} or
+		 	Exists (
+		 		SELECT 1 FROM 
+		 			TB_APPROVE_CHAIN TT 
+		 		WHERE MATR_AUDIT_DEPT = #{dutyCode, jdbcType = VARCHAR} 
+		 		AND TT.ORG21_CODE = A.ORG21_CODE
+		 	)
+		 )
+		<if test="dataYear != null and dataYear != ''">
+			AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="dataAttr != null and dataAttr != ''">
+			AND A.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+		<if test="dataType != null and dataType != ''">
+			AND A.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+			order by A.INST_DATE
+	</select>
+	
+	<!-- 查找当前登陆人下物料归口部门的数据-->
+	<select id="getBudgetGeneralList" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" 
+			resultType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean">
+		select distinct T.MATR_CODE,
+				T.TMPLT_ID,
+		       M.MATR_NAME,
+		       P.DATA_ATTR,
+		       A.AUDIT_AMT,
+		       decode(A.AUDIT_FLAG,'00','待初审','01','初审通过','02','本级汇总审批通过','03','本级汇总审批退回','04','二级汇总审批通过'),
+		       A.AUDIT_FLAG,
+		       NVL(A.OLD_AMT,0) as STOCK_AMT,
+		       NVL(A.ADD_AMT,0) as APPLY_AMT,
+  			   TBFA.AUDIT_SEQ
+		  from TB_BUDGET_TMPLT_DETAIL T
+		  left join TD_BUDGET_FIRST_AUDIT_LOG TBFA  ON T.TMPLT_ID=TBFA.TMPLT_ID
+		  left join TB_BUDGET_TMPLT P
+		    on P.TMPLT_ID = T.TMPLT_ID
+		  left join TB_MATR_TYPE M
+		    on M.MATR_CODE = T.MATR_CODE
+		  left join TB_APPROVE_CHAIN C
+		    on C.MATR_CODE = T.MATR_CODE
+		  left join TD_BUDGET_FIRST_AUDIT A
+		  	on A.TMPLT_ID = T.TMPLT_ID
+		  	and A.DUTY_CODE =  C.MATR_AUDIT_DEPT
+		  	and A.MATR_CODE = T.MATR_CODE 
+		 where T.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		       and C.MATR_AUDIT_DEPT = #{dutyCode,jdbcType=VARCHAR}
+		       <!-- 0427添加查询条件：至展示初审流水log序号最新的初审记录 -->
+		       AND TBFA.AUDIT_SEQ = (SELECT MAX(AUDIT_SEQ) FROM TD_BUDGET_FIRST_AUDIT_LOG WHERE TMPLT_ID = #{tmpltId,jdbcType=VARCHAR})
+		       order by T.MATR_CODE
+	</select>
+	
+	<!-- 查找预算物料数据-->
+	<select id="getBudgetDetailList" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" 
+			resultType="com.forms.prms.web.budget.firstaudit.domain.BudgetDetailBean">
+		  select F.DUTY_NAME, T.IN_NEED_CNT, T.IN_AMT
+		  from TD_BUDGET_WRITE_DETAIL T
+		  join TB_BUDGET_TMPLT_DETAIL P
+		    on P.TMPLT_ID = T.TMPLT_ID
+		       and P.ROW_SEQ = T.ROW_SEQ
+		  left join TB_FNDWRR F
+		    on F.DUTY_CODE = T.DUTY_CODE
+		 where T.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		       and P.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+
+	</select>
+	
+	<update id="updateAuditAmt" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" >
+		update TD_BUDGET_FIRST_AUDIT
+		   set AUDIT_FLAG = '01',
+		       AUDIT_AMT  =  #{auditAmt,jdbcType=VARCHAR}
+		 where TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		       and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		       and MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		       and AUDIT_FLAG in ('00','03')
+	</update>
+	<insert id="insertAuditLog" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" >
+		insert into TD_BUDGET_FIRST_AUDIT_LOG
+		  (TMPLT_ID,
+		   DUTY_CODE,
+		   MATR_CODE,
+		   AUDIT_SEQ,
+		   AUDIT_LVL,
+		   BEFORE_AMT,
+		   AFTER_AMT,
+		   AUDIT_OPER,
+		   AUDIT_DATE,
+		   AUDIT_TIME)
+		  select TMPLT_ID,
+		         DUTY_CODE,
+		         MATR_CODE,
+		         (select NVL(max(AUDIT_SEQ), 0) + 1
+		            from TD_BUDGET_FIRST_AUDIT_LOG
+		           where TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+				       and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+				       and MATR_CODE = #{matrCode,jdbcType=VARCHAR}),
+		         0,
+		         T.ADD_AMT,
+		         T.AUDIT_AMT,
+		          #{auditOper,jdbcType=VARCHAR},
+		         TO_CHAR(sysdate, 'yyyy-MM-dd'),
+		         TO_CHAR(sysdate, 'hh24:mi:ss')
+		    from TD_BUDGET_FIRST_AUDIT T
+		 where TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		       and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		       and MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+	</insert>
+	
+	<!-- 详情-->
+		<select id="view" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" 
+			resultType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean">
+		select  TBFA.TMPLT_ID,
+				TF.DUTY_name,
+				tmt.MATR_name,
+				TBFA.AUDIT_SEQ,
+				decode(AUDIT_LVL,'0','初审','1','本级','2','二级') AUDIT_LVL,
+				TBFA.BEFORE_AMT,
+				TBFA.AFTER_AMT,
+				TBFA.AUDIT_OPER,
+				TBFA.AUDIT_DATE,
+				TBFA.AUDIT_TIME,
+				TBFA.AUDIT_MEMO
+         from td_budget_first_audit_log TBFA
+		 left join TB_FNDWRR TF on tbfa.duty_code=tf.duty_code
+		 left join TB_MATR_TYPE tmt on TBFA.matr_code=tmt.matr_code
+		 WHERE  TBFA.TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+				and TF.DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+				AND tmt.MATR_CODE  = #{matrCode,jdbcType=VARCHAR}
+	</select>
+	<!-- 更新审批金额-->
+	<update id="update" parameterType="com.forms.prms.web.budget.firstaudit.domain.FirstAuditBean" >
+		update TD_BUDGET_FIRST_AUDIT
+		   set AUDIT_FLAG = '01',
+		       AUDIT_AMT = #{auditAmt,jdbcType=VARCHAR}
+		 where TMPLT_ID = #{tmpltId,jdbcType=VARCHAR}
+		       and DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+		       and MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		       and AUDIT_FLAG in ('00','03')
+	</update>
+	
+	
+</mapper>

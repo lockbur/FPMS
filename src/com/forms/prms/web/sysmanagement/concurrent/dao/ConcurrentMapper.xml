@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.concurrent.dao.ConcurrentDao">
+	<!--看是否有B锁-->
+	<select id="lock_B" parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean"  resultType="String">
+		SELECT TASK_SUB_TYPE FROM  TL_LOCK A WHERE A.TASK_TYPE = 'CONCURRENT_B' 
+		AND A.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} AND ROWNUM='1'
+	</select>
+	<!--看是否有B C 锁-->
+	<select id="lock_BC"  parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean" resultType="String">
+		SELECT TASK_SUB_TYPE FROM  TL_LOCK A 
+		WHERE 
+		  (
+		  	A.TASK_TYPE = 'CONCURRENT_B'
+		 	AND A.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		  )
+		  OR
+		  (
+		  	A.TASK_TYPE = 'CONCURRENT_C'
+		  )
+		  AND ROWNUM='1'
+		 
+	</select>
+	
+	<!--看是否有A B锁-->
+	<select id="lock_AB"  parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean" resultType="String">
+		SELECT TASK_SUB_TYPE FROM  TL_LOCK A 
+		WHERE A.TASK_TYPE IN('CONCURRENT_A','CONCURRENT_B')
+		  AND A.TASK_SUB_TYPE != #{subType,jdbcType=VARCHAR}	
+		  AND A.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} AND ROWNUM='1'
+		 
+	</select>
+	<!--看是否有A C锁-->
+	<select id="lock_AC"  parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean" resultType="String">
+		SELECT TASK_SUB_TYPE FROM  TL_LOCK A 
+		WHERE 
+		  (
+		  	A.TASK_TYPE = 'CONCURRENT_A'
+		 	AND A.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		  )
+		  OR
+		  (
+		  	A.TASK_TYPE = 'CONCURRENT_C'
+		  )
+		  AND ROWNUM='1'
+		 
+	</select>
+	<!--看是否有A B C锁-->
+	<select id="lock_ABC"  parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean" resultType="String">
+		SELECT TASK_SUB_TYPE FROM  TL_LOCK A 
+		WHERE A.TASK_TYPE IN( 'CONCURRENT_A','CONCURRENT_B','CONCURRENT_C')
+		AND ROWNUM = '1'
+	</select>
+	<insert id="addConcurrentLock" parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean">
+		INSERT INTO TL_LOCK (TASK_TYPE,TASK_SUB_TYPE,IP_ADDRESS,INST_OPER,INST_DATE,INST_TIME,ORG21_CODE, MEMO)
+		 ( SELECT #{type,jdbcType=VARCHAR},#{subType,jdbcType=VARCHAR},#{ipAddress,jdbcType=VARCHAR},
+		#{instOper,jdbcType=VARCHAR},TO_CHAR(SYSDATE,'YYYY-MM-DD'),TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+		#{org21Code,jdbcType=VARCHAR} ,#{memo,jdbcType=VARCHAR} FROM DUAL
+		WHERE NOT EXISTS(
+			SELECT 1 FROM TL_LOCK WHERE TASK_TYPE = #{type,jdbcType=VARCHAR} AND TASK_SUB_TYPE = #{subType,jdbcType=VARCHAR}
+			 AND ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		))
+	</insert>
+	<delete id="delConcurrentLock" parameterType="com.forms.prms.web.sysmanagement.concurrent.domain.ConcurrentBean">
+		DELETE FROM TL_LOCK TL
+		WHERE TASK_TYPE = #{type,jdbcType=VARCHAR}
+		  AND TASK_SUB_TYPE =#{subType,jdbcType=VARCHAR}  
+		  AND ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		<if test="subType =='B1' ">
+			AND NOT EXISTS(
+				  SELECT 1 FROM TBL_MONT_APRV TMA
+			      WHERE TMA.PRO_TYPE = '01' 
+			      AND TMA.BATCH_NO != #{batchNo,jdbcType=VARCHAR}
+			      AND TMA.DATA_YEAR = To_CHAR(SYSDATE,'YYYY')
+			      AND TMA.CNT_STATUS = 'C4'
+			      AND (TL.ORG21_CODE = TMA.ORG21_CODE 
+			          OR TL.ORG21_CODE = (SELECT DISTINCT ORG1_CODE FROM TB_FNDWRR TF WHERE TF.ORG2_CODE = TMA.ORG21_CODE)
+			          )
+			)
+		</if>
+		<if test="subType =='B2' ">
+			AND NOT EXISTS(
+				  SELECT 1 FROM ERP_BUDGET_SUM_TOTAL EB
+			      WHERE  EB.BGT_YEAR =TO_CHAR(SYSDATE,'YYYY')
+			      AND EB.STATUS = '04'
+			      AND EB.BATCH_NO != #{batchNo,jdbcType=VARCHAR}
+			      AND (TL.ORG21_CODE = EB.ORG21_CODE 
+			          OR TL.ORG21_CODE = (SELECT DISTINCT ORG1_CODE FROM TB_FNDWRR TF WHERE TF.ORG2_CODE = EB.ORG21_CODE)
+			          )
+			)
+		</if>
+	</delete>
+</mapper>

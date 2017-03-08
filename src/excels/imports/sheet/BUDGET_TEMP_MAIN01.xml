@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="100">
+	<section startRow="0" endRow="0">
+		<mapping cell="A1">bean.title</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.budget.budgetplan.domain.ZiChanBudgetDetailBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.montCode</mapping>
+			<mapping row="1" col="1">detail.propertyType</mapping>
+			<mapping row="1" col="2">detail.acCode</mapping>
+			<mapping row="1" col="3">detail.columnOne</mapping>
+			<mapping row="1" col="4">detail.columnTwo</mapping>
+			<mapping row="1" col="5">detail.matrCode</mapping>
+			<mapping row="1" col="6">detail.matrName</mapping>
+			<mapping row="1" col="7">detail.referPrice</mapping>
+			<mapping row="1" col="8">detail.referType</mapping>
+			<mapping row="1" col="9">detail.scrapNum</mapping>
+			<mapping row="1" col="10">detail.demandNum</mapping>
+			<mapping row="1" col="11">detail.budgetAmount</mapping>
+			<mapping row="1" col="12">detail.memoDescr</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

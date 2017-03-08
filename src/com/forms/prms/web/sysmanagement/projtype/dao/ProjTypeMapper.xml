@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.projtype.dao.ProjTypeDao">
+	<select id="list" parameterType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean" 
+	resultType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean">
+		select  rownum as projId,
+				param_value,
+				param_name,
+				org1_code,
+				case when use_flag = '1'  then '启用' 
+                     else '禁用' end
+                as use_flag,
+                inst_user,
+                inst_date,
+                inst_time,
+                upd_user,
+                upd_date,
+                upd_time
+		from td_project_type  where 1=1 
+		<if test="org1Code != null and '' != org1Code">
+			and org1_code =  #{org1Code ,jdbcType=VARCHAR}
+		</if>		
+		<if test="paramName != null and '' != paramName">
+			AND param_name like '%' || #{paramName ,jdbcType=VARCHAR} || '%'
+		</if>
+		order by projId 
+	</select>
+	
+	<insert id="addSubmit" parameterType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean">
+		insert into td_project_type
+		  (
+		   param_value,
+		   param_name,
+		   org1_code,
+		   use_flag,
+		   inst_user,
+		   inst_date,
+		   inst_time
+		   )
+		values
+		  (
+		   RM_GET_COMMON_ID('PROJTYPEID'),
+		   #{paramName,	jdbcType=VARCHAR},
+		   #{org1Code,	jdbcType=VARCHAR},
+		   #{useFlag,	jdbcType=VARCHAR},
+		   #{instUser,	jdbcType=VARCHAR},
+		   #{instDate,	jdbcType=VARCHAR},
+		   #{instTime,	jdbcType=VARCHAR}
+		  )
+	</insert>
+	
+	<update id="updateSubmit" parameterType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean">
+		update td_project_type
+		set param_name = #{paramName,jdbcType=VARCHAR},
+			use_flag = #{useFlag,jdbcType=VARCHAR},
+			upd_user = #{updUser,jdbcType=VARCHAR},
+			upd_date = #{updDate,jdbcType=VARCHAR},
+			upd_time = #{updTime,jdbcType=VARCHAR}
+		where param_value = #{paramValue,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="del" parameterType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean">
+		update td_project_type
+		set use_flag = '0'
+		where param_value = #{paramValue,jdbcType=VARCHAR}
+	</update>
+	
+	<select id="queryInfo" parameterType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean" 
+			resultType="com.forms.prms.web.sysmanagement.projtype.domain.ProjTypeBean">
+		select  param_value,
+				param_name,
+				org1_code, 
+				use_flag 
+		from td_project_type where param_value = #{paramValue,jdbcType=VARCHAR}
+	</select>
+	
+</mapper>

@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.sysmanagement.provider.dao.ProviderDao">
+	<!--查找函数当前的值-->
+	<select id="getProviderCode" resultType="String">
+		SELECT RM_GET_COMMON_ID('PROVIDERCODE') FROM DUAL
+	</select>
+	<!--得到供应商集合-->
+	<select id="getProvider" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" >
+		SELECT 
+			 TPB.PROVIDER_CODE,
+		     TPB.PROVIDER_NAME,
+		     TPB.PROVIDER_ADDR,
+		     TPB.OU_CODE,
+		     TPB.OU_NAME,
+		     SS.PARAM_NAME AS providerTypeName,
+		     SS1.PARAM_NAME AS payCondition,
+		     SS2.PARAM_NAME AS payMode,
+		     SS3.PARAM_NAME as actTypeText,
+		     TPB.BANK_NAME,
+			 TPB.BRANCH_NAME,
+			 TPB.ACT_NAME,
+			 TPB.ACT_NO,
+			 TPB.ACT_CURR,
+			 TPB.IS_MASTER_ACT,
+			 TPB.ACT_TYPE,
+			 TPB.BANK_INFO,
+			 TPB.BANK_CODE,
+			 TPB.BANK_AREA
+		FROM TB_PROVIDER TPB
+		LEFT JOIN SYS_SELECT SS ON TPB.PROVIDER_TYPE=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='PROVIDER_TYPE'
+		LEFT JOIN SYS_SELECT SS1 ON TPB.PAY_CONDITION=SS1.PARAM_VALUE
+		AND SS1.CATEGORY_ID='SYS_PAY_CONDITION'
+		LEFT JOIN SYS_SELECT SS2 ON TPB.PAY_MODE=SS2.PARAM_VALUE
+		AND SS2.CATEGORY_ID='SYS_PAY_WAY'
+		LEFT JOIN SYS_SELECT SS3 ON TPB.ACT_TYPE=SS3.PARAM_VALUE
+		AND SS3.CATEGORY_ID='SYS_ACCOUNT_TYPE'
+		where 1 = 1 
+		<if test="isAdmin == 1">
+		    AND EXISTS (SELECT 1 FROM TB_FNDWRR A 
+		                  WHERE A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+		                    AND A.OU_CODE = TPB.OU_CODE
+		                )
+		</if>
+		<if test="isAdmin != 1">
+		    AND OU_CODE =#{ouCode,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName!=null and providerName!=''">
+			AND	TPB.PROVIDER_NAME LIKE '%'||#{providerName,jdbcType=VARCHAR} ||'%'
+		</if>
+		<if test="providerType!=null and providerType!=''">
+			AND	TPB.PROVIDER_TYPE = #{providerType,jdbcType=VARCHAR} 
+		</if>
+		<if test="providerAddr!=null and providerAddr!=''">
+			AND	TPB.PROVIDER_ADDR LIKE '%'||#{providerAddr,jdbcType=VARCHAR} ||'%'	
+		</if>
+		ORDER BY  TPB.PROVIDER_CODE DESC
+	</select>
+	<!--向供应商表中插入数据-->	
+	<insert id="add" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		INSERT INTO  TB_PROVIDER
+		(
+			PROVIDER_CODE,
+			PROVIDER_NAME,
+			PROVIDER_TYPE,
+			PROVIDER_ADDR,
+			PAY_CONDITION,
+			PAY_MODE,
+			OU_CODE,
+			OU_NAME
+			)
+			VALUES
+			(
+			#{providerCode, jdbcType=VARCHAR },
+			#{providerName, jdbcType=VARCHAR },
+			#{providerType, jdbcType=VARCHAR},
+			#{providerAddr, jdbcType=VARCHAR },
+			#{payCondition, jdbcType=VARCHAR },
+			#{payMode, jdbcType=VARCHAR },
+			#{ouCode, jdbcType=VARCHAR },
+			#{ouName, jdbcType=VARCHAR }
+		)
+	</insert>
+	
+	<!--向供应商表中插入数据-->	
+	<insert id="addProvider" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		INSERT INTO  TB_PROVIDER
+		(
+			PROVIDER_CODE,
+			PROVIDER_NAME,
+			PAY_MODE,
+			OU_CODE,
+			OU_NAME,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			TAX_RATE
+			)
+			VALUES
+			(
+			#{providerCode, jdbcType=VARCHAR },
+			#{providerName, jdbcType=VARCHAR },
+			#{payMode, jdbcType=VARCHAR },
+			#{ouCode, jdbcType=VARCHAR },
+			#{ouName, jdbcType=VARCHAR },
+			#{instOper, jdbcType=VARCHAR },
+			to_char(sysdate,'YYYY-MM-DD'),
+			to_char(sysdate,'HH:MM:SS'),
+			#{taxRate, jdbcType=VARCHAR }
+		)
+	</insert>
+	<!--给指定的供应商添加银行号信息-->
+	<insert id="addAct" parameterType="java.util.HashMap">
+		INSERT INTO TB_PROVIDER
+		(
+			PROVIDER_CODE,
+			ACT_NO,
+			ACT_CURR,
+			BANK_NAME,
+			BRANCH_NAME,
+			ACT_NAME,
+			IS_MASTER_ACT,
+			ACT_TYPE,
+			BANK_INFO,
+			BANK_CODE,
+			BANK_AREA
+		)
+		<foreach collection="providerActList" item="item"  index="index" separator="union all">
+   			  select  
+   			  	   #{item.providerCode,jdbcType=VARCHAR} PROVIDER_CODE,
+   			       #{item.actNo,jdbcType=VARCHAR} ACT_NO,
+   			       #{item.actCurr,jdbcType=VARCHAR} ACT_CURR,
+   			       #{item.bankName,jdbcType=VARCHAR} BANK_NAME,
+   			       #{item.branchName,jdbcType=VARCHAR} BRANCH_NAME,
+   			       #{item.actName,jdbcType=VARCHAR} ACT_NAME,
+   			       #{item.isMasterAct,jdbcType=VARCHAR} IS_MASTER_ACT,
+   			       #{item.actType,jdbcType=VARCHAR} ACT_TYPE,
+   			       #{item.bankInfo,jdbcType=VARCHAR} BANK_INFO,
+   			       #{item.bankCode,jdbcType=VARCHAR} BANK_CODE,
+   			       #{item.bankArea,jdbcType=VARCHAR} BANK_AREA
+   			 from dual
+		</foreach>
+	</insert>
+	
+	<!--弹出框给指定的供应商添加银行号信息-->
+	<insert id="addActPop" parameterType="java.util.HashMap">
+		INSERT INTO TB_PROVIDER
+		(
+			PROVIDER_CODE,
+			ACT_NO,
+			BANK_NAME,
+			ACT_NAME,
+			ACT_TYPE,
+			BANK_CODE
+		)
+		<foreach collection="providerActList" item="item"  index="index" separator="union all">
+   			  select  
+   			  	   #{item.providerCode,jdbcType=VARCHAR} PROVIDER_CODE,
+   			       #{item.actNo,jdbcType=VARCHAR} ACT_NO,
+   			       #{item.bankName,jdbcType=VARCHAR} BANK_NAME,
+   			       #{item.actName,jdbcType=VARCHAR} ACT_NAME,
+   			       #{item.actType,jdbcType=VARCHAR} ACT_TYPE,
+   			       #{item.bankCode,jdbcType=VARCHAR} BANK_CODE
+   			 from dual
+		</foreach>
+	</insert>
+	<!--通过供应商编号查找供应商信息-->
+	<select id="getInfoByCode" parameterType="String" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" >
+		  SELECT 
+		     	PROVIDER_CODE,
+				PROVIDER_NAME,
+				PROVIDER_TYPE,
+				PROVIDER_ADDR,
+				PAY_CONDITION,
+				PAY_MODE,
+				OU_CODE,
+				OU_NAME
+		FROM TB_PROVIDER
+		where PROVIDER_CODE=#{providerCode,jdbcType=VARCHAR}
+	</select>
+	<!--通过供应商编号和地点编码查找供应商信息-->
+	<select id="queryInfoByCode" parameterType="String" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" >
+		SELECT 
+	     	PROVIDER_CODE,
+			PROVIDER_NAME,
+			PROVIDER_TYPE,
+			PROVIDER_ADDR_CODE,
+			PROVIDER_ADDR,
+			PAY_CONDITION,
+			PAY_MODE,
+			OU_CODE,
+			OU_NAME
+		FROM TB_PROVIDER
+		where PROVIDER_CODE=#{providerCode,jdbcType=VARCHAR}
+		and  PROVIDER_ADDR_CODE=#{providerAddrCode,jdbcType=VARCHAR}
+	</select>
+	<!--通过供应商编号查找供应商详细信息-->
+	<select id="getDetailByCode" parameterType="String" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" >
+			  SELECT 
+		        		TPB.PROVIDER_CODE,
+						TPB.PROVIDER_NAME,
+						TPB.PROVIDER_TYPE,
+						TPB.PROVIDER_ADDR,
+						SS.PARAM_NAME as payCondition,
+						SS1.PARAM_NAME AS payMode,
+						TPB.OU_CODE,
+						TPB.OU_NAME
+			 FROM TB_PROVIDER TPB
+			 LEFT JOIN  SYS_SELECT SS
+			 ON TPB.PAY_CONDITION=SS.PARAM_VALUE
+	   		 AND SS.CATEGORY_ID='SYS_PAY_CONDITION'
+			 LEFT JOIN  SYS_SELECT SS1
+			 ON TPB.PAY_MODE=SS1.PARAM_VALUE
+	    	 AND SS1.CATEGORY_ID='SYS_PAY_WAY'
+			 where TPB.PROVIDER_CODE=#{providerCode,jdbcType=VARCHAR}
+	</select>
+	<!---通过供应商-编号找到所有对应的银行卡号集合-->
+	<select id="getActList" parameterType="String" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderActBean" >
+		   SELECT 
+        		TBA.ACT_NO,
+				TBA.ACT_CURR,
+				TBA.BANK_NAME,
+				TBA.BRANCH_NAME,
+				TBA.ACT_NAME,
+				TBA.IS_MASTER_ACT,
+				SS.PARAM_NAME as actTypeText,
+				TBA.ACT_TYPE as actType,
+				TBA.BANK_INFO,
+				TBA.BANK_CODE,
+				TBA.BANK_AREA
+		FROM TB_PROVIDER TBA
+		LEFT JOIN SYS_SELECT SS
+		ON TBA.ACT_TYPE=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='SYS_ACCOUNT_TYPE'
+		WHERE TBA.PROVIDER_CODE=#{providerCode,jdbcType=VARCHAR}
+	</select>
+	
+	<!--批量删除供应商编号下的银行卡信-->
+	<delete id="batchDelete" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		 delete from  TB_PROVIDER
+		 where TB_PROVIDER.PROVIDER_CODE =#{providerCode,jdbcType=VARCHAR} 
+	</delete>
+	
+	<!---更新保存的信息-->
+	<update id="editsubmit"
+		parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		UPDATE TB_PROVIDER tpb SET 
+		tpb.PROVIDER_NAME=#{providerName,jdbcType=VARCHAR},
+		tpb.PROVIDER_ADDR=#{providerAddr,jdbcType=VARCHAR},
+		tpb.PAY_CONDITION=#{payCondition,jdbcType=VARCHAR},
+		tpb.PAY_MODE=#{payMode,jdbcType=VARCHAR},
+		tpb.OU_CODE=#{ouCode,jdbcType=VARCHAR},
+		tpb.OU_NAME=#{ouName,jdbcType=VARCHAR}
+		WHERE tpb.PROVIDER_CODE = #{providerCode,jdbcType=VARCHAR}
+	</update>
+	<!--删除供应商所对应的银行信息-->
+	<delete id="deleteProvider" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		delete from  TB_PROVIDER
+		WHERE PROVIDER_CODE IN 
+		<foreach collection="delIdList" item="delId" open="(" close=")" separator=",">#{delId,jdbcType=VARCHAR}</foreach>
+	</delete>
+	<!--删除供应商信息-->
+	<delete id="deleteProviderAct" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		delete from  TB_PROVIDER
+		 WHERE PROVIDER_CODE IN
+		<foreach collection="delIdList" item="delId" open="(" close=")" separator=",">#{delId,jdbcType=VARCHAR}</foreach>
+	</delete>
+	<!--查找登录人ID对应的ouCode-->
+	<select id="findOuCode" parameterType="String" resultType="String">
+		SELECT OU_CODE FROM SYS_USER
+		WHERE USER_ID=#{userId,jdbcType=VARCHAR}
+	</select>
+	<!--查找登录人ID对应的所有ouName-->
+	<select id="getOuNameList" parameterType="String" resultType="String">
+		SELECT  DISTINCT TB_FNDWRR.OU_NAME
+		FROM TB_FNDWRR 
+		LEFT JOIN SYS_USER SU
+		ON TB_FNDWRR.DUTY_CODE =SU.DUTY_CODE
+		WHERE SU.USER_ID=#{userId,jdbcType=VARCHAR}
+	</select>
+	<!--查找登录人ID对应的所有ouCode-->
+	<select id="getOuCodeList" parameterType="String" resultType="String">
+		SELECT  DISTINCT TB_FNDWRR.OU_CODE
+		FROM TB_FNDWRR 
+		LEFT JOIN SYS_USER SU
+		ON TB_FNDWRR.DUTY_CODE =SU.DUTY_CODE
+		WHERE SU.USER_ID=#{userId,jdbcType=VARCHAR}
+		
+	</select>
+	<!--弹出框查找供应商账号-->
+	<select id="searchProviderAct" parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		SELECT 
+			TPB.PROVIDER_CODE,
+			TPB.PROVIDER_NAME,
+			SS.PARAM_NAME AS providerTypeName,
+			TPB.PROVIDER_TYPE,
+			TPB.TAX_RATE,
+			TPB.PROVIDER_ADDR,
+			TPB.PROVIDER_ADDR_CODE,
+			TPB.ACT_NAME,
+			TPB.BANK_INFO,
+			TPB.BANK_CODE,
+			TPB.BANK_AREA,
+			TPB.PAY_MODE,
+			TPB.ACT_TYPE,
+			TPB.BANK_NAME AS bankNamePop,
+			TPB.ACT_NO AS actNoPop,
+			TPB.ACT_CURR AS actCurrPop
+		FROM  TB_PROVIDER  tpB
+		LEFT JOIN SYS_SELECT SS ON TPB.PROVIDER_TYPE=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='PROVIDER_TYPE'
+    	WHERE TPB.OU_CODE =#{ouCode,jdbcType=VARCHAR}
+			<if test="flag ==1">
+			AND TPB.PROVIDER_TYPE = 'VENDOR' 
+			</if>
+			<if test="flag ==2">
+			AND TPB.PROVIDER_TYPE != 'EMPLOYEE' 
+			</if>
+			<if test="providerCodePop!=null and providerCodePop!=''">
+			AND	TPB.PROVIDER_CODE LIKE '%'|| #{providerCodePop,jdbcType=VARCHAR} ||'%'
+			</if>
+			<if test="providerName!=null and providerName!=''">
+			AND	TPB.PROVIDER_NAME LIKE '%'||#{providerName,jdbcType=VARCHAR} ||'%'
+			</if>
+			<if test="providerTypePop!=null and providerTypePop!=''">
+			AND	TPB.PROVIDER_TYPE = #{providerTypePop,jdbcType=VARCHAR} 
+			</if>
+			<if test="actNoPop!=null and actNoPop!=''">
+			AND	TPB.ACT_NO LIKE '%'|| #{actNoPop,jdbcType=VARCHAR} ||'%'
+			</if>
+			<if test="actTypePop!=null and actTypePop!=''">
+			AND	TPB.ACT_TYPE =#{actTypePop,jdbcType=VARCHAR}
+			</if>
+			<if test="bankNamePop!=null and bankNamePop!=''">
+			AND	TPB.BANK_NAME LIKE '%'||#{bankNamePop,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="bankCodePop!=null and bankCodePop!=''">
+			AND	TPB.BANK_CODE LIKE '%'||#{bankCodePop,jdbcType=VARCHAR}
+			</if>
+		ORDER BY  TPB.PROVIDER_CODE DESC
+	</select>
+	<!--查找添加的供应商名称是否存在-->
+	<select id="checkProviderName"  parameterType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean" resultType="com.forms.prms.web.sysmanagement.provider.domain.ProviderBean">
+		SELECT TB_PROVIDER.PROVIDER_NAME
+		FROM TB_PROVIDER
+		WHERE TB_PROVIDER.PROVIDER_NAME = #{providerName,jdbcType = VARCHAR}
+	</select>
+</mapper>

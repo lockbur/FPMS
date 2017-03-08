@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.contractcommon.dao.ContractCommonDao">
+<!-- 合同新增后专向包向合同统计表中加入数据-->
+	<insert id = "addWarnCnt" parameterType="com.forms.prms.web.contract.contractcommon.domain.ContractCommonBean">
+		INSERT
+			INTO SYS_WARN_CNT_INFO
+			  (
+			    CNT_NUM,
+				DUTY_CODE,
+				FUNC_TYPE
+			  )
+			SELECT 
+				 DISTINCT #{cntNum,jdbcType=VARCHAR},
+				 TAC.MATR_AUDIT_DEPT,
+				 #{funcType,jdbcType=VARCHAR}
+			FROM  TD_CNT_DEVICE	 TCD
+			LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE  AND TAC.DATA_year = to_char(sysdate, 'yyyy')
+			AND  TAC.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code)) 
+			WHERE TCD.CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+			AND TCD.DATA_FLAG='00' 
+			AND TAC.MATR_AUDIT_DEPT IS NOT NULL
+	</insert>
+	
+	<!-- 合同新增后非专向包向合同统计表中加入数据-->
+	<insert id = "addWarnCntNoSpec" parameterType="com.forms.prms.web.contract.contractcommon.domain.ContractCommonBean">
+		INSERT
+			INTO SYS_WARN_CNT_INFO
+			  (
+			    CNT_NUM,
+				DUTY_CODE,
+				FUNC_TYPE
+			  )
+			SELECT 
+				 DISTINCT #{cntNum,jdbcType=VARCHAR},
+				 NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT) MATR_AUDIT_DEPT,
+				 #{funcType,jdbcType=VARCHAR}
+			FROM  TD_CNT_DEVICE	 TCD
+			LEFT JOIN TB_FNDWRR TFR ON TFR.DUTY_CODE = TCD.FEE_DEPT
+			
+			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			AND TACN.FEE_CODE IS NOT NULL
+			AND TACN.FEE_CODE = TCD.FEE_DEPT AND  TACN.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+			AND  TACN.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			
+			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+			AND TACN2.orG_CODE = TFR.ORG_CODE AND  TACN2.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+			AND  TACN2.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			
+			
+			
+			WHERE TCD.CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+			AND TCD.DATA_FLAG='00' 
+			AND (TACN.MATR_AUDIT_DEPT IS NOT NULL OR TACN2.MATR_AUDIT_DEPT IS NOT NULL)
+	</insert>
+	<!--费用类+其他的合同加入统计信息-->
+	<insert id = "addWarnCntSpecOrNoSpec" parameterType="com.forms.prms.web.contract.contractcommon.domain.ContractCommonBean">
+		INSERT
+			INTO SYS_WARN_CNT_INFO
+			  (
+			    CNT_NUM,
+				DUTY_CODE,
+				FUNC_TYPE
+			  )
+			SELECT 
+				 DISTINCT #{cntNum,jdbcType=VARCHAR},
+				 NVL(TAC.MATR_AUDIT_DEPT,NVL(TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT)) MATR_AUDIT_DEPT,
+				 #{funcType,jdbcType=VARCHAR}
+			FROM  TD_CNT_DEVICE	 TCD
+			LEFT JOIN TB_FNDWRR TFR ON TFR.DUTY_CODE = TCD.FEE_DEPT
+			
+			LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE  AND TAC.DATA_year = to_char(sysdate, 'yyyy')
+			AND  TAC.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+			
+			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			AND TACN.FEE_CODE IS NOT NULL
+			AND TACN.FEE_CODE = TCD.FEE_DEPT AND  TACN.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+			AND  TACN.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			
+			LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+			AND TACN2.orG_CODE = TFR.ORG_CODE AND  TACN2.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+			AND  TACN2.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			
+			
+			
+			WHERE TCD.CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+			AND TCD.DATA_FLAG='00' 
+			AND (TAC.MATR_AUDIT_DEPT IS NOT NULL OR TACN.MATR_AUDIT_DEPT IS NOT NULL OR TACN2.MATR_AUDIT_DEPT IS NOT NULL)
+	</insert>
+	
+	<!-- 合同物料复核全部通过后加入一条待确认的数据-->
+	<insert id = "addWarnCntCheck" parameterType="com.forms.prms.web.contract.contractcommon.domain.ContractCommonBean">
+		INSERT
+			INTO SYS_WARN_CNT_INFO
+			  (
+			    CNT_NUM,
+				DUTY_CODE,
+				FUNC_TYPE
+			  )
+			SELECT 
+				 #{cntNum,jdbcType=VARCHAR},
+				 TC.CREATE_DEPT,
+				 #{funcType,jdbcType=VARCHAR}
+			FROM  TD_CNT TC
+			WHERE TC.CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+	</insert>
+	
+	<!-- 合同移交后将该合同将要接收的部门加入到合同统计表中-->
+	<insert id = "addWarnCntDeliver" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		INSERT
+			INTO SYS_WARN_CNT_INFO
+			  (
+			    CNT_NUM,
+				DUTY_CODE,
+				FUNC_TYPE
+			  )
+			  (
+			   <foreach collection="cntNums" item="cntNumItem" index="index" separator="union">
+					  select
+			     	  #{cntNumItem, jdbcType=VARCHAR},
+			     	  #{deliverDutyCode,jdbcType=VARCHAR},
+			     	  #{funcType,jdbcType=VARCHAR}
+			     	  from dual
+		    	</foreach>
+			  )
+	</insert>
+	 <!-- 修改合同删除之前这条待复核合同对应物料的归口部门在合同统计表中的数据 -->
+	<delete id="delWarnCntCheck" parameterType="String">
+		DELETE FROM SYS_WARN_CNT_INFO
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+	</delete>
+	 <!-- 复核物料后删除这些物料对应归口部门在合同统计表中的数据 -->
+	<delete id="delWarnCntCheckOnce" parameterType="com.forms.prms.web.contract.check.domain.ContractCheckBean">
+		DELETE FROM SYS_WARN_CNT_INFO
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+		AND DUTY_CODE=#{dutyCode,jdbcType=VARCHAR}
+	</delete>
+	 <!--  合同确认通过退回都删除这条合同在统计表中待确认的数据 -->
+	<delete id="delWarnCntConfirm" parameterType="String">
+		DELETE FROM SYS_WARN_CNT_INFO
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR} 
+	</delete>
+	 <!--  合同移交前先删除这些合同所归属那个部门接受 -->
+	<delete id="delWarnCntDeliver" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		DELETE FROM SYS_WARN_CNT_INFO
+		WHERE FUNC_TYPE='C3' 
+		AND CNT_NUM IN
+		 <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</delete>
+	<!-- 得到新增合同时添加到合同统计表中的归口部门集合 -->
+	<select id="getDutyCodeList" parameterType="String" resultType="String">
+		SELECT DUTY_CODE
+		FROM SYS_WARN_CNT_INFO
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		AND FUNC_TYPE='C1'
+	</select>
+	
+	<!-- 得到待确认合同所归属的部门 -->
+	<select id="getSureDutyCode" parameterType="String" resultType="String">
+		SELECT CREATE_DEPT as sureDutyCode
+		FROM TD_CNT
+		WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	<!--取消移交-->
+	<delete id="cancelDeliverCntInfo" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		DELETE FROM SYS_WARN_CNT_INFO T WHERE EXISTS(
+			SELECT 1 FROM TD_CNT TC WHERE 
+			    TC.CNT_NUM = T.CNT_NUM
+			AND T.DUTY_CODE = DELIVER_DUTY_CODE
+		) 
+		and T.CNT_NUM IN
+		 <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</delete>
+	<!--取消移交-->
+</mapper>	

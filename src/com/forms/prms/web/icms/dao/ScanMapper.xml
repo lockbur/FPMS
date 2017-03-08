@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.icms.dao.ScanDAO">
+	<insert id="mergeUUID" parameterType="com.forms.prms.web.icms.domain.ScanBean">
+		merge into ti_icms_pkuuid des
+		using (
+		    select #{id, jdbcType = VARCHAR} as id,
+		           #{icmsPkuuid, jdbcType = VARCHAR} as icms_pkuuid,
+		           #{instOper, jdbcType = VARCHAR} as inst_oper,
+		           to_char(sysdate,'yyyy-MM-dd') as inst_date,
+		           to_char(sysdate,'hh24:mi:ss') as inst_time
+		    from dual       
+		  )  src   
+		on (des.id = src.id)
+		when matched then
+			update set des.icms_pkuuid = src.icms_pkuuid,
+			           des.inst_oper = src.inst_oper,
+			           des.inst_date = src.inst_date,
+			           des.inst_time = src.inst_time
+		when not matched then 
+		    insert values(
+		    src.id,
+		    src.icms_pkuuid,
+		    src.inst_oper,
+		    src.inst_date,
+		    src.inst_time
+		    )    			           
+	</insert>
+	
+	<update id="updateUUID" parameterType="com.forms.prms.web.icms.domain.ScanBean">
+		update TI_ICMS_PKUUID
+			set ICMS_PKUUID = #{icmsPkuuid, jdbcType = VARCHAR}
+			where ID = #{id, jdbcType = VARCHAR}
+	</update>
+	
+	<select id="selectUUID" parameterType="com.forms.prms.web.icms.domain.ScanBean"
+			resultType="com.forms.prms.web.icms.domain.ScanBean">
+		select * from TI_ICMS_PKUUID
+			where ID = #{id, jdbcType = VARCHAR} 
+	</select>
+	
+	<select id="findICMSConfig" parameterType="String"
+			resultType="com.forms.prms.web.icms.domain.ScanBean">
+		SELECT A.ICMS AS ICMS,B.ICMS_CODE AS ICMS_CODE 
+		  FROM TB_FNDWRR A LEFT JOIN TB_ORG_ICMS B ON A.ORG1_CODE = B.ORG1_CODE  
+		 where A.DUTY_CODE = #{dutyCode, jdbcType = VARCHAR} 
+	</select>
+</mapper>

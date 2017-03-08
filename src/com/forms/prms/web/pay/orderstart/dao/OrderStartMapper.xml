@@ -1,0 +1,517 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.orderstart.dao.OrderStartDao">
+	<!--查找函数当前的值-->
+	<select id="getOrderId" parameterType="String"  resultType="String">
+		SELECT #{orderDutyCode, jdbcType=VARCHAR}||RM_GET_COMMON_ID('ORDERID') FROM DUAL
+	</select>
+	
+	<!--专向包合同给订单表中批量添加数据-->
+	<!-- 此代码没用到暂时保留<insert id="orderCreateList" parameterType="String">
+		INSERT
+			INTO TD_ORDER
+			  (
+			    ORDER_ID,
+			    STOCK_NUM,
+			    ORDER_MEMO,
+			    CNT_NUM,
+			    STOCK_AMT,
+			    STOCK_PROV,
+			    SIGN_DATE,
+			    START_DATE,
+				END_DATE,
+				PAY_TERM_MEMO,
+				INST_DUTY_CODE,
+				INST_DATE,
+				INST_TIME,
+				INST_USER,
+			    ORDER_DUTY_CODE,
+			    DATA_FLAG
+			  )
+			SELECT MATR_BUY_DEPT
+			  ||RM_GET_COMMON_ID('ORDERID'),
+			  TC.STOCK_NUM,
+			  TC.CNT_NAME || '的采购订单：' || SUBSTR(A.STR, 1, 100) AS ORDER_MEMO,
+			  TC.CNT_NUM,
+			  TC.LXJE,
+			  TC.PROVIDER_CODE,
+			  TC.SIGN_DATE,
+			  TC.FEE_START_DATE,
+			  TC.FEE_END_DATE,
+			  TC.PAY_TERM,
+			  #{insertDutyCode,jdbcType=VARCHAR},
+			  to_char(SYSDATE, 'yyyy-MM-dd'),
+			  to_char(SYSDATE, 'hh24:mi:ss'),
+			  #{instUser,jdbcType=VARCHAR},
+			  A.MATR_BUY_DEPT,
+			  '00'
+			FROM
+			  ( SELECT TAC.MATR_BUY_DEPT,
+			  		   TCD.CNT_NUM,
+                       WM_CONCAT(TMT.MATR_NAME) AS STR
+               FROM TD_CNT_DEVICE TCD
+               LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+              LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE  AND TAC.DATA_year = to_char(sysdate, 'yyyy')
+			  AND  TAC.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,decode(TCD.next_year,to_char(sysdate,'yyyy'),TCD.next_mont_code))
+		      LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = TCD.FEE_DEPT AND TF1.ORG1_CODE = TAC.ORG1_CODE 
+              WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+              GROUP BY TAC.MATR_BUY_DEPT,TCD.CNT_NUM) A
+       LEFT JOIN TD_CNT TC ON A.CNT_NUM = TC.CNT_NUM
+	</insert> -->
+	
+	<!--订单退回修改合同后专向包合同给订单表中批量添加数据-->
+	<!-- 此代码没用到，暂时保留<insert id="orderEditCreateList" parameterType="String">
+		INSERT
+			INTO TD_ORDER
+			  (
+			    ORDER_ID,
+			    STOCK_NUM,
+			    ORDER_MEMO,
+			    CNT_NUM,
+			    STOCK_AMT,
+			    STOCK_PROV,
+			    SIGN_DATE,
+			    START_DATE,
+				END_DATE,
+				PAY_TERM_MEMO,
+				INST_DUTY_CODE,
+				INST_DATE,
+				INST_TIME,
+				INST_USER,
+			    ORDER_DUTY_CODE,
+			    DATA_FLAG
+			  )
+			SELECT MATR_BUY_DEPT
+			  ||RM_GET_COMMON_ID('ORDERID'),
+			  TC.STOCK_NUM,
+			  TC.CNT_NAME || '的采购订单：' || SUBSTR(A.STR, 1, 100) AS ORDER_MEMO,
+			  TC.CNT_NUM,
+			  TC.LXJE,
+			  TC.PROVIDER_CODE,
+			  TC.SIGN_DATE,
+			  TC.FEE_START_DATE,
+			  TC.FEE_END_DATE,
+			  TC.PAY_TERM,
+			  #{insertDutyCode,jdbcType=VARCHAR},
+			  to_char(SYSDATE, 'yyyy-MM-dd'),
+			  to_char(SYSDATE, 'hh24:mi:ss'),
+			  #{instUser,jdbcType=VARCHAR},
+			  A.MATR_BUY_DEPT,
+			  '01'
+			FROM
+			  ( SELECT TAC.MATR_BUY_DEPT,
+			  		   TCD.CNT_NUM,
+                       WM_CONCAT(TMT.MATR_NAME) AS STR
+               FROM TD_CNT_DEVICE TCD
+               LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+               LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE  AND TAC.DATA_year = to_char(sysdate, 'yyyy')
+			  AND  TAC.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,decode(TCD.next_year,to_char(sysdate,'yyyy'),TCD.next_mont_code))
+		      LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = TCD.FEE_DEPT AND TF1.ORG1_CODE = TAC.ORG1_CODE 
+              WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+              AND TCD.DATA_FLAG='90'
+              AND TCD.ORDER_ID  IS NULL
+              GROUP BY TAC.MATR_BUY_DEPT,TCD.CNT_NUM) A
+       LEFT JOIN TD_CNT TC ON A.CNT_NUM = TC.CNT_NUM
+	</insert> -->
+	
+	<!--非专向包给订单表中批量添加数据-->
+	<!--此代码暂时保留，没有用到 <insert id="orderCreateList1" parameterType="String">
+		INSERT
+			INTO TD_ORDER
+			  (
+			    ORDER_ID,
+			    STOCK_NUM,
+			    ORDER_MEMO,
+			    CNT_NUM,
+			    STOCK_AMT,
+			    STOCK_PROV,
+			    SIGN_DATE,
+			    START_DATE,
+				END_DATE,
+				PAY_TERM_MEMO,
+				INST_DUTY_CODE,
+				INST_DATE,
+				INST_TIME,
+				INST_USER,
+			    ORDER_DUTY_CODE,
+			    DATA_FLAG
+			  )
+			SELECT MATR_BUY_DEPT
+			  ||RM_GET_COMMON_ID('ORDERID'),
+			  TC.STOCK_NUM,
+			  TC.CNT_NUM || '的采购订单：' || SUBSTR(A.STR, 1, 100) AS ORDER_MEMO,
+			  TC.CNT_NUM,
+			  TC.LXJE,
+			  TC.PROVIDER_CODE,
+			  TC.SIGN_DATE,
+			  TC.FEE_START_DATE,
+			  TC.FEE_END_DATE,
+			  TC.PAY_TERM,
+			  #{insertDutyCode,jdbcType=VARCHAR},
+			  to_char(SYSDATE, 'yyyy-MM-dd'),
+			  to_char(SYSDATE, 'hh24:mi:ss'),
+			  #{instUser,jdbcType=VARCHAR},
+			  A.MATR_BUY_DEPT,
+			  '00'
+			FROM
+			   ( 
+			     SELECT TACN.MATR_BUY_DEPT,
+                        TCD.CNT_NUM,
+                        WM_CONCAT(TMT.MATR_NAME) AS STR
+                 FROM TD_CNT_DEVICE TCD
+                 LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+                 LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			     AND TACN.FEE_CODE = TCD.FEE_DEPT AND  TACN.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+			     AND  TACN.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,decode(TCD.next_year,to_char(sysdate,'yyyy'),TCD.next_mont_code))
+                 WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+                 GROUP BY TACN.MATR_BUY_DEPT,TCD.CNT_NUM
+                ) A
+                LEFT JOIN TD_CNT TC ON A.CNT_NUM = TC.CNT_NUM
+	</insert> -->
+	
+	<!--订单退回修改合同后非专向包给订单表中批量添加数据-->
+	<!--此代码没用到，暂时保留 <insert id="orderEditCreateList1" parameterType="String">
+		INSERT
+			INTO TD_ORDER
+			  (
+			    ORDER_ID,
+			    STOCK_NUM,
+			    ORDER_MEMO,
+			    CNT_NUM,
+			    STOCK_AMT,
+			    STOCK_PROV,
+			    SIGN_DATE,
+			    START_DATE,
+				END_DATE,
+				PAY_TERM_MEMO,
+				INST_DUTY_CODE,
+				INST_DATE,
+				INST_TIME,
+				INST_USER,
+			    ORDER_DUTY_CODE,
+			    DATA_FLAG
+			  )
+			SELECT MATR_BUY_DEPT
+			  ||RM_GET_COMMON_ID('ORDERID'),
+			  TC.STOCK_NUM,
+			  TC.CNT_NUM || '的采购订单：' || SUBSTR(A.STR, 1, 100) AS ORDER_MEMO,
+			  TC.CNT_NUM,
+			  TC.LXJE,
+			  TC.PROVIDER_CODE,
+			  TC.SIGN_DATE,
+			  TC.FEE_START_DATE,
+			  TC.FEE_END_DATE,
+			  TC.PAY_TERM,
+			  #{insertDutyCode,jdbcType=VARCHAR},
+			  to_char(SYSDATE, 'yyyy-MM-dd'),
+			  to_char(SYSDATE, 'hh24:mi:ss'),
+			  #{instUser,jdbcType=VARCHAR},
+			  A.MATR_BUY_DEPT,
+			  '01'
+			FROM
+			  ( 
+			     SELECT TACN.MATR_BUY_DEPT,
+                        TCD.CNT_NUM,
+                        WM_CONCAT(TMT.MATR_NAME) AS STR
+                 FROM TD_CNT_DEVICE TCD
+                 LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+                 LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			     AND TACN.FEE_CODE = TCD.FEE_DEPT AND  TACN.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+			     AND  TACN.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,decode(TCD.next_year,to_char(sysdate,'yyyy'),TCD.next_mont_code))
+                 WHERE TCD.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+                 AND TCD.DATA_FLAG='90'
+                 AND TCD.ORDER_ID  IS NULL
+                 GROUP BY TACN.MATR_BUY_DEPT,TCD.CNT_NUM
+                ) A
+                LEFT JOIN TD_CNT TC ON A.CNT_NUM = TC.CNT_NUM
+	</insert> -->
+	<!--查找待补录订单-->
+	<select id="getList" parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean"  resultType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		SELECT 
+			TOR.ORDER_ID,
+			TOR.STOCK_NUM,
+			TOR.CNT_NUM,
+			TF.DUTY_NAME AS orderDutyCodeName,
+			TC.CNT_NAME,
+			SS.PARAM_NAME as dataFlagName
+		FROM TD_ORDER TOR
+		LEFT JOIN SYS_SELECT SS ON TOR.DATA_FLAG=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='ORDER_DATA_FLAG'
+		LEFT JOIN TB_FNDWRR TF ON  TOR.ORDER_DUTY_CODE=TF.DUTY_CODE
+		LEFT JOIN TD_CNT TC ON TOR.CNT_NUM=TC.CNT_NUM
+		WHERE (TOR.DATA_FLAG='00' OR TOR.DATA_FLAG='01')
+		AND TOR.ORDER_DUTY_CODE = #{orderDutyCode,jdbcType=VARCHAR}
+		<if test="orderId != null and '' != orderId">
+			AND TOR.ORDER_ID LIKE '%' || #{orderId ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="cntNum != null and '' != cntNum">
+			AND TOR.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="cntName != null and '' != cntName">
+			AND TC.CNT_NAME LIKE '%' || #{cntName,jdbcType=VARCHAR} || '%'
+		</if>
+	</select>
+	<!---更新保存的信息-->
+	<update id="start"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		UPDATE TD_ORDER  SET 
+				ORDER_MEMO=#{orderMemo,jdbcType=VARCHAR},
+				<if test="startDate != null and '' != startDate">
+				START_DATE=#{startDate,jdbcType=VARCHAR},
+				</if>
+				<if test="endDate != null and '' != endDate">
+				END_DATE=#{endDate,jdbcType=VARCHAR},
+				</if>
+				PROCUREMENT_ROUTE=#{procurementRoute,jdbcType=VARCHAR},
+				CHK_USER=#{chkUser,jdbcType=VARCHAR},
+				DATA_FLAG='02',
+				oper_memo=#{operMemo,jdbcType=VARCHAR},
+				dept_id = #{deptId,jdbcType=VARCHAR}
+				WHERE ORDER_ID = #{orderId,jdbcType=VARCHAR}
+				AND (DATA_FLAG='00'  or data_flag='01')
+	</update>
+	<!---专向包合同批量更新合同设备中的订单信息-->
+	<!-- 此代码没用，暂时保留<update id="updateCntDev"
+		parameterType="String">
+		 update td_cnt_device t
+		    set t.order_id = (select e.order_id
+		                      from td_cnt b, tb_aprv_chain_spec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and t.matr_code = c.matr_code
+		                            and b.org1_code = c.org1_code
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            and b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+		                      )
+		 	where t.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		 	 and exists(
+        					select 1
+		                      from td_cnt b, tb_aprv_chain_spec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and t.matr_code = c.matr_code
+		                            and b.org1_code = c.org1_code
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            and b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+     					 )
+	</update>	 -->
+	
+	<!---订单退回修改合同后专向包合同批量更新合同设备中的订单信息-->
+	<!--此代码没用，暂时保留 <update id="updateEditCntDev"
+		parameterType="String">
+		 update td_cnt_device t
+		    set t.order_id = (select e.order_id
+		                      from td_cnt b, tb_aprv_chain_spec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and t.matr_code = c.matr_code
+		                            and b.org1_code = c.org1_code
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            AND b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+		                            and e.data_flag='01')
+		 	where t.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		 	and t.data_flag='90'
+		 	and t.order_id is null
+		 	 and exists(
+        					select 1
+		                      from td_cnt b, tb_aprv_chain_spec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and t.matr_code = c.matr_code
+		                            and b.org1_code = c.org1_code
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            and b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+		                            and e.data_flag='01'
+     					 )
+	</update>	 -->
+	
+	<!---非专向包合同批量更新合同设备中的订单信息-->
+	<!-- 此代码没用到，暂时保留<update id="updateCntDev1"
+		parameterType="String">
+		 update td_cnt_device t
+		    set t.order_id = (select e.order_id
+		                      from td_cnt b, tb_aprv_chain_nospec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and t.fee_dept = c.fee_code
+		                            and t.matr_code = c.matr_code
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            AND b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+		                            )
+		 	where t.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		 	 and exists(
+        					select 1
+		                      from td_cnt b, tb_aprv_chain_nospec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and t.fee_dept = c.fee_code
+		                            and t.matr_code = c.matr_code
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            and b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+     					 )
+	</update> -->
+	
+	<!---订单退回修改合同后非专向包合同批量更新合同设备中的订单信息-->
+	<!-- 此代码没用，暂时保留<update id="updateEditCntDev1"
+		parameterType="String">
+		 update td_cnt_device t
+		    set t.order_id = (select e.order_id
+		                      from td_cnt b, tb_aprv_chain_nospec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and t.fee_dept = c.fee_code
+		                            and t.matr_code = c.matr_code
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            and b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+		                            and e.data_flag='01'
+		                            )
+		 	where t.cnt_num = #{cntNum,jdbcType=VARCHAR}
+		 	and t.data_flag='90'
+		 	and t.order_id is null
+		 	and exists(
+        					select 1
+		                      from td_cnt b, tb_aprv_chain_nospec c, td_order e
+		                      where t.cnt_num = b.cnt_num
+		                            and t.fee_dept = c.fee_code
+		                            and t.matr_code = c.matr_code
+		                            and c.mont_code=decode(t.curr_year,to_char(sysdate,'yyyy'),t.curr_mont_code,decode(t.next_year,to_char(sysdate,'yyyy'),t.next_mont_code))
+		                            and c.matr_buy_dept = e.order_duty_code
+		                            and b.cnt_num = e.cnt_num
+		                            and c.DATA_YEAR = to_char(SYSDATE, 'YYYY')
+		                            and e.data_flag='01'
+     					 )
+	</update> -->
+	<!---更改订单状态-->
+	<update id="sure"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		UPDATE TD_ORDER  SET 
+				DATA_FLAG=#{dataFlag,jdbcType=VARCHAR},
+				oper_memo=#{operMemo,jdbcType=VARCHAR}
+				WHERE ORDER_ID = #{orderId,jdbcType=VARCHAR}
+				AND (DATA_FLAG='00' OR DATA_FLAG='01')
+	</update>
+	<!--订单操作添加到log表中-->
+	<insert id = "addLogOrder" parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		INSERT INTO TD_ORDER_AUDIT_LOG
+		(
+			ORDER_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{orderId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_ORDER_AUDIT_LOG WHERE ORDER_ID = #{orderId ,jdbcType=VARCHAR}),
+			#{dataFlag ,jdbcType=VARCHAR},
+			#{operMemo ,jdbcType=VARCHAR},
+			#{instUser ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYYMMDD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+	<!---更改合同表中的合同号为订单退回-->
+	<update id="updateCnt"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		UPDATE TD_CNT  TC SET 
+				TC.DATA_FLAG='40'
+				WHERE TC.CNT_NUM=
+								(
+								SELECT CNT_NUM FROM TD_ORDER  WHERE ORDER_ID= #{orderId,jdbcType=VARCHAR}
+								AND  (DATA_FLAG='00' OR DATA_FLAG='01')
+								)
+	</update>
+	<!--查询审批历史记录-->
+	<select id="queryHis" parameterType="String" 
+			resultType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		SELECT 
+			TOAL.ORDER_ID,
+			TOAL.INNER_NO,
+			TOAL.DATA_FLAG,
+			SEL.PARAM_NAME AS dataFlagName,
+			TOAL.OPER_MEMO,
+			TOAL.INST_OPER as instUser,
+			TOAL.INST_DATE,
+			TOAL.INST_TIME
+		FROM TD_ORDER_AUDIT_LOG TOAL
+		LEFT JOIN SYS_SELECT SEL ON SEL.CATEGORY_ID = 'ORDER_DATA_FLAG' AND SEL.PARAM_VALUE = TOAL.DATA_FLAG
+		WHERE TOAL.ORDER_ID = #{orderId ,jdbcType=VARCHAR}
+		ORDER BY TOAL.INNER_NO  DESC
+	</select>
+	<!--删除合同号下的所有订单-->
+	<delete id="deleteOrder" parameterType="String">
+		 delete from  TD_ORDER
+		  where ORDER_ID=(
+		  select  order_id from  TD_CNT_DEVICE
+		  where CNT_NUM=#{cntNum,jdbcType=VARCHAR}
+		  and DATA_FLAG='90'
+		 )
+	</delete>
+	<!---更改合同设备表中的物料为订单退回-->
+	<update id="backCntDev"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		UPDATE TD_CNT_DEVICE TCD 
+		SET TCD.DATA_FLAG='01'
+		WHERE ORDER_ID=#{orderId ,jdbcType=VARCHAR}
+	</update>
+	<!--通过订单号查询对应的物料列表-->
+	<select id="devList" parameterType="String" 
+			resultType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+			SELECT 
+			TP.PROJ_NAME,
+			TF.DUTY_NAME,
+			TCD.MATR_CODE,
+			TCD.MONT_CODE,
+			DEVICE_MODEL_NAME,
+			TS.SPECIAL_NAME,
+			TR.REFERENCE_NAME,
+			TCD.EXEC_NUM,
+			TCD.EXEC_PRICE,
+			TCD.EXEC_AMT,
+      TMN.MONT_NAME,
+      TMT.MATR_CODE,
+      TMT.MATR_NAME,
+      TCD.TAX_CODE,
+      DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,'N',TCD.TAX_NAMT)CNT_TR_AMT
+		FROM TD_CNT_DEVICE TCD
+		LEFT JOIN TD_PROJECT TP ON TCD.PROJ_ID=TP.PROJ_ID
+		LEFT JOIN TB_FNDWRR TF ON TCD.FEE_DEPT=TF.DUTY_CODE
+		LEFT JOIN TB_SPECIAL TS ON  TS.SPECIAL_ID=TCD.SPECIAL
+		LEFT JOIN TB_REFERENCE TR ON TR.REFERENCE_ID=TCD.REFERENCE
+    LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+    LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TCD.MATR_CODE
+		WHERE TCD.ORDER_ID = #{orderId ,jdbcType=VARCHAR}
+	</select>
+	<!--查找订单号对应合同号下是否存在00或者01状态的订单号-->
+	<select id="sureList" parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean" 
+			resultType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		select data_flag from td_order
+		where (data_flag='00' or data_flag='01')
+		and cnt_num=(
+					select cnt_num from td_order
+					where order_id=#{orderId,jdbcType=VARCHAR}
+		)
+	</select>
+	<!---更新订单表中订单对应合同下的所有状态为02的为待发送(04)-->
+	<update id="updateOrder"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		update td_order  set
+		data_flag='04'
+		where data_flag='02'
+		and cnt_num=(
+		select cnt_num from td_order
+		where order_id=#{orderId,jdbcType=VARCHAR}
+		)
+	</update>
+</mapper>

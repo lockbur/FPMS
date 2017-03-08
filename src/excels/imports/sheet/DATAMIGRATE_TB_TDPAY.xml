@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+		<!-- Sheet标题信息 -->
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="A1" regExp="\u6b63\u5e38\u4ed8\u6b3e\u57fa\u672c\u4fe1\u606f" formatDesc="该值应该为[正常付款基本信息]">bean.headInfos</mapping>
+
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u6b63\u5e38\u4ed8\u6b3e\u5355\u53f7" formatDesc="该值应该为[正常付款单号]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u662f\u5426\u8d37\u9879\u901a\u77e5\u5355" formatDesc="该值应该为[是否贷项通知单]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u4f9b\u5e94\u5546\u540d\u79f0" formatDesc="该值应该为[供应商名称]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u4f9b\u5e94\u5546\u8d26\u53f7" formatDesc="该值应该为[供应商账号]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u4f9b\u5e94\u5546\u8d26\u53f7\u5e01\u522b" formatDesc="该值应该为[供应商账号币别]">bean.headInfos</mapping>
+		<mapping cell="G2" regExp="\u53d1\u7968\u91d1\u989d" formatDesc="该值应该为[发票金额]">bean.headInfos</mapping>
+		<mapping cell="H2" regExp="\u4ed8\u6b3e\u91d1\u989d" formatDesc="该值应该为[付款金额]">bean.headInfos</mapping>
+		<mapping cell="I2" regExp="\u9884\u4ed8\u6b3e\u6838\u9500\u91d1\u989d" formatDesc="该值应该为[预付款核销金额]">bean.headInfos</mapping>
+		<mapping cell="J2" regExp="\u6682\u6536\u91d1\u989d" formatDesc="该值应该为[暂收金额]">bean.headInfos</mapping>
+		<mapping cell="K2" regExp="\u6682\u6536\u5df2\u7ed3\u6e05\u91d1\u989d" formatDesc="该值应该为[暂收已结清金额]">bean.headInfos</mapping>
+		<mapping cell="L2" regExp="\u6b63\u5e38\u4ed8\u6b3e\u65e5\u671f" formatDesc="该值应该为[正常付款日期]">bean.headInfos</mapping>
+		<mapping cell="M2" regExp="\u4ed8\u6b3e\u65b9\u5f0f" formatDesc="该值应该为[付款方式]">bean.headInfos</mapping>
+		<mapping cell="N2" regExp="\u6682\u6536\u4ed8\u6b3e\u65e5\u671f" formatDesc="该值应该为[暂收付款日期]">bean.headInfos</mapping>
+		<mapping cell="O2" regExp="\u6682\u6536\u540d\u79f0" formatDesc="该值应该为[暂收名称]">bean.headInfos</mapping>
+		<mapping cell="P2" regExp="\u6302\u8d26\u539f\u56e0" formatDesc="该值应该为[挂账原因]">bean.headInfos</mapping>
+		<mapping cell="Q2" regExp="\u9884\u8ba1\u5904\u7406\u65f6\u95f4\uff08\u6708\u4efd\uff09" formatDesc="该值应该为[预计处理时间（月份）]">bean.headInfos</mapping>
+		<mapping cell="R2" regExp="\u53d1\u7968\u8bf4\u660e" formatDesc="该值应该为[发票说明]">bean.headInfos</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.cntNum</mapping>
+			<mapping row="1" col="1">detail.payId</mapping>
+			<mapping row="1" col="2">detail.isCreditNote</mapping>
+			<mapping row="1" col="3">detail.providerName</mapping>
+			<mapping row="1" col="4">detail.provActNo</mapping>
+			<mapping row="1" col="5">detail.provActCurr</mapping>
+			<mapping row="1" col="6">detail.invoiceAmt</mapping>
+			<mapping row="1" col="7">detail.payAmt</mapping>
+			<mapping row="1" col="8">detail.advanceCancelAmt</mapping>
+			<mapping row="1" col="9">detail.suspenseAmt</mapping>
+			<mapping row="1" col="10">detail.susTotalAmt</mapping>
+			<mapping row="1" col="11">detail.payDate</mapping>
+			<mapping row="1" col="12">detail.payMode</mapping>
+			<mapping row="1" col="13">detail.suspenseDate</mapping>
+			<mapping row="1" col="14">detail.suspenseName</mapping>
+			<mapping row="1" col="15">detail.suspenseReason</mapping>
+			<mapping row="1" col="16">detail.suspensePeriod</mapping>
+			<mapping row="1" col="17">detail.invoiceMemo</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

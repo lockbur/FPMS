@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.businessType.dao.BusinessTypeDao">
+
+     <!--查询参数类别列表  -->
+	<select id="queryParamClassList" parameterType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType" 
+	resultType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType">
+		SELECT Y.CATEGORY_ID ,
+  			Y.CATEGORY_NAME
+		FROM sys_select_category Y
+<!-- 		where Y.category_id in ('ANNEX_TYPE','CNT_APPROVE_TYPE',
+			'CNT_PAY_TERM','CNT_STAGE_TYPE','HOUSE_KIND',
+			'PROCUREMENT_ROUTE','SYS_ACCOUNT_TYPE',
+			'SYS_BANK_AREA_CODE','SYS_PAY_CONDITION',
+			'SYS_PAY_WAY','SYS_PRUCHASE_WAY')  -->
+			<where>
+				<if test="categoryId != null and '' != categoryId">
+					AND Y.CATEGORY_ID = #{categoryId,jdbcType=VARCHAR}
+				</if>
+			</where>
+		ORDER BY Y.CATEGORY_ID ASC
+	</select>
+
+	<!--查询参数列表  -->
+	<select id="queryParameter" parameterType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType" 
+	resultType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType">
+			select t.CATEGORY_ID,
+			c.CATEGORY_NAME,
+			t.PARAM_NAME,
+			t.PARAM_VALUE,
+			DECODE(t.IS_INVALID,'Y','失效','N','未失效') IS_INVALID
+			from sys_select t JOIN sys_select_category C ON T.CATEGORY_ID = C.CATEGORY_ID
+			<where>
+				<if test="paramName != null and '' != paramName">
+					AND T.PARAM_NAME LIKE '%' || #{paramName,jdbcType=VARCHAR} || '%'
+				</if>
+			</where>
+			order by t.category_id ASC,t.sort_flag
+	</select>
+	
+	<!-- SQL描述：根据ParamName,CategoryId查找系统参数对象 -->
+	<select id="findPara" parameterType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType" 
+	resultType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType">
+		select t.* from sys_select t 
+		  WHERE T.CATEGORY_ID = #{categoryId,jdbcType=VARCHAR}
+		  and t.PARAM_NAME = #{paramName,jdbcType=VARCHAR}
+	</select>
+	
+	<update id="editPara" parameterType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType">
+		  UPDATE sys_select T
+   				   SET T.PARAM_VALUE = #{paramUpdateValue,jdbcType=VARCHAR},
+   				   t.PARAM_NAME      = #{paramUpdateName,jdbcType=VARCHAR},
+			       T.APPLY_USER_ID      = #{applyUserId,jdbcType=VARCHAR},
+			       T.APPLY_TIME         = SYSDATE,
+			       T.IS_INVALID       = #{isInvalid,jdbcType=VARCHAR}
+			 WHERE T.CATEGORY_ID = #{categoryId,jdbcType=VARCHAR}
+		     and t.PARAM_NAME = #{paramName,jdbcType=VARCHAR}
+	</update>
+	<select id="getMaxSort" parameterType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType" resultType="Integer">
+		select MAX(t.sort_flag)+1 from sys_select t where t.category_id = #{categoryId,jdbcType=VARCHAR}
+	</select>
+	<insert id="addSubmit" parameterType="com.forms.prms.web.sysmanagement.businessType.domain.BusinessType">
+		insert into sys_select t 
+		  (
+		   CATEGORY_ID,
+		   PARAM_NAME,
+		   PARAM_VALUE,
+		   SORT_FLAG,
+		   IS_INVALID,
+		   APPLY_USER_ID,
+		   APPLY_TIME
+		   )
+		values
+		  (
+		   #{categoryId,	jdbcType=VARCHAR},
+		   #{paramName,	jdbcType=VARCHAR},
+		   #{paramValue,	jdbcType=VARCHAR},
+		   #{sortFlag,	jdbcType=INTEGER},
+		   #{isInvalid,	jdbcType=VARCHAR},
+		   #{applyUserId,	jdbcType=VARCHAR},
+		   SYSDATE
+		  )
+	</insert>
+	
+	
+</mapper>

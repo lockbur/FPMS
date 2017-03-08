@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.tool.fms.montAprv.dao.MontAprvDao">
+	<!--校验当年是否导入了审批链-->
+	<select id="isHaveImportData" parameterType="String" resultType="Integer">
+		SELECT COUNT(1) FROM TBL_MONT_APRV A 
+		WHERE A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+		  AND A.PRO_TYPE ='02'
+		  <if test="type == 00">
+		  	AND A.SUB_TYPE IN ('11','12','21','22')
+		  	AND A.ORG21_CODE IN (#{org1Code, jdbcType=VARCHAR},#{org2Code, jdbcType=VARCHAR})
+		  </if>
+		  <if test="type == 01">
+		  	AND A.SUB_TYPE IN ('11','12')
+		  	AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  </if>
+		  <if test="type == 02">
+		  	AND A.SUB_TYPE IN ('21','22')
+		  	AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  </if>
+		  <if test="type == 11 or type == 12 or type == 21 or type == 22 ">
+		  	AND A.SUB_TYPE = #{type, jdbcType=VARCHAR}
+		  	AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  </if>
+		 AND EXCEL_STATUS = 'C5'
+	</select>
+	<!--判断审批链是否是在正式表 00代表所有类型审批链-->
+	<select id="getCountInTable"  parameterType="String" resultType="List">
+		<if test="type ==00">
+			SELECT BATCH_NO 
+			  FROM TBL_MONT_APRV A
+			 WHERE A.PRO_TYPE = '02'
+			   AND A.TRANSFER_STATUS IN ('T0')
+			   AND A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			   AND (A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+				    OR EXISTS(
+				   		 SELECT 1 FROM TB_FNDWRR B
+				   	     WHERE B.ORG1_CODE = #{org21Code, jdbcType=VARCHAR}
+				   	      AND B.ORG2_CODE = A.ORG21_CODE
+				   		)
+				   )
+		</if>
+		<if test="type ==01">
+			SELECT BATCH_NO 
+			  FROM TBL_MONT_APRV A
+			 WHERE A.PRO_TYPE = '02'
+			   AND A.TRANSFER_STATUS IN ('T0','T1')
+			   AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+			   AND A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			   AND ROWNUM = 1
+		</if>
+		<if test="type ==02">
+			SELECT BATCH_NO 
+			  FROM TBL_MONT_APRV A
+			 WHERE A.PRO_TYPE = '02'
+			   AND A.TRANSFER_STATUS IN ('T0','T1')
+			   AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+			   AND A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			   AND ROWNUM = 1
+		</if>
+		<if test="type ==11">
+			SELECT BATCH_NO 
+			  FROM TBL_MONT_APRV A
+			 WHERE A.PRO_TYPE = '02'
+			   AND A.TRANSFER_STATUS IN ('T0','T1')
+			   AND A.SUB_TYPE= '11'
+			   AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+			   AND A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			   AND ROWNUM = 1
+		</if>
+		<if test="type == 12 or type==21 or type==22">
+			SELECT BATCH_NO 
+			  FROM TBL_MONT_APRV A
+			 WHERE A.PRO_TYPE = '02'
+			   AND A.TRANSFER_STATUS IN ('T0','T1')
+			    AND A.SUB_TYPE= #{type, jdbcType=VARCHAR}
+			   AND A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+			   AND A.DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+			   AND ROWNUM = 1
+			   
+		</if>
+	</select>
+	<!--判断审批链是否是在FUT表-->
+	<select id="getCountInFut"  parameterType="String" resultType="String">
+		<if test="type ==00">
+			select type from (
+				select '11' as type from tb_aprv_chain_spec_fut a where ORG1_CODE = #{org21Code, jdbcType=VARCHAR} and a.data_year = to_char(sysdate,'yyyy') AND rownum=1
+			    union  
+			    select aprv_type as type from tb_aprv_chain_nospec_fut a where ORG21_CODE = #{org21Code, jdbcType=VARCHAR} and a.data_year = to_char(sysdate,'yyyy') AND rownum=1
+			)where rownum=1
+		</if>
+		<if test="type ==01">
+			select type from (
+				select '11' as type from tb_aprv_chain_spec_fut a where ORG1_CODE = #{org21Code, jdbcType=VARCHAR} and a.data_year = to_char(sysdate,'yyyy') AND rownum=1
+			    union  
+			    select aprv_type as type from tb_aprv_chain_nospec_fut a where ORG21_CODE = #{org21Code, jdbcType=VARCHAR} and a.data_year = to_char(sysdate,'yyyy') 
+			    and aprv_type ='12'
+			    AND rownum=1
+			)where rownum=1
+		</if>
+		<if test="type ==02">
+			select type from (
+			    select aprv_type as type from tb_aprv_chain_nospec_fut a where ORG21_CODE = #{org21Code, jdbcType=VARCHAR} and a.data_year = to_char(sysdate,'yyyy') 
+			    and aprv_type in('21','22')
+			    AND rownum=1
+			)where rownum=1
+		</if>
+		<if test="type ==11">
+			select #{type, jdbcType=VARCHAR} as type from tb_aprv_chain_spec_fut a
+			where a.data_year = to_char(sysdate,'yyyy')
+			and a.ORG1_CODE = #{org21Code, jdbcType=VARCHAR}
+			and rownum=1
+		</if>
+		<if test="type == 12 or type==21 or type==22">
+			select #{type, jdbcType=VARCHAR} as type from tb_aprv_chain_nospec_fut a
+		    where a.data_year = to_char(sysdate,'yyyy') and aprv_type = #{type, jdbcType=VARCHAR} and a.ORG21_CODE = #{org21Code, jdbcType=VARCHAR} and rownum=1
+		</if>
+	</select>
+	<select id="getStatusTransfer"  parameterType="String" resultType="String">
+		select status from tbl_mont_aprv where TRANSFER_STATUS='T1'
+	</select>
+	<update id="updateStatus" parameterType="String">
+		update tbl_mont_aprv set status=#{statusNew, jdbcType=VARCHAR}
+		where org21_code =#{org21Code, jdbcType=VARCHAR}
+		and data_year = to_char(sysdate,'yyyy')
+		and PRO_TYPE = '02'
+		and SUB_TYPE=#{type, jdbcType=VARCHAR}
+		and STATUS = #{statusOld, jdbcType=VARCHAR}
+		and rownum =1
+	</update>
+	<!--判断当年的归口部门在FUT表里存在不-->
+	<select id="getCountPoFut"  parameterType="String" resultType="String">
+		select type from (
+				select '11' as type from tb_aprv_chain_spec_fut a where data_year = to_char(sysdate,'yyyy') and MATR_AUDIT_DEPT = #{dutyCode, jdbcType=VARCHAR} and rownum=1
+			    union  
+			    select aprv_type as type from tb_aprv_chain_nospec_fut a where data_year = to_char(sysdate,'yyyy') and MATR_AUDIT_DEPT = #{dutyCode, jdbcType=VARCHAR} and rownum=1
+		) where rownum=1
+		
+	</select>
+	<!--得到需要转移的数据-->
+	<select id="getNoTransfer" resultType="List">
+		SELECT FROM TBL_MONT_APRV WHERE  TRANSFER_STATUS = 'T0' AND DATA_YEAR = TO_CHAR(SYSDATE,'YYYY')
+	</select>
+	<!--年初转移数据-->
+	<update id="transfer" parameterType="String">
+		call PRC_MADB_TRANSFER(#{batchNo, jdbcType=VARCHAR})
+	</update>
+</mapper>

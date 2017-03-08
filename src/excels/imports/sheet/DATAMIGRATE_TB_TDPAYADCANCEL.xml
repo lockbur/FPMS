@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="A1" regExp="\u9884\u4ed8\u6b3e\u6838\u9500\u4fe1\u606f" formatDesc="该值应该为[预付款核销信息]">bean.headInfos</mapping>
+
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u666e\u901a\u4ed8\u6b3e\u5355\u53f7" formatDesc="该值应该为[普通付款单号]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u9884\u4ed8\u6b3e\u5355\u53f7" formatDesc="该值应该为[预付款单号]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u672c\u6b21\u6838\u9500\u91d1\u989d\u0028\u5143\u0029" formatDesc="该值应该为[本次核销金额(元)]">bean.headInfos</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayAdvanceCancelBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.cntNum</mapping>
+			<mapping row="1" col="1">detail.normalPayId</mapping>
+			<mapping row="1" col="2">detail.advancePayId</mapping>
+			<mapping row="1" col="3">detail.cancelAmt</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

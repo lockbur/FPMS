@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+<mapper namespace="com.forms.prms.web.sysmanagement.role.dao.RoleDao">
+
+	<select id="queryRole" parameterType="com.forms.prms.web.sysmanagement.role.domain.Role" resultType="com.forms.prms.web.sysmanagement.role.domain.Role">
+		SELECT * FROM SYS_ROLE
+		<where>
+			<if test="roleId != null and roleId != ''">
+				AND ROLE_ID = #{roleId,jdbcType=VARCHAR}
+			</if>
+			<if test="roleName != null and roleName != ''">
+				AND ROLE_NAME LIKE '%' || #{roleName,jdbcType=VARCHAR} || '%'
+			</if>
+		</where>
+		ORDER BY ROLE_ID DESC
+	</select>
+	
+	<select id="findRole" parameterType="String" resultType="com.forms.prms.web.sysmanagement.role.domain.Role">
+		SELECT * FROM SYS_ROLE where ROLE_ID = #{roleId,jdbcType=VARCHAR}
+	</select>
+	
+	<update id="updateRole" parameterType="com.forms.prms.web.sysmanagement.role.domain.Role">
+		update sys_role set role_name=#{roleName,jdbcType=VARCHAR}, 
+		role_level=#{roleLevel,jdbcType=VARCHAR},
+		UPDATE_USER = #{updateUser,jdbcType=VARCHAR},
+		UPDATE_DATE =  TO_CHAR(SYSDATE,'YYYY-MM-DD')
+		where ROLE_ID = #{roleId,jdbcType=VARCHAR}
+	</update>
+	
+	<insert id="insertRole" parameterType="com.forms.prms.web.sysmanagement.role.domain.Role">
+		insert into SYS_ROLE
+        (
+             ROLE_ID,
+             ROLE_NAME,
+             ROLE_LEVEL,
+             ENABLE_DEL,
+             INST_USER,
+             INST_DATE
+         )
+		values
+	    (
+	          #{roleId, jdbcType=VARCHAR },
+	          #{roleName, jdbcType=VARCHAR },
+	          #{roleLevel, jdbcType=VARCHAR },
+	          #{enableDel, jdbcType=VARCHAR },
+	          #{instUser, jdbcType=VARCHAR },
+	          TO_CHAR(SYSDATE,'YYYY-MM-DD')
+         )
+	</insert>
+
+	<delete id="deleteRole" parameterType="String">
+		DELETE FROM SYS_ROLE WHERE ROLE_ID = #{roleId, jdbcType=VARCHAR }
+	</delete>
+	
+	<delete id="deleteRoleFunction" parameterType="String">
+		DELETE FROM PF_ROLE_FUNC_RLN WHERE ROLE_ID = #{roleId, jdbcType=VARCHAR }
+	</delete>
+
+	<delete id="deleteUserRole" parameterType="String">
+		DELETE FROM PF_USER_ROLE_RLN WHERE ROLE_ID = #{roleId, jdbcType=VARCHAR }
+	</delete>
+	
+	<select id="selectMaxId" resultType="String">
+		select max(to_number(substr(t.ROLE_ID,2)))+1 from SYS_ROLE t
+	</select>
+	
+	<select id="selRoleByFuncId" parameterType="String" resultType="HashMap">
+		SELECT DISTINCT t.*
+		from sys_role t 
+		LEFT JOIN pf_role_func_rln rf ON t.role_id=rf.role_id
+		WHERE rf.func_id = #{funcId,jdbcType=VARCHAR} 
+		ORDER BY t.role_id
+	</select>
+	
+	<insert id="addRoleFuncRln" parameterType="java.util.List">
+		INSERT INTO PF_ROLE_FUNC_RLN (ROLE_ID, FUNC_ID) (
+			<foreach collection="roleList" item="item" index="index" separator="union all" > 
+				select #{item.roleId,jdbcType=VARCHAR}, #{item.funcId,jdbcType=VARCHAR} from dual
+	  		 </foreach> 
+			)
+   	</insert>
+	
+	<delete id="delRoleFuncRlnByRoleId" parameterType="string">
+		DELETE FROM PF_ROLE_FUNC_RLN
+		WHERE ROLE_ID = #{roleId,jdbcType=VARCHAR}
+	</delete>
+
+	<select id="checkRole"  parameterType="String" resultType="com.forms.prms.web.sysmanagement.role.domain.Role">
+		select user_id 
+		from PF_USER_ROLE_RLN p
+		left join sys_role s
+		on p.role_id=s.role_id
+		where p.ROLE_ID like '%' || #{roleId,jdbcType=VARCHAR} || '%'
+	</select>
+</mapper>

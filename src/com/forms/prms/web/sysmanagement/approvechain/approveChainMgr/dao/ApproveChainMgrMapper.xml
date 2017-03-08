@@ -1,0 +1,1562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.dao.ApproveChainMgrDao">
+	<!--省行维护审批链  已审批-->
+	<select id="specHaveWhList" 
+			parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+	SELECT distinct V.*,
+       tf51.duty_name as fee_name,
+       C1.MONT_NAME,
+       B1.MATR_NAME,
+       SS.PARAM_NAME AS APRV_TYPE_NAME,
+       TF11.DUTY_NAME AS MATR_BUY_NAME,
+       TF01.DUTY_NAME AS MATR_AUDIT_NAME,
+       TF21.DUTY_NAME FINC_DEPT_S_NAME,
+       TF31.DUTY_NAME FINC_DEPT_2_NAME,
+       TF41.DUTY_NAME FINC_DEPT_1_NAME,
+       TF61.ORG_NAME AS ORG_NAME
+  FROM (select #{org21Code,jdbcType=VARCHAR} as org1_Code,
+               '11' AS APRV_TYPE,
+               <!--'专项包' as aprv_type_name,-->
+               NULL AS FEE_CODE,
+               A.MONT_CODE,
+               A.MATR_CODE,
+               A.MATR_BUY_DEPT,
+               A.MATR_AUDIT_DEPT,
+               A.FINC_DEPT_S,
+               A.FINC_DEPT_2,
+               A.FINC_DEPT_1,
+               a.data_year,
+               '' as org_code
+          from ${specTableName} A
+         where a.org1_code = #{org21Code,jdbcType=VARCHAR}
+           and a.data_year =  #{dataYear,jdbcType=VARCHAR}
+        union
+        select #{org21Code,jdbcType=VARCHAR} as org1_Code,
+               a1.aprv_type,
+               <!--decode(a1.aprv_type,'12','省行统购资产','21','非省行统购资产','22','非专项包费用') as aprv_type_name,-->
+               A1.FEE_CODE,
+               A1.MONT_CODE,
+               A1.MATR_CODE,
+               A1.MATR_BUY_DEPT,
+               A1.MATR_AUDIT_DEPT,
+               A1.FINC_DEPT_S,
+               A1.FINC_DEPT_2,
+               A1.FINC_DEPT_1,
+               a1.data_year,
+               A1.ORG_CODE
+          from ${noSpecTableName} A1  
+         WHERE A1.aprv_type = '12'
+           AND A1.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+           and a1.data_year = #{dataYear,jdbcType=VARCHAR}
+       ) V
+  LEFT JOIN TB_MATR_TYPE B1
+    ON V.MATR_CODE = B1.MATR_CODE
+  LEFT JOIN tb_mont_name C1
+    ON C1.MONT_CODE = V.MONT_CODE
+  left JOIN TB_FNDWRR TF01
+    ON TF01.DUTY_CODE = V.MATR_AUDIT_DEPT
+  left JOIN TB_FNDWRR TF11
+    ON TF11.DUTY_CODE = V.MATR_BUY_DEPT
+  left JOIN TB_FNDWRR TF21
+    ON TF21.DUTY_CODE = V.FINC_DEPT_S
+  left JOIN TB_FNDWRR TF31
+    ON TF31.DUTY_CODE = V.FINC_DEPT_2
+  left JOIN TB_FNDWRR TF41
+    ON TF41.DUTY_CODE = V.FINC_DEPT_1
+  left JOIN TB_FNDWRR TF51
+    ON TF51.DUTY_CODE = V.FEE_CODE
+  LEFT JOIN TB_FNDWRR TF61 
+    ON TF61.ORG_CODE = V.ORG_CODE
+  left join sys_select ss on v.APRV_TYPE = ss.param_value and ss.category_id = 'MONT_TYPE'
+	<where>
+    <if test="matrCode != null and matrCode != ''">
+	 		and V.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="orgCode != null and orgCode != ''">
+	 		and V.ORG_CODE=#{orgCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="matrName != null and matrName != ''">
+ 			AND B1.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+ 	</if>
+ 	 <if test="montCode != null and montCode != ''">
+	 		and C1.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="montName != null and montName != ''">
+ 			AND C1.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+ 	</if>
+ 	<if test="matrBuyDept != null and matrBuyDept != ''">
+	 		and V.MATR_BUY_DEPT=#{matrBuyDept,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="matrAuditDept != null and matrAuditDept != ''">
+	 		and V.MATR_AUDIT_DEPT=#{matrAuditDept,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="fincDeptS != null and fincDeptS != ''">
+	 		and V.FINC_DEPT_S=#{fincDeptS,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="fincDept2 != null and fincDept2 != ''">
+	 		and V.FINC_DEPT_2=#{fincDept2,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="fincDept1 != null and fincDept1 != ''">
+	 		and V.FINC_DEPT_1=#{fincDept1,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="aprvType != null and aprvType != ''">
+	 		and V.APRV_TYPE=#{aprvType,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="feeCode != null and feeCode != ''">
+	 		and V.FEE_CODE=#{feeCode,jdbcType=VARCHAR}
+ 	</if>
+ 	</where>
+ 	ORDER BY V.MONT_CODE,V.MATR_CODE DESC
+	</select>
+	<!--省行未维护审批链 的物料列表 专项包-->
+	<select id="specNoWhList" 
+			parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+			SELECT 
+			A.MATR_CODE,
+			C.MATR_NAME,
+			A.MONT_CODE,
+			B.MONT_NAME
+			FROM TB_MONT_MATR_CONTRA A
+			LEFT JOIN TB_MONT_NAME B ON A.MONT_CODE = B.MONT_CODE
+			LEFT JOIN TB_MATR_TYPE C ON C.MATR_CODE = A.MATR_CODE
+			WHERE B.DATA_YEAR = #{dataYear,jdbcType=VARCHAR} AND  NOT EXISTS (
+				SELECT 1 FROM ${specTableName} C 
+				WHERE C.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+					  and C.MONT_CODE =  A.MONT_CODE
+					  and C.MATR_CODE = A.MATR_CODE 
+					  AND C.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+			)
+			and B.MONT_TYPE='11' and B.ORG21_CODE=#{org1Code,jdbcType=VARCHAR}
+			ORDER BY A.MONT_CODE,A.MATR_CODE DESC
+	</select>
+	<!--省行维护增加审批链-->
+	<insert id="specAdd" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+		INSERT INTO ${specTableName}
+			 (
+			 	  data_year,
+				  ORG1_CODE,
+				  MONT_CODE,
+				  MATR_CODE,
+				  MATR_BUY_DEPT,
+				  MATR_AUDIT_DEPT,
+				  FINC_DEPT_S,
+				  FINC_DEPT_2,
+				  FINC_DEPT_1,
+				  INST_OPER,
+				  INST_DATE,
+				  INST_TIME
+			  )
+			 (
+			<foreach collection="montMatrList" item="item" index="index" separator="union " > 
+				select 
+					#{dataYear,jdbcType=VARCHAR}, 
+					#{org1Code,jdbcType=VARCHAR}, 
+					#{item.montCodeMap,jdbcType=VARCHAR}, 
+					#{item.matrCodeMap,jdbcType=VARCHAR}, 
+					#{matrBuyDept,jdbcType=VARCHAR}, 
+					#{matrAuditDept,jdbcType=VARCHAR}, 
+				    #{fincDeptS,jdbcType=VARCHAR},
+				    #{fincDept2,jdbcType=VARCHAR}, 
+				    #{fincDept1,jdbcType=VARCHAR}, 
+				    #{instOper,jdbcType=VARCHAR} ,
+				    to_char(sysdate, 'YYYY-MM-DD'),
+              		to_char(sysdate, 'HH24:MI:SS')
+				    from dual
+	  		 </foreach> 
+		 )
+   	</insert>
+	<!--编辑页省行审批链-->
+	<select id="specPreEdit" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+		<if test="aprvType == 11">
+			select #{aprvType,jdbcType=VARCHAR} AS APRV_TYPE, a.* ,B.MATR_NAME,C.MONT_NAME
+			from ${specTableName} a
+			left join TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+			LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.MONT_CODE
+			WHERE A.ORG1_CODE =#{org1Code,jdbcType=VARCHAR}
+			and   A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="aprvType == 12">
+			select #{aprvType,jdbcType=VARCHAR} AS APRV_TYPE,
+			 a.* ,B.MATR_NAME,C.MONT_NAME
+			from ${noSpecTableName} a
+			left join TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+			LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.MONT_CODE
+			WHERE  A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+	   		<if test="feeCode != null and feeCode != ''">
+	   			AND A.FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+	   		</if>
+	   		<if test="orgCode != null and orgCode != ''">
+	   			AND A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+	   		</if>
+		</if>
+		
+	</select>
+	<!--省行审批链编辑-->
+	<update id="specEdit" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+		<if test="aprvType == 11">
+			update ${specTableName} A set 
+			a.MATR_BUY_DEPT=#{matrBuyDept,jdbcType=VARCHAR},
+			a.MATR_AUDIT_DEPT=#{updateMatrAuditDept,jdbcType=VARCHAR},
+			a.FINC_DEPT_S=#{fincDeptS,jdbcType=VARCHAR},
+			a.FINC_DEPT_2=#{fincDept2,jdbcType=VARCHAR},
+			a.FINC_DEPT_1=#{fincDept1,jdbcType=VARCHAR}
+			WHERE A.ORG1_CODE =#{org1Code,jdbcType=VARCHAR}
+			and   A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+		</if>
+		<if test="aprvType == 12">
+			update ${noSpecTableName} A set 
+			a.MATR_BUY_DEPT=#{matrBuyDept,jdbcType=VARCHAR},
+			a.MATR_AUDIT_DEPT=#{updateMatrAuditDept,jdbcType=VARCHAR},
+			a.FINC_DEPT_S=#{fincDeptS,jdbcType=VARCHAR},
+			a.FINC_DEPT_2=#{fincDept2,jdbcType=VARCHAR},
+			a.FINC_DEPT_1=#{fincDept1,jdbcType=VARCHAR} 
+			 
+			WHERE  A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+	   		<if test="feeCode != null and feeCode != ''">
+	   			AND A.FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+	   		</if>
+	   		<if test="orgCode != null and orgCode != ''">
+	   			AND A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+	   		</if>
+	   		
+		</if>
+		
+	</update>
+		<!--省行审批链解除-->
+   	<delete id="specDel" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+   		<if test="aprvType == 11">
+			delete from ${specTableName} 
+	   		where ORG1_CODE =#{org1Code,jdbcType=VARCHAR} 
+	   		and   MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		and  data_year = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="aprvType == 12">
+			delete from ${noSpecTableName} 
+	   		where   MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		and  data_year = #{dataYear,jdbcType=VARCHAR}
+	   		<if test="feeCode != null and feeCode != ''">
+	   			AND FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+	   		</if>
+	   		<if test="orgCode != null and orgCode != ''">
+	   			AND  ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+	   		</if>
+		</if>
+   		
+   	</delete>
+   	<!--省行未维护的责任中心列表-->
+   	<select id="specNoWhDutyList"  parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+   		SELECT 
+   			A.DUTY_CODE,
+   			A.DUTY_NAME,
+   			COUNT(C.MATR_CODE) as NO_UP_COUNT  
+    	FROM TB_FNDWRR A  , TB_MONT_NAME B  
+		 	
+    	LEFT JOIN TB_MONT_MATR_CONTRA C ON C.MONT_CODE = B.MONT_CODE 
+    	
+    	WHERE   
+    	B.ORG21_CODE = A.ORG1_CODE
+	      AND B.MONT_TYPE='12'
+	      and b.data_year =#{dataYear,jdbcType=VARCHAR}
+    	AND A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}    	
+    	AND not exists(
+    		select 1 from ${noSpecTableName}  E
+    		WHERE  E.FEE_CODE = A.DUTY_CODE and E.MATR_CODE = C.MATR_CODE AND E.MONT_CODE = B.MONT_CODE
+    		and e.data_year = #{dataYear,jdbcType=VARCHAR}
+    	)
+    	AND NOT EXISTS(
+    		SELECT 1 FROM  ${noSpecTableName} F
+    		 WHERE  1=1 AND  F.MATR_CODE = C.MATR_CODE
+                       AND F.MONT_CODE = C.MONT_CODE
+                       AND F.ORG_CODE = A.ORG_CODE
+                       AND F.DATA_YEAR=#{dataYear,jdbcType=VARCHAR}
+                       AND F.FEE_CODE IS NULL
+    	)
+    	<if test="dutyCode != null and dutyCode != ''">
+    	 		and A.DUTY_CODE=#{dutyCode,jdbcType=VARCHAR}
+	 	</if>
+		group by A.DUTY_CODE,   A.DUTY_NAME
+		order by a.duty_code
+   		
+   	</select>
+	<!--省行未维护物料明细页面 省行统购-->
+   	<select id="specNoWhMatrs" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+   		SELECT 
+			A.MATR_CODE,
+			C.MATR_NAME,
+			A.MONT_CODE,
+			B.MONT_NAME
+			FROM TB_MONT_MATR_CONTRA A 
+			LEFT JOIN TB_MONT_NAME B ON A.MONT_CODE = B.MONT_CODE
+			LEFT JOIN TB_MATR_TYPE C ON C.MATR_CODE = A.MATR_CODE
+			WHERE B.ORG21_CODE = #{org1Code,jdbcType=VARCHAR}
+			and B.data_year = #{dataYear,jdbcType=VARCHAR}
+			AND B.MONT_TYPE=12 
+			and NOT EXISTS (
+				SELECT 1 FROM ${noSpecTableName} C 
+				WHERE C.FEE_CODE = #{dutyCode,jdbcType=VARCHAR}
+					  and C.MONT_CODE =  A.MONT_CODE
+					  and C.MATR_CODE = A.MATR_CODE 
+					  and c.data_year = #{dataYear,jdbcType=VARCHAR}
+			)
+			AND NOT EXISTS(
+          SELECT 1 FROM ${noSpecTableName} D
+          WHERE D.MONT_CODE = A.MONT_CODE
+            AND D.MATR_CODE = A.MATR_CODE
+            AND D.ORG_CODE = (SELECT ORG_CODE FROM TB_FNDWRR TF WHERE TF.DUTY_CODE=#{dutyCode,jdbcType=VARCHAR})
+            AND D.FEE_CODE IS NULL
+      )
+			ORDER BY A.MONT_CODE,A.MATR_CODE DESC
+   	</select>
+   	<!--省行变动责任中心-->
+	<select id="getChangeDutyListForSpec" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+		resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+			SELECT DISTINCT C.DUTY_CODE ,
+				TF1.DUTY_NAME DUTY_NAME
+				 FROM(
+				SELECT  
+						A.FEE_CODE AS DUTY_CODE
+				FROM 		${noSpecTableName} A
+				WHERE  A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR} 
+				AND A.aprv_type = '12'
+				and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+				AND(
+					NOT EXISTS(
+				      SELECT 1 FROM TB_FNDWRR B WHERE A.FEE_CODE = B.DUTY_CODE
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		 SELECT 1 FROM TB_FNDWRR B0 WHERE A.FEE_CODE = B0.DUTY_CODE AND A.ORG_CODE = B0.ORG_CODE
+				    	)
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		 SELECT 1 FROM TB_FNDWRR B1 WHERE A.MATR_BUY_DEPT = B1.DUTY_CODE
+				    	)
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		  SELECT 1 FROM TB_FNDWRR B2 WHERE A.MATR_AUDIT_DEPT = B2.DUTY_CODE
+				    	)
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		SELECT 1 FROM TB_FNDWRR B3 WHERE A.DECOMPOSE_ORG = B3.DUTY_CODE
+				    	)
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		SELECT 1 FROM TB_FNDWRR B4 WHERE A.FINC_DEPT_S = B4.DUTY_CODE
+				    	)
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		 SELECT 1 FROM TB_FNDWRR B5 WHERE A.FINC_DEPT_2 = B5.DUTY_CODE
+				    	)
+				    )
+				    OR(
+				    	NOT EXISTS(
+				    		 SELECT 1 FROM TB_FNDWRR B6 WHERE A.FINC_DEPT_1 = B6.DUTY_CODE
+				    	)
+				    )
+				)
+				
+				union
+				SELECT   
+						A7.MATR_BUY_DEPT AS DUTY_CODE
+						 
+				FROM ${specTableName} A7
+				WHERE A7.ORG1_CODE = #{org1Code,jdbcType=VARCHAR} 
+				and a7.data_year = #{dataYear,jdbcType=VARCHAR}
+				AND(
+					NOT EXISTS(
+				      SELECT 1 FROM TB_FNDWRR B7 WHERE A7.MATR_BUY_DEPT = B7.DUTY_CODE
+					)
+					 OR(
+				    	NOT EXISTS(
+				    		SELECT 1 FROM TB_FNDWRR B8 WHERE A7.MATR_AUDIT_DEPT = B8.DUTY_CODE
+				    	)
+				    )
+				     OR(
+				    	NOT EXISTS(
+				    		  SELECT 1 FROM TB_FNDWRR B10 WHERE A7.FINC_DEPT_S = B10.DUTY_CODE
+				    	)
+				    )
+				     OR(
+				    	NOT EXISTS(
+				    		  SELECT 1 FROM TB_FNDWRR B10 WHERE A7.FINC_DEPT_2 = B10.DUTY_CODE
+				    	)
+				    )
+				     OR(
+				    	NOT EXISTS(
+				    		 SELECT 1 FROM TB_FNDWRR B10 WHERE A7.FINC_DEPT_1 = B10.DUTY_CODE
+				    	)
+				    )
+				)
+				 
+			)C 
+			LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = C.DUTY_CODE
+			ORDER BY C.DUTY_CODE DESC
+	</select>
+   	<!--省行待修改查询-->
+	<select id="getAprvChange" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+			<!--	
+		SELECT C.*,
+				D.MATR_NAME,
+				E.MONT_NAME,
+				TF1.DUTY_NAME FEE_NAME,
+				TF2.DUTY_NAME MATR_AUDIT_NAME,
+				TF3.DUTY_NAME MATR_BUY_NAME,
+				TF4.DUTY_NAME DECOMPOSE_ORG_NAME,
+				TF5.DUTY_NAME FINC_DEPT_S_NAME,
+				TF6.DUTY_NAME FINC_DEPT_2_NAME,
+				TF7.DUTY_NAME FINC_DEPT_1_NAME
+				 FROM(
+				SELECT DISTINCT A.ORG_CODE,
+				                A.FEE_CODE,
+				                '02' AS APPRV_TYPE,
+				                A.MONT_CODE,
+				                A.MATR_CODE,
+				                A.MATR_BUY_DEPT,
+				                A.MATR_AUDIT_DEPT,
+				                A.DECOMPOSE_ORG,
+				                A.FINC_DEPT_S,
+				                A.FINC_DEPT_2,
+				                A.FINC_DEPT_1,
+				                A.DATA_YEAR
+				  FROM ${noSpecTableName}   A
+				 WHERE A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+				   AND A.IS_PROVINCE_BUY = '0'
+				   and a.data_year = #{dataYear,jdbcType=VARCHAR}
+				   AND
+				   (
+				    NOT EXISTS
+				 (SELECT 1 FROM TB_FNDWRR B WHERE A.FEE_CODE = B.DUTY_CODE)
+				    OR (NOT EXISTS (SELECT 1
+				                      FROM TB_FNDWRR B
+				                     WHERE a.fee_code = b.duty_code
+				                       and a.org_code = b.org_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.matr_buy_dept = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.matr_audit_dept = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.decompose_org = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_s = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_2 = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_1 = b.duty_code))
+					)
+				union
+				
+				SELECT NULL AS ORG_CODE,
+				       NULL AS FEE_CODE,
+				       '01' AS APPRV_TYPE,
+				       A7.MONT_CODE,
+				       A7.MATR_CODE,
+				       A7.MATR_BUY_DEPT,
+				       A7.MATR_AUDIT_DEPT,
+				       NULL AS DECOMPOSE_ORG,
+				       A7.FINC_DEPT_S,
+				       A7.FINC_DEPT_2,
+				       A7.FINC_DEPT_1,
+				       A7.DATA_YEAR
+				  FROM ${specTableName}  A7
+				 WHERE A7.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+				   and A7.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+				   and (
+				   NOT EXISTS
+				 (SELECT 1 FROM TB_FNDWRR B1 WHERE a7.matr_buy_dept = b1.duty_code)
+				    or (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B1 WHERE a7.matr_audit_dept = b1.duty_code
+				         
+				         ))
+				    or (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B1 WHERE a7.finc_dept_s = b1.duty_code
+				         
+				         ))
+				    or (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B1 WHERE a7.finc_dept_2 = b1.duty_code
+				         
+				         ))
+				    or (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B1 WHERE a7.finc_dept_1 = b1.duty_code
+				         
+				         ))
+				)
+			)C 
+			LEFT JOIN TB_MATR_TYPE D ON D.MATR_CODE= C.MATR_CODE
+			LEFT JOIN TB_MONT_NAME E ON E.MONT_CODE = C.MONT_CODE
+			LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = C.FEE_CODE
+			left JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = C.MATR_AUDIT_DEPT
+			left JOIN TB_FNDWRR TF3 ON TF3.DUTY_CODE = C.MATR_BUY_DEPT
+			left JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = C.DECOMPOSE_ORG
+			left JOIN TB_FNDWRR TF5 ON TF5.DUTY_CODE = C.FINC_DEPT_S
+			left JOIN TB_FNDWRR TF6 ON TF6.DUTY_CODE = C.FINC_DEPT_2
+			left JOIN TB_FNDWRR TF7 ON TF7.DUTY_CODE = C.FINC_DEPT_1
+			<where>
+				<if test="dutyCode != null and dutyCode != ''">
+					AND C.FEE_CODE = #{dutyCode,jdbcType=VARCHAR} 
+				</if>
+				<if test="dutyName != null and dutyName != ''">
+					AND TF1.DUTY_NAME LIKE '%' || #{dutyName ,jdbcType=VARCHAR} || '%'
+				</if>
+			</where>
+			ORDER BY C.FEE_CODE,C.MATR_CODE DESC
+			-->
+		SELECT distinct
+		A.APRV_TYPE,
+		A.DATA_YEAR,
+		DECODE(A.APRV_TYPE,'11','专项包','12','省行统购资产','21','非省行统购资产','22','非专项包费用') APRV_TYPE_NAME,
+		A.MONT_CODE_NEW,A.MONT_NAME_NEW,A.MATR_CODE,B.MATR_NAME
+		 FROM TB_APRV_CHAIN_UP A 
+		 LEFT JOIN TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+	<where>
+		A.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} 
+    <if test="matrCode != null and matrCode != ''">
+	 		and A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="matrName != null and matrName != ''">
+ 			AND B.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+ 	</if>
+ 	<if test="montCodeNew != null and montCodeNew != ''">
+	 		and A.MONT_CODE_NEW=#{montCodeNew,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="montNameNew != null and montNameNew != ''">
+ 			AND A.MONT_NAME_NEW LIKE '%' || #{montNameNew} || '%'
+ 	</if>
+ 	</where>
+ 	ORDER BY A.MONT_CODE_NEW,A.MATR_CODE DESC
+	</select>
+	<!--省行批量维护查询所有责任中心 责任中心 物料 监控指标 有一条组合在审批链表里不存在就列出来-->
+	<select id="getDutyByOrg1ForSpec" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+	 	SELECT F.*,G.ORG2_CODE,G.ORG2_NAME,NVL(G.ORG2_CODE_ORI,-1)LVL
+	 	FROM (
+		 	SELECT 
+	   			A.DUTY_CODE,
+	   			A.DUTY_NAME,
+	   			COUNT(C.MATR_CODE) as NO_UP_COUNT  
+	    	FROM TB_FNDWRR A ,TB_MONT_NAME B  
+		 
+	    	LEFT JOIN TB_MONT_MATR_CONTRA C ON C.MONT_CODE = B.MONT_CODE 
+	    	WHERE
+	    	B.ORG21_CODE = A.ORG1_CODE
+	        AND B.MONT_TYPE='12' 
+	        and b.data_year = #{dataYear,jdbcType=VARCHAR}   
+	    	AND A.ORG1_CODE =  #{org1Code,jdbcType=VARCHAR}  
+	    	AND not exists(
+	    		select 1 from ${noSpecTableName}  E
+	    		WHERE  E.FEE_CODE = A.DUTY_CODE and E.MATR_CODE = C.MATR_CODE AND E.MONT_CODE = B.MONT_CODE
+	    		and e.data_year = #{dataYear,jdbcType=VARCHAR}
+	    	)
+	    	AND NOT EXISTS(
+	    		 SELECT  1
+                       FROM TB_APRV_CHAIN_NOSPEC F
+                       WHERE 1=1
+                       AND  F.MATR_CODE = C.MATR_CODE
+                       AND F.MONT_CODE = C.MONT_CODE
+                       AND F.ORG_CODE = A.ORG_CODE
+                       AND F.DATA_YEAR=#{dataYear,jdbcType=VARCHAR}
+                       AND F.FEE_CODE IS NULL
+	    	)
+			group by A.DUTY_CODE,   A.DUTY_NAME
+		) F LEFT JOIN TB_FNDWRR G ON F.DUTY_CODE = G.DUTY_CODE 
+		order by g.org2_code, f.duty_code desc
+		
+	</select>
+   	<!--=========================================================分行==============================-->
+   	<!--分行审批链已维护列表查询-->
+   	<select id="noSpecHaveWhList" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+   		select distinct
+   		A.APRV_TYPE,
+   		ss.param_name as aprv_type_name,
+		a.FEE_CODE,
+		D.DUTY_NAME AS FEE_NAME,
+		A.MONT_CODE,
+		C.MONT_NAME,
+		A.MATR_CODE,
+		B.MATR_NAME,
+		A.DECOMPOSE_ORG,
+		E.DUTY_NAME AS DECOMPOSE_ORG_NAME,
+		
+		A.MATR_BUY_DEPT,
+		TF1.DUTY_NAME AS MATR_BUY_NAME,
+		A.MATR_AUDIT_DEPT,
+		TF0.DUTY_NAME AS MATR_AUDIT_NAME,
+		A.FINC_DEPT_S,
+		TF2.DUTY_NAME FINC_DEPT_S_NAME,
+		A.FINC_DEPT_2,
+		TF3.DUTY_NAME FINC_DEPT_2_NAME,
+		A.FINC_DEPT_1,
+		TF4.DUTY_NAME FINC_DEPT_1_NAME,
+		 
+		A.DATA_YEAR,
+		A.ORG_cODE,
+		tf5.org_name
+		from ${noSpecTableName} A
+		
+		LEFT JOIN TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+		LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.MONT_CODE
+		LEFT JOIN TB_FNDWRR D ON D.DUTY_CODE  = A.FEE_CODE
+		LEFT JOIN TB_FNDWRR E ON E.DUTY_CODE  = A.DECOMPOSE_ORG
+		left JOIN TB_FNDWRR TF0 ON TF0.DUTY_CODE = A.MATR_AUDIT_DEPT
+		left JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = A.MATR_BUY_DEPT
+		left JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = A.FINC_DEPT_S
+		left JOIN TB_FNDWRR TF3 ON TF3.DUTY_CODE = A.FINC_DEPT_2
+		left JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = A.FINC_DEPT_1
+		left join tb_fndwrr tf5 on tf5.org_Code = a.org_code
+		left join sys_select ss on a.aprv_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+		WHERE
+		A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		AND A.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		<if test="aprvType ==null or aprvType ==''">
+			AND A.APRV_TYPE IN ('21','22')
+		</if>
+		<if test="orgCode != null and orgCode != ''">
+		 		and A.ORG_CODE=#{orgCode,jdbcType=VARCHAR} 
+	 	</if>
+		<if test="matrCode!=null and matrCode!=''">
+   			AND A.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+   		</if>
+   		<if test="aprvType != null and aprvType != ''">
+		 		and A.APRV_TYPE=#{aprvType,jdbcType=VARCHAR}
+	 	</if>
+		<if test="matrName!=null and matrName!=''">
+   			AND B.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+  	 	</if>
+   		<if test="feeCode!=null and feeCode!=''">
+   			AND A.FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+   		</if>
+   		<if test="montCode!=null and montCode!=''">
+   			AND A.MONT_CODE = #{montCode,jdbcType=VARCHAR}
+   		</if>
+   		<if test="montName!=null and montName!=''">
+   			 AND c.mont_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+   		</if>
+   		<if test="matrBuyDept != null and matrBuyDept != ''">
+	 		and A.MATR_BUY_DEPT=#{matrBuyDept,jdbcType=VARCHAR}
+	 	</if>
+	 	<if test="matrAuditDept != null and matrAuditDept != ''">
+		 		and A.MATR_AUDIT_DEPT=#{matrAuditDept,jdbcType=VARCHAR}
+	 	</if>
+	 	<if test="fincDeptS != null and fincDeptS != ''">
+		 		and A.FINC_DEPT_S=#{fincDeptS,jdbcType=VARCHAR}
+	 	</if>
+	 	<if test="fincDept2 != null and fincDept2 != ''">
+		 		and A.FINC_DEPT_2=#{fincDept2,jdbcType=VARCHAR}
+	 	</if>
+	 	<if test="fincDept1 != null and fincDept1 != ''">
+		 		and A.FINC_DEPT_1=#{fincDept1,jdbcType=VARCHAR}
+	 	</if>
+	 	<if test="decomposeOrg != null and decomposeOrg != ''">
+	 		and A.DECOMPOSE_ORG=#{decomposeOrg,jdbcType=VARCHAR}
+ 		</if>
+ 		ORDER BY A.FEE_CODE,A.MONT_CODE,A.MATR_CODE DESC
+   	</select>
+   	<!--分行未维护审批链 责任中心列表-->
+   	<select id="noSpecNoWhList" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+		SELECT 
+   			A.DUTY_CODE,
+   			A.DUTY_NAME,
+   			COUNT(C.MATR_CODE) as NO_UP_COUNT,
+   		    #{dataYear,jdbcType=VARCHAR} dataYear
+    	FROM TB_FNDWRR A  ,TB_MONT_NAME B  
+	 	
+    	LEFT JOIN TB_MONT_MATR_CONTRA C ON C.MONT_CODE = B.MONT_CODE 
+    	WHERE
+    	B.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}   
+        AND B.MONT_TYPE = #{aprvType,jdbcType=VARCHAR}   
+        AND B.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+	 	AND A.ORG2_CODE = #{org21Code,jdbcType=VARCHAR} 
+    	AND not exists(
+    		select 1 from ${noSpecTableName}  E
+    		WHERE  E.FEE_CODE = A.DUTY_CODE and E.MATR_CODE = C.MATR_CODE AND E.MONT_CODE = B.MONT_CODE
+    		AND E.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+    	)
+    	AND NOT EXISTS(
+    		 SELECT  1
+               FROM TB_APRV_CHAIN_NOSPEC F
+               WHERE 1=1
+               AND F.MATR_CODE = C.MATR_CODE
+               AND F.MONT_CODE = C.MONT_CODE
+               AND F.ORG_CODE = A.ORG_CODE
+               AND F.DATA_YEAR=#{dataYear,jdbcType=VARCHAR}
+               AND F.FEE_CODE IS NULL
+    	)
+    	<if test="dutyCode != null and dutyCode != ''">
+    	 		and A.DUTY_CODE=#{dutyCode,jdbcType=VARCHAR}
+	 	</if>
+		group by A.DUTY_CODE,   A.DUTY_NAME
+		order by a.duty_code
+   	</select>
+   	<!--分行未维护物料明细页面-->
+   	<select id="noSpecNoWhMatrs" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+   		SELECT 
+			A.MATR_CODE,
+			C.MATR_NAME,
+			A.MONT_CODE,
+			B.MONT_NAME
+			FROM TB_MONT_MATR_CONTRA A 
+			LEFT JOIN TB_MONT_NAME B ON A.MONT_CODE = B.MONT_CODE
+			LEFT JOIN TB_MATR_TYPE C ON C.MATR_CODE = A.MATR_CODE
+			WHERE
+			B.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+			AND NOT EXISTS (
+				SELECT 1 FROM ${noSpecTableName} C 
+				WHERE C.FEE_CODE = #{dutyCode,jdbcType=VARCHAR}
+					  and C.MONT_CODE =  A.MONT_CODE
+					  and C.MATR_CODE = A.MATR_CODE 
+					  AND C.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+			)
+			AND NOT EXISTS(
+          SELECT 1 FROM ${noSpecTableName} D
+          WHERE D.MONT_CODE = A.MONT_CODE
+            AND D.MATR_CODE = A.MATR_CODE
+            AND D.ORG_CODE = (SELECT ORG_CODE FROM TB_FNDWRR TF WHERE TF.DUTY_CODE=#{dutyCode,jdbcType=VARCHAR})
+            AND D.FEE_CODE IS NULL
+      )
+				and B.MONT_TYPE = #{aprvType,jdbcType=VARCHAR} and B.ORG21_CODE=#{org2Code,jdbcType=VARCHAR}
+				ORDER BY A.MONT_CODE,A.MATR_CODE 
+   	</select>
+   	<!--分行维护增加审批链-->
+	<insert id="noSpecAdd" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+		INSERT INTO ${noSpecTableName}
+			 (
+			 	  data_year,
+				  FEE_CODE,
+				  MONT_CODE,
+				  MATR_CODE,
+				  MATR_BUY_DEPT,
+				  MATR_AUDIT_DEPT,
+				  DECOMPOSE_ORG,
+				  FINC_DEPT_S,
+				  FINC_DEPT_2,
+				  FINC_DEPT_1,
+				  aprv_type,
+				  INST_OPER,
+				  INST_DATE,
+				  INST_TIME,
+				  ORG1_CODE,
+				  ORG_CODE,
+				  org21_code
+			  )
+			 (
+			<foreach collection="montMatrList" item="item" index="index" separator="union " > 
+				select 
+					#{dataYear,jdbcType=VARCHAR},
+					#{feeCode,jdbcType=VARCHAR}, 
+					#{item.montCodeMap,jdbcType=VARCHAR}, 
+					#{item.matrCodeMap,jdbcType=VARCHAR}, 
+					#{matrBuyDept,jdbcType=VARCHAR}, 
+					#{matrAuditDept,jdbcType=VARCHAR}, 
+					#{decomposeOrg,jdbcType=VARCHAR}, 
+				    #{fincDeptS,jdbcType=VARCHAR},
+				    #{fincDept2,jdbcType=VARCHAR}, 
+				    #{fincDept1,jdbcType=VARCHAR}, 
+				     #{aprvType,jdbcType=VARCHAR}, 
+				    #{instOper,jdbcType=VARCHAR} ,
+				    to_char(sysdate, 'YYYY-MM-DD'),
+              		to_char(sysdate, 'HH24:MI:SS'),
+              		ORG1_CODE,
+              		ORG_CODE,
+              		#{org21Code,jdbcType=VARCHAR}
+				    from TB_FNDWRR WHERE DUTY_CODE = #{feeCode,jdbcType=VARCHAR}
+	  		 </foreach> 
+		 )
+   	</insert>
+	<!--编辑页分行审批链-->
+	<select id="noSpecPreEdit" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+		select a.* ,B.MATR_NAME,C.MONT_NAME
+		from ${noSpecTableName} a
+		left join TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+		LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.MONT_CODE
+		WHERE A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR}
+   		AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+   		<if test="feeCode != null and feeCode != ''">
+   			AND A.FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+   		</if>
+   	<if test="orgCode != null and orgCode != ''">
+   			AND A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+   		</if>
+	</select>
+	<!--分行审批链编辑-->
+	<update id="noSpecEdit" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+		update ${noSpecTableName} A set 
+		(
+			 
+			a.MATR_BUY_DEPT ,
+			a.MATR_AUDIT_DEPT ,
+			a.FINC_DEPT_S ,
+			a.FINC_DEPT_2 ,
+			a.FINC_DEPT_1 ,
+			a.DECOMPOSE_ORG 
+		) = (
+			SELECT 
+			 #{matrBuyDept,jdbcType=VARCHAR},
+			 #{updateMatrAuditDept,jdbcType=VARCHAR},
+			 #{fincDeptS,jdbcType=VARCHAR},
+			 #{fincDept2,jdbcType=VARCHAR},
+			 #{fincDept1,jdbcType=VARCHAR},
+			 #{decomposeOrg,jdbcType=VARCHAR}
+			 FROM dual
+		)
+		WHERE   A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR}
+   		and a.data_year =  #{dataYear,jdbcType=VARCHAR}
+   		<if test="feeCode != null and feeCode != ''">
+   			AND A.FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+   		</if>
+   		<if test="orgCode != null and orgCode != ''">
+   			AND A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+   		</if>
+	</update>
+		<!--分行审批链解除-->
+   	<delete id="noSpecDel" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+   		delete from ${noSpecTableName} 
+   		where MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+   		and   MATR_CODE=#{matrCode,jdbcType=VARCHAR}
+   		and  data_year =  #{dataYear,jdbcType=VARCHAR} 
+   		<if test="feeCode != null and feeCode != ''">
+	   			AND FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+	   		</if>
+	   		<if test="orgCode != null and orgCode != ''">
+	   			AND  ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+	   		</if>
+   	</delete>
+   	<!--分行查询变化的责任中心-->
+   	<!--
+   	<select id="getChangeDutyListForNospec" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+   		SELECT distinct C.DUTY_CODE,
+				TF1.DUTY_NAME DUTY_NAME
+				 FROM(
+				SELECT A.FEE_CODE AS DUTY_CODE
+				FROM ${noSpecTableName} A
+				WHERE  A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR} 
+				 and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+				AND A.APRV_TYPE IN ('21','22')
+				and
+				(
+				    NOT EXISTS
+				 (SELECT 1 FROM TB_FNDWRR B WHERE A.FEE_CODE = B.DUTY_CODE)
+				    OR (NOT EXISTS (SELECT 1
+				                      FROM TB_FNDWRR B
+				                     WHERE a.fee_code = b.duty_code
+				                       and a.org_code = b.org_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.matr_buy_dept = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.matr_audit_dept = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.decompose_org = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_s = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_2 = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_1 = b.duty_code))
+					)
+			)C 
+			LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = C.DUTY_CODE
+			ORDER BY C.DUTY_CODE DESC
+   	</select>
+   	-->
+   	<!--分行待修改查询-->
+   	<!--
+	<select id="getNoSpecChange" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+				
+		SELECT C.*,
+			    D.MATR_NAME,
+				E.MONT_NAME,
+				TF1.DUTY_NAME FEE_NAME,
+				TF2.DUTY_NAME MATR_AUDIT_NAME,
+				TF3.DUTY_NAME MATR_BUY_NAME,
+				TF4.DUTY_NAME DECOMPOSE_ORG_NAME,
+				TF5.DUTY_NAME FINC_DEPT_S_NAME,
+				TF6.DUTY_NAME FINC_DEPT_2_NAME,
+				TF7.DUTY_NAME FINC_DEPT_1_NAME
+				 FROM(
+				SELECT A.*
+				FROM ${noSpecTableName} A
+				WHERE  A.ORG1_CODE =#{org1Code,jdbcType=VARCHAR} 
+				 and a.data_year = #{dataYear,jdbcType=VARCHAR}
+				AND A.IS_PROVINCE_BUY = '1'
+				and 
+				(
+				    NOT EXISTS
+				 (SELECT 1 FROM TB_FNDWRR B WHERE A.FEE_CODE = B.DUTY_CODE)
+				    OR (NOT EXISTS (SELECT 1
+				                      FROM TB_FNDWRR B
+				                     WHERE a.fee_code = b.duty_code
+				                       and a.org_code = b.org_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.matr_buy_dept = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.matr_audit_dept = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.decompose_org = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_s = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_2 = b.duty_code))
+				    OR (NOT EXISTS
+				        (SELECT 1 FROM TB_FNDWRR B WHERE a.finc_dept_1 = b.duty_code))
+					)
+			)C 
+			LEFT JOIN TB_MATR_TYPE D ON D.MATR_CODE= C.MATR_CODE
+			LEFT JOIN TB_MONT_NAME E ON E.MONT_CODE = C.MONT_CODE
+			LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = C.FEE_CODE
+			left JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = C.MATR_AUDIT_DEPT
+			left JOIN TB_FNDWRR TF3 ON TF3.DUTY_CODE = C.MATR_BUY_DEPT
+			left JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = C.DECOMPOSE_ORG
+			left JOIN TB_FNDWRR TF5 ON TF5.DUTY_CODE = C.FINC_DEPT_S
+			left JOIN TB_FNDWRR TF6 ON TF6.DUTY_CODE = C.FINC_DEPT_2
+			left JOIN TB_FNDWRR TF7 ON TF7.DUTY_CODE = C.FINC_DEPT_1
+			WHERE 1=1
+			<if test="dutyCode != null and dutyCode != ''">
+				and C.FEE_CODE = #{dutyCode,jdbcType=VARCHAR} 
+			</if>
+			<if test="dutyName != null and dutyName != ''">
+				AND TF1.DUTY_NAME LIKE '%' || #{dutyName ,jdbcType=VARCHAR} || '%'
+			</if>
+			ORDER BY C.FEE_CODE,C.MATR_CODE DESC
+	</select>
+	-->
+	<!--批量维护查询所有责任中心 责任中心 物料 监控指标 有一条组合在审批链表里不存在就列出来-->
+	<select id="getDutyByOrg2" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+	 	SELECT 
+   			A.DUTY_CODE,
+   			A.DUTY_NAME,
+   			COUNT(C.MATR_CODE) as NO_UP_COUNT  
+    	FROM TB_FNDWRR A  , TB_MONT_NAME B 
+    	
+    	LEFT JOIN TB_MONT_MATR_CONTRA C ON C.MONT_CODE = B.MONT_CODE 
+    	
+    	WHERE 
+    	b.org21_code = A.ORG2_CODE
+	 	
+        AND B.MONT_TYPE = #{aprvType,jdbcType=VARCHAR}
+        and b.data_year=#{dataYear,jdbcType=VARCHAR}  
+	 	AND A.ORG2_CODE = #{org21Code,jdbcType=VARCHAR} 
+    	AND not exists(
+    		select 1 from ${noSpecTableName}  E
+    		WHERE  E.FEE_CODE = A.DUTY_CODE and E.MATR_CODE = C.MATR_CODE AND E.MONT_CODE = B.MONT_CODE 
+    		AND E.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+    	)
+    	AND NOT EXISTS(
+    	 SELECT  1
+                       FROM TB_APRV_CHAIN_NOSPEC F
+                       WHERE 1=1
+                       AND F.MATR_CODE = C.MATR_CODE
+                       AND F.MONT_CODE = C.MONT_CODE
+                       AND F.ORG_CODE = A.ORG_CODE
+                       AND F.DATA_YEAR=#{dataYear,jdbcType=VARCHAR}
+                       AND F.FEE_CODE IS NULL
+    	)
+    	<if test="dutyCode != null and dutyCode != ''">
+    	 		and A.DUTY_CODE=#{dutyCode,jdbcType=VARCHAR}
+	 	</if>
+		group by A.DUTY_CODE,   A.DUTY_NAME
+		order by a.duty_code
+		
+	</select>
+	<!--查询多个责任中心共同未维护的审批链-->
+	<select id="selecstPublicMatrs" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+		SELECT A.MATR_CODE,A.MONT_CODE,B.MONT_NAME,C.MATR_NAME FROM TB_MONT_MATR_CONTRA A
+		JOIN TB_MONT_NAME B ON A.MONT_CODE = B.MONT_CODE
+		JOIN TB_MATR_TYPE C ON C.MATR_CODE = A.MATR_CODE
+		where B.data_year = #{dataYear,jdbcType=VARCHAR} and not exists(
+		 SELECT 1 FROM ${noSpecTableName} T
+          WHERE T.MATR_CODE = A.MATR_CODE AND T.FEE_CODE in 
+          	<foreach collection="dutyList" item="duty" index="index" open="(" close=")"  separator="," > 
+          	#{duty,jdbcType=VARCHAR}
+          	</foreach>
+          	AND T.MONT_CODE = A.MONT_CODE
+          	and t.data_year = #{dataYear,jdbcType=VARCHAR}
+		)
+		<if test="aprvType == 21 or aprvType == 22 ">
+			and B.MONT_TYPE = #{aprvType,jdbcType=VARCHAR}  and B.ORG21_CODE=#{org2Code,jdbcType=VARCHAR}
+		</if>
+		<if test="aprvType == 12 ">
+			and B.MONT_TYPE='12' and B.ORG21_CODE=#{org1Code,jdbcType=VARCHAR}
+		</if>
+		ORDER BY A.MONT_CODE,A.MATR_CODE DESC
+	</select>
+	<!--分行批量维护审批链-->
+	<insert id="noSpecBatchEditExecute" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+		INSERT INTO ${noSpecTableName} 
+			(
+				 data_year,
+				 FEE_CODE,
+				 MONT_CODE,
+				 MATR_CODE,
+				 MATR_BUY_DEPT,
+				 MATR_AUDIT_DEPT,
+				 DECOMPOSE_ORG,
+				 FINC_DEPT_S,
+				 FINC_DEPT_2,
+				 FINC_DEPT_1,
+				 INST_OPER,
+				 INST_DATE,
+				 INST_TIME,
+				 APRV_TYPE,
+				 ORG1_CODE,
+				 ORG_CODE,
+				 org21_code
+			 )
+			 (
+			<foreach collection="montMatrList" item="item" index="index" separator="union" > 
+				select 
+					#{dataYear,jdbcType=VARCHAR},
+					#{dutyCode,jdbcType=VARCHAR},
+					#{item.montCodeMap,jdbcType=VARCHAR},
+					#{item.matrCodeMap,jdbcType=VARCHAR},
+					#{matrBuyDept,jdbcType=VARCHAR},
+					#{matrAuditDept,jdbcType=VARCHAR}, 
+					#{decomposeOrg,jdbcType=VARCHAR},
+				 	#{fincDeptS,jdbcType=VARCHAR},
+				 	#{fincDept2,jdbcType=VARCHAR}, 
+				 	#{fincDept1,jdbcType=VARCHAR},
+				 	#{instOper,jdbcType=VARCHAR},
+				 	to_char(sysdate, 'YYYY-MM-DD'),
+              		to_char(sysdate, 'HH24:MI:SS'),
+					#{aprvType,jdbcType=VARCHAR},
+					ORG1_CODE,
+					ORG_CODE,
+					#{org21Code,jdbcType=VARCHAR}
+					from tb_fndwrr a where a.duty_code = #{dutyCode,jdbcType=VARCHAR}
+	  		 </foreach> 
+	  		 
+		 )
+	</insert>
+<!--修改费用承担部门-->
+ <update id="updateFee" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+  	 UPDATE ${noSpecTableName} a SET a.FEE_Code = #{updateFeeCode,jdbcType=VARCHAR} 
+	  	 WHERE a.FEE_Code=#{feeCode,jdbcType=VARCHAR} and a.APRV_TYPE=#{aprvType,jdbcType=VARCHAR} 
+	  	 	and not exists(
+	  	 	 select 1 from ${noSpecTableName} b
+	     	 where b.FEE_CODE =  #{updateFeeCode,jdbcType=VARCHAR} 
+	     	 and b.matr_code = a.matr_code 
+	     	 and b.mont_code=a.mont_code
+	     	 and b.APRV_TYPE = #{aprvType,jdbcType=VARCHAR} 
+	     	 and b.data_year = a.data_Year
+	     	 
+	  	 ) and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+	  	 
+	  	 
+	  	 <if test="matrCode != null and matrCode != ''">
+	 		AND A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="matrName != null and matrName != ''">
+ 			AND EXISTS(
+			    SELECT 1 FROM TB_MATR_TYPE TMT
+			    WHERE TMT.MATR_CODE = A.MATR_CODE
+			    AND TMT.MATR_NAME LIKE  '%' || #{matrName,jdbcType=VARCHAR} || '%'
+			)
+ 	</if>
+ 	 <if test="montCode != null and montCode != ''">
+	 	
+	 		AND A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="montName != null and montName != ''">
+ 		 AND EXISTS(
+		    SELECT 1 FROM TB_MONT_NAME TMN
+		    WHERE TMN.MONT_CODE = A.MONT_CODE
+		    TMN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		)
+ 		 
+ 	</if>
+ 	<if test="matrBuyDept != null and matrBuyDept != ''">
+	 		AND A.MATR_BUY_DEPT =#{matrBuyDept,jdbcType=VARCHAR}
+ 	</if>
+ 	<if test="matrAuditDept != null and matrAuditDept != ''">
+	 		AND A.MATR_AUDIT_DEPT =#{matrAuditDept,jdbcType=VARCHAR}
+ 	</if>
+  </update>
+  	<!--修改物料归口管理部门-->
+  <update id="updateAudit" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+  	 <if test="aprvType == 11">
+  	 	UPDATE ${specTableName} a set a.MATR_AUDIT_DEPT =#{updateMatrAuditDept,jdbcType=VARCHAR}
+  	 	WHERE MATR_AUDIT_DEPT=#{matrAuditDept,jdbcType=VARCHAR}
+  	 	 and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+  	 </if>
+  	 <if test="aprvType != '' and aprvType !=null and aprvType != 11">
+  	 	UPDATE ${noSpecTableName} a set a.MATR_AUDIT_DEPT =#{updateMatrAuditDept,jdbcType=VARCHAR}
+  	 	WHERE MATR_AUDIT_DEPT=#{matrAuditDept,jdbcType=VARCHAR} and a.APRV_TYPE = #{aprvType,jdbcType=VARCHAR} 
+  	 	 and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+ 	  	<if test="feeCode != null and feeCode != ''">
+		 		and A.FEE_CODE=#{feeCode,jdbcType=VARCHAR}
+		</if>
+		<if test="orgCode != null and orgCode != ''">
+		 		and A.ORG_CODE=#{orgCode,jdbcType=VARCHAR}
+		</if>
+  	 </if>
+  	 <if test="matrCode != null and matrCode != ''">
+	 		AND A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="matrName != null and matrName != ''">
+ 			AND EXISTS(
+			    SELECT 1 FROM TB_MATR_TYPE TMT
+			    WHERE TMT.MATR_CODE = A.MATR_CODE
+			    AND TMT.MATR_NAME LIKE  '%' || #{matrName,jdbcType=VARCHAR} || '%'
+			)
+ 	</if>
+ 	 <if test="montCode != null and montCode != ''">
+	 	
+	 		AND A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="montName != null and montName != ''">
+ 		 AND EXISTS(
+		    SELECT 1 FROM TB_MONT_NAME TMN
+		    WHERE TMN.MONT_CODE = A.MONT_CODE
+		    and TMN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		)
+ 		 
+ 	</if>
+ 	<if test="matrBuyDept != null and matrBuyDept != ''">
+	 		AND A.MATR_BUY_DEPT =#{matrBuyDept,jdbcType=VARCHAR}
+ 	</if>
+ 	 
+
+  </update>
+  	<!--修改物料采购部门-->
+  <update id="updateBuy" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+  	 <if test="aprvType == 11">
+  	 	UPDATE ${specTableName} a set a.MATR_BUY_DEPT =#{updateMatrBuyDept,jdbcType=VARCHAR}
+  	 	WHERE MATR_BUY_DEPT=#{matrBuyDept,jdbcType=VARCHAR}
+  	 	 and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+  	 </if>
+  	 <if test="aprvType != '' and aprvType !=null and aprvType != 11">
+  	 	UPDATE ${noSpecTableName} a set a.MATR_BUY_DEPT =#{updateMatrBuyDept,jdbcType=VARCHAR}
+  	 	WHERE MATR_BUY_DEPT=#{matrBuyDept,jdbcType=VARCHAR} and a.APRV_TYPE = #{aprvType,jdbcType=VARCHAR} 
+  	 	 and a.data_year = #{dataYear,jdbcType=VARCHAR} 
+  	 	 <if test="feeCode != null and feeCode != ''">
+		 		and A.FEE_CODE=#{feeCode,jdbcType=VARCHAR}
+		</if>
+		<if test="orgCode != null and orgCode != ''">
+		 		and A.ORG_CODE=#{orgCode,jdbcType=VARCHAR}
+		</if>
+  	 </if>
+  	 <if test="matrCode != null and matrCode != ''">
+	 		AND A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="matrName != null and matrName != ''">
+ 			AND EXISTS(
+			    SELECT 1 FROM TB_MATR_TYPE TMT
+			    WHERE TMT.MATR_CODE = A.MATR_CODE
+			    AND TMT.MATR_NAME LIKE  '%' || #{matrName,jdbcType=VARCHAR} || '%'
+			)
+ 	</if>
+ 	 <if test="montCode != null and montCode != ''">
+	 	
+	 		AND A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+ 	</if>
+ 	<if test="montName != null and montName != ''">
+ 		 AND EXISTS(
+		    SELECT 1 FROM TB_MONT_NAME TMN
+		    WHERE TMN.MONT_CODE = A.MONT_CODE
+		    and TMN.MONT_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+		)
+ 		 
+ 	</if>
+ 	<if test="matrAuditDept != null and matrAuditDept != ''">
+	 		AND A.MATR_AUDIT_DEPT =#{matrAuditDept,jdbcType=VARCHAR}
+ 	</if>
+  </update>
+  
+	
+	<select id="HisAppList" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean"
+							resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+         select a.* ,
+				  tmn.mont_name,
+				  tmt.matr_name,
+				  ss.param_name as aprv_type_name
+         from(
+         SELECT tacn.data_year,
+         		tacn.fee_code,
+         		tacn.org_Code,
+				tacn.mont_code,
+				tacn.matr_code,
+				tacn.matr_buy_dept,
+				tacn.matr_audit_dept,
+				APRV_TYPE<!--,
+				decode(APRV_TYPE,'12','省行统购','21','非省行统购资产','22','非专项包费用') as APRV_TYPE_NAME-->
+				from ${noSpecTableName} tacn
+				where  tacn.ORG21_CODE = decode(tacn.APRV_TYPE,'12',#{org1Code, jdbcType=VARCHAR},#{org21Code, jdbcType=VARCHAR})
+				 
+				AND TACN.DATA_YEAR = #{dataYear, jdbcType=VARCHAR}
+				
+				union
+				select tacs.data_year,
+				'' as fee_code,
+				'' as org_code,
+				tacs.mont_code,
+				tacs.matr_code,
+				tacs.matr_buy_dept,
+				tacs.matr_audit_dept,
+				'11' as APRV_TYPE<!--,
+				'专项包' as APRV_TYPE_NAME-->
+				from ${specTableName} tacs
+				
+				where tacs.org1_Code=#{org1Code, jdbcType=VARCHAR}
+					and tacs.data_year = #{dataYear, jdbcType=VARCHAR}
+				 
+				)  a 
+				LEFT JOIN TB_MONT_NAME tmn ON a.mont_code=tmn.mont_code
+				LEFT JOIN TB_MATR_TYPE tmt ON a.matr_code=tmt.matr_code	
+				LEFT JOIN SYS_SELECT SS ON a.aprv_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+		<where>	
+			<if test="feeCode != null and feeCode != '' ">
+            	AND a.fee_code = #{feeCode, jdbcType=VARCHAR}
+            </if>
+            <if test="orgCode != null and orgCode != '' ">
+            	AND a.org_code = #{orgCode, jdbcType=VARCHAR}
+            </if>		
+			<if test="montCode != null and montCode != '' ">
+            	AND a.mont_code = #{montCode, jdbcType=VARCHAR} 
+            </if>
+			<if test="matrCode != null and matrCode != '' ">
+            	AND a.matr_code = #{matrCode, jdbcType=VARCHAR} 
+            </if>
+            <if test="matrName != null and matrName != '' ">
+            	AND tmt.matr_name LIKE '%'|| #{matrName, jdbcType=VARCHAR} ||'%'
+            </if>
+			<if test="matrBuyDept != null and matrBuyDept != '' ">
+            	AND a.matr_buy_dept = #{matrBuyDept, jdbcType=VARCHAR}
+            </if>
+			<if test="matrAuditDept != null and matrAuditDept != '' ">
+            	AND a.matr_audit_dept = #{matrAuditDept, jdbcType=VARCHAR}
+            </if>
+              <if test="aprvType != null and aprvType != '' ">
+            	AND a.APRV_TYPE = #{aprvType, jdbcType=VARCHAR}
+            </if>        
+            <if test="montName!=null and montName!=''">
+	   			 AND tmn.mont_NAME LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+	   		</if>                                                                                                             
+		</where>
+	</select>	
+	
+	<!--监控指标列表查询-->
+		<select id="getMont" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean"
+							resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+		SELECT MONT_CODE,MONT_NAME FROM TB_MONT_NAME TMN
+		WHERE TMN.ORG21_CODE = #{org1Code, jdbcType=VARCHAR}
+		OR exists(SELECT 1 FROM TB_FNDWRR TF 
+		WHERE TMN.ORG21_CODE = TF.ORG2_CODE AND TF.ORG1_CODE =  #{org1Code, jdbcType=VARCHAR}  )
+		</select>
+		
+		
+		<insert id="insertDataFromUpSpec" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+			INSERT INTO 
+			${specTableName}
+			(
+			  data_year       ,
+			  org1_code       ,
+			  mont_code       ,
+			  matr_code       ,
+			  matr_buy_dept   ,
+			  matr_audit_dept ,
+			  finc_dept_s     ,
+			  finc_dept_2     ,
+			  finc_dept_1     ,
+			  inst_oper       ,
+			  inst_date       ,
+			  inst_time       
+			)(
+				 SELECT
+		          data_year       ,
+		          org21_code       ,
+		          mont_code_NEW       ,
+		          matr_code       ,
+		          matr_buy_dept   ,
+		          matr_audit_dept ,
+		          finc_dept_s     ,
+		          finc_dept_2     ,
+		          finc_dept_1     ,
+		          inst_oper       ,
+		          inst_date       ,
+		          inst_time        
+		        FROM TB_APRV_CHAIN_UP
+		        WHERE GROUP_ID= #{groupId, jdbcType=VARCHAR}
+		         AND MONT_CODE = #{montCode, jdbcType=VARCHAR}
+			)
+		</insert>
+		<insert id="insertDataFromUpNoSpec" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+			insert into
+			${noSpecTableName}
+			(
+				  data_year      ,
+				  fee_code       ,
+				  org_code       ,
+				
+				  mont_code      ,
+				  matr_code      ,
+				  matr_buy_dept  ,
+				  matr_audit_dept,
+				  decompose_org  ,
+				  finc_dept_s    ,
+				  finc_dept_2    ,
+				  finc_dept_1    ,
+				  inst_oper      ,
+				  inst_date      ,
+				  inst_time      ,
+				
+				
+				  org21_code     ,
+				  aprv_type      
+				)(
+				  select
+				  data_year      ,
+				  fee_code       ,
+				  org_code       ,
+				 
+				  mont_code_new     ,
+				  matr_code      ,
+				  matr_buy_dept  ,
+				  matr_audit_dept,
+				  decompose_org  ,
+				  finc_dept_s    ,
+				  finc_dept_2    ,
+				  finc_dept_1    ,
+				  inst_oper      ,
+				  inst_date      ,
+				  inst_time      ,
+				
+				 
+				  org21_code     ,
+				  aprv_type      
+				  from tb_aprv_chain_up
+				  WHERE GROUP_ID= #{groupId, jdbcType=VARCHAR}
+		         AND MONT_CODE = #{montCode, jdbcType=VARCHAR} 
+				)
+		</insert>
+		<delete id="deleteDataUp" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+			
+			DELETE FROM TB_APRV_CHAIN_UP WHERE GROUP_ID = #{groupId, jdbcType=VARCHAR}
+		</delete>
+		
+	<select id="selectDetail" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+		<if test="aprvType == 11">
+			select #{aprvType,jdbcType=VARCHAR} AS APRV_TYPE, a.* ,B.MATR_NAME,C.MONT_NAME,
+			TF0.DUTY_NAME AS MATR_AUDIT_NAME,
+			TF1.DUTY_NAME AS MATR_BUY_NAME,
+			TF2.DUTY_NAME AS FINC_DEPT_S_NAME,
+			TF3.DUTY_NAME AS FINC_DEPT_2_NAME,
+			TF4.DUTY_NAME AS FINC_DEPT_1_NAME
+			
+			from ${specTableName} a
+			left join TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+			LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.MONT_CODE
+			
+			left JOIN TB_FNDWRR TF0 ON TF0.DUTY_CODE = A.MATR_AUDIT_DEPT
+			left JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = A.MATR_BUY_DEPT
+			left JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = A.FINC_DEPT_S
+			left JOIN TB_FNDWRR TF3 ON TF3.DUTY_CODE = A.FINC_DEPT_2
+			left JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = A.FINC_DEPT_1
+			
+			WHERE A.ORG1_CODE =#{org1Code,jdbcType=VARCHAR}
+			and   A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="aprvType == 12 or aprvType == 21 or aprvType == 22">
+			select distinct #{aprvType,jdbcType=VARCHAR} AS APRV_TYPE,
+			 a.* ,B.MATR_NAME,C.MONT_NAME,
+			 
+			 D.DUTY_NAME AS FEE_CODE_NAME,
+			E.DUTY_NAME AS DECOMPOSE_ORG_NAME,
+			TF0.DUTY_NAME AS MATR_AUDIT_NAME,
+			TF1.DUTY_NAME AS MATR_BUY_NAME,
+			TF2.DUTY_NAME AS FINC_DEPT_S_NAME,
+			TF3.DUTY_NAME AS FINC_DEPT_2_NAME,
+			TF4.DUTY_NAME AS FINC_DEPT_1_NAME,
+			tf5.ORG_NAME AS org_name
+			
+			from ${noSpecTableName} a
+			left join TB_MATR_TYPE B ON A.MATR_CODE = B.MATR_CODE
+			LEFT JOIN TB_MONT_NAME C ON C.MONT_CODE = A.MONT_CODE
+			
+			LEFT JOIN TB_FNDWRR D ON D.DUTY_CODE  = A.FEE_CODE
+			LEFT JOIN TB_FNDWRR E ON E.DUTY_CODE  = A.DECOMPOSE_ORG
+			left JOIN TB_FNDWRR TF0 ON TF0.DUTY_CODE = A.MATR_AUDIT_DEPT
+			left JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = A.MATR_BUY_DEPT
+			left JOIN TB_FNDWRR TF2 ON TF2.DUTY_CODE = A.FINC_DEPT_S
+			left JOIN TB_FNDWRR TF3 ON TF3.DUTY_CODE = A.FINC_DEPT_2
+			left JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = A.FINC_DEPT_1
+			left join tb_fndwrr tf5 on tf5.org_Code = a.org_code
+			
+			WHERE  A.MONT_CODE=#{montCode,jdbcType=VARCHAR} 
+	   		and   A.MATR_CODE=#{matrCode,jdbcType=VARCHAR} 
+	   		AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+	   		<if test="feeCode != null and feeCode != ''">
+	   			AND A.FEE_CODE = #{feeCode,jdbcType=VARCHAR}
+	   		</if>
+	   		<if test="orgCode != null and orgCode != ''">
+	   			AND A.ORG_CODE = #{orgCode,jdbcType=VARCHAR}
+	   		</if>
+	   		AND A.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		
+	</select>
+	<select id="forUpdate" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" 
+			resultType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean" >
+		SELECT * FROM (
+				SELECT
+				DISTINCT
+				NVL2(A.FEE_CODE,'1','2')FEE_LEVL,
+				NVL2(A.FEE_CODE,TF1.DUTY_NAME,TF2.ORG_NAME) FEE_NAME_LEVL,
+				A.GROUP_ID, 
+				A.FEE_CODE,
+				A.ORG_CODE,
+				A.MATR_BUY_DEPT,
+				A.MATR_AUDIT_DEPT,
+				A.MONT_CODE,
+				A.MONT_NAME,
+				A.MATR_CODE,
+				B.MATR_NAME,
+				TF1.Duty_Name AS FEE_NAME,
+				TF2.ORG_NAME  AS ORG_NAME,
+				TF3.DUTY_NAME AS MATR_BUY_NAME,
+				TF4.DUTY_NAME AS MATR_AUDIT_NAME
+				FROM TB_APRV_CHAIN_UP A
+				LEFT JOIN TB_MATR_TYPE B ON B.MATR_CODE = A.MATR_CODE
+				LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = A.FEE_CODE
+				LEFT JOIN TB_FNDWRR TF2 ON TF2.ORG_CODE = A.ORG_CODE
+				LEFT JOIN TB_FNDWRR TF3 ON TF3.DUTY_CODE = A.MATR_BUY_DEPT
+				LEFT JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = A.MATR_AUDIT_DEPT
+				
+				WHERE A.MONT_CODE_NEW = #{montCodeNew,jdbcType=VARCHAR}
+				AND A.MATR_CODE =  #{matrCode,jdbcType=VARCHAR}
+				)V
+				ORDER BY V.GROUP_ID   ASC,NVL2(V.FEE_CODE,V.FEE_CODE,V.ORG_CODE)ASC
+
+	</select>
+	<!--修改SYS_WARN_CNT_INFO表-->
+	<update id="updateSysWarnC1" parameterType="com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.domain.ApproveChainMgrBean">
+	
+	 <if test="aprvType == 11">		
+	 UPDATE   SYS_WARN_CNT_INFO A SET A.DUTY_CODE=#{updateMatrAuditDept,jdbcType=VARCHAR}
+     WHERE A.FUNC_TYPE='C1'
+     and a.duty_code=#{matrAuditDept,jdbcType=VARCHAR}
+     AND EXISTS(
+         SELECT 1 FROM TD_CNT TC
+         WHERE TC.CNT_NUM = A.CNT_NUM
+         AND TC.ORG1_CODE = (SELECT DISTINCT ORG1_CODE FROM TB_FNDWRR TF2
+          WHERE  TF2.DUTY_CODE = #{matrAuditDept,jdbcType=VARCHAR})
+     )
+     AND EXISTS(
+         SELECT 1 FROM TD_CNT_DEVICE TCD
+         left join tb_fndwrr tf on tf.duty_code = tcd.fee_dept
+         left join tb_mont_name tm on tm.mont_Code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+         left join tb_matr_type  tmt on tmt.matr_code = tcd.matr_Code
+         
+         LEFT JOIN ${specTableName} TACS 
+                ON TACS.MATR_CODE =TCD.MATR_CODE
+                AND TACS.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+                and tacs.data_year = to_char(sysdate,'yyyy')
+         
+         WHERE TCD.CNT_NUM = A.CNT_NUM
+           and tacs.matr_audit_dept = a.duty_code
+           
+           <if test="montCode != null and montCode != ''">
+          	    AND tacs.mont_code = #{montCode,jdbcType=VARCHAR}
+           </if>
+           <if test="matrCode != null and matrCode != ''">
+            	AND tacs.matr_code = #{matrCode,jdbcType=VARCHAR}
+           </if>
+           <if test="isSigle !=1">
+	           <if test="montName != null and montName != ''">
+	           	    AND TM.MONT_NAME  LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+	           </if>
+	           <if test="matrName != null and matrName != ''">
+	           	    AND TMt.MATR_NAME  LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+	           </if>
+	           <if test="matrBuyDept != null and matrBuyDept != ''">
+	           		AND  TACS.MATR_BUY_DEPT =#{matrBuyDept,jdbcType=VARCHAR} 
+	           </if>
+           </if>
+     )
+	 </if>
+	  <if test="aprvType != '' and aprvType !=null and aprvType != 11">
+	  	 UPDATE   SYS_WARN_CNT_INFO A SET A.DUTY_CODE=#{updateMatrAuditDept,jdbcType=VARCHAR}
+     WHERE A.FUNC_TYPE='C1'
+     and a.duty_code=#{matrAuditDept,jdbcType=VARCHAR}
+     AND EXISTS(
+         SELECT 1 FROM TD_CNT TC
+         WHERE TC.CNT_NUM = A.CNT_NUM
+         AND TC.ORG1_CODE = (SELECT DISTINCT ORG1_CODE FROM TB_FNDWRR TF2
+          WHERE  TF2.DUTY_CODE = #{matrAuditDept,jdbcType=VARCHAR})
+     )
+     AND EXISTS(
+         SELECT 1 FROM TD_CNT_DEVICE TCD
+         left join tb_fndwrr tf on tf.duty_code = tcd.fee_dept
+         left join tb_mont_name tm on tm.mont_Code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+         left join tb_matr_type  tmt on tmt.matr_code = tcd.matr_Code
+         left join tb_aprv_chain_nospec tac
+              on tac.matr_code = tcd.matr_code
+              and tac.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))      
+              and tac.data_year = to_char(sysdate,'yyyy')
+              and tac.fee_code is not null
+              and tac.fee_code = tcd.fee_dept
+              and tac.aprv_type = #{aprvType,jdbcType=VARCHAR}
+              
+         left join tb_aprv_chain_nospec tac2
+              on tac2.matr_code = tcd.matr_code
+              and tac2.mont_code = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))      
+              and tac2.data_year = to_char(sysdate,'yyyy')
+              and tac2.fee_code is   null
+              and tac2.org_code = tf.org_code
+              and tac2.aprv_type = #{aprvType,jdbcType=VARCHAR}
+         WHERE TCD.CNT_NUM = A.CNT_NUM
+           and  nvl(tac.matr_audit_dept,tac2.matr_audit_dept) = a.duty_code
+           <if test="montCode != null and montCode != ''">
+          	    AND NVL(TAC.MONT_CODE,TAC2.MONT_CODE) = #{montCode,jdbcType=VARCHAR}
+           </if>
+           <if test="matrCode != null and matrCode != ''">
+            	AND NVL(TAC.MATR_CODE,TAC2.MATR_CODE)= #{matrCode,jdbcType=VARCHAR}
+           </if>
+           <if test="isSigle !=1">
+	           <if test="montName != null and montName != ''">
+	           	    AND TM.MONT_NAME  LIKE '%' || #{montName,jdbcType=VARCHAR} || '%'
+	           </if>
+	           <if test="matrName != null and matrName != ''">
+	           	    AND TMt.MATR_NAME  LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+	           </if>
+	           <if test="matrBuyDept != null and matrBuyDept != ''">
+	           		AND NVL(TAC.MATR_BUY_DEPT,TAC2.MATR_BUY_DEPT) =#{matrBuyDept,jdbcType=VARCHAR} 
+	           </if>
+           </if>
+            
+     )
+	  </if>
+	</update>
+</mapper>

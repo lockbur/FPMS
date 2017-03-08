@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FMSConfig>
+	<!--从FMS得到用户信息 -->
+	<FMS ID="11" TableNameTmp="FMS_USER">
+		<File>
+			<FileName>TOERP_EMPLOYEE_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_erp_11</ProcedureName>
+			<DealBean>downloadData11</DealBean>
+			<TranTmpSql></TranTmpSql>
+			<TruncateTmpSql>truncate table fms_user</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!--从FMS得到机构及机构层级信息 -->
+	<FMS ID="12" TableNameTmp="FMS_ORG">
+		<File>
+			<FileName>TOERP_COMCC_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_erp_12</ProcedureName>
+			<DealBean>downloadData12</DealBean>
+			<TranTmpSql></TranTmpSql>
+			<TruncateTmpSql>truncate table fms_org</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!--供应商信息-->
+	<FMS ID="13" TableNameTmp="FMS_PROVIDER_ACT">
+		<File>
+			<FileName>TOERP_VENDORS_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_erp_13</ProcedureName>
+			<DealBean>downloadData13</DealBean>
+			<TranTmpSql></TranTmpSql>
+			<TruncateTmpSql>truncate table fms_provider_act</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!--PRC_FMS_21-->
+	<FMS ID="21" TableNameTmp="TID_AP_INVOICE_TMP" TableName="TID_AP_INVOICE">
+		<File>
+			<FileName>TOERP_INVOICES_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_fms_21</ProcedureName>
+			<DealBean>downloadData21</DealBean>
+			<TranTmpSql>insert into TID_AP_INVOICE select {0},t.* from TID_AP_INVOICE_TMP t</TranTmpSql>
+			<TruncateTmpSql>truncate table tid_ap_invoice_tmp</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!--PRC_FMS_22        TODO:  TD_PAY_CLEAN_LOG              -->
+	<FMS ID="22" TableNameTmp="TID_AP_PAY_TMP" TableName="TID_AP_PAY">
+		<File>
+			<FileName>TOERP_PAYMENT_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_fms_22</ProcedureName>
+			<DealBean>downloadData22</DealBean>
+			<TranTmpSql>insert into TID_AP_PAY select {0},t.* from TID_AP_PAY_TMP t</TranTmpSql>
+			<TruncateTmpSql>truncate table tid_ap_pay_tmp</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!-- 预提待摊 结果文件 -->
+	<FMS ID="23" TableNameTmp="TID_ACCOUNT_TMP" TableName="TID_ACCOUNT">
+		<File>
+			<FileName>TOERP_GLJOURNAL_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_fms_23</ProcedureName>
+			<DealBean>downloadData23</DealBean>
+			<TranTmpSql>insert into TID_ACCOUNT select {0},t.* from TID_ACCOUNT_TMP t</TranTmpSql>
+			<TruncateTmpSql>truncate table tid_account_tmp</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!--第二次读取订单详情25-->
+	<FMS ID="25" TableNameTmp="TID_ORDER_TMP" TableName="TID_ORDER">
+		<File>
+			<FileName>TOERP_PO_{date8}.TXT.gz</FileName>
+			<ProcedureName>prc_fms_25</ProcedureName>
+			<DealBean>downloadData25</DealBean>
+			<TranTmpSql>insert into TID_ORDER select {0},t.* from TID_ORDER_TMP t</TranTmpSql>
+			<TruncateTmpSql>truncate table tid_order_tmp</TruncateTmpSql>
+		</File>
+	</FMS>
+
+	<!-- 初始化下载文件 -->
+	<FMS ID="FMS2ERP" TradeTypes="11,12,13,21,22,23,25" />
+
+
+	<FMS ID="31" TableName="TIU_AP_INVOICE" CheckTableName="TIU_AP_INVOICE_CHECK" 
+		 TableNameTmp="TIU_AP_INVOICE_CHECK_TMP">
+		<File>
+			<FileName>ERP_INVOICE_{oucode}_{date8}_{seq}.TXT</FileName>
+			<ProcedureName>prc_fms_31,prc_fms_32</ProcedureName>
+			<DealBean>downloadData31</DealBean>
+			<TranTmpSql>insert into tiu_ap_invoice_check select {0},t.* from tiu_ap_invoice_check_tmp t</TranTmpSql>
+			<TruncateTmpSql>truncate table tiu_ap_invoice_check_tmp</TruncateTmpSql>
+			<CheckUpdateSql>
+				<SqlBean>
+					<sql>
+						merge into tiu_ap_invoice a 
+						using (select * from tiu_ap_invoice_check where batch_no = {0}) b 
+						on (a.batch_no = b.batch_no and a.seq_no = b.seq_no) 
+						when matched then 
+						  update 
+						     set a.import_status = b.import_status, a.error_reason = b.error_reason
+					</sql>
+				</SqlBean>
+				<SqlBean>
+					<sql>
+						merge into tiu_pay_cancel a 
+						using (select * from tiu_ap_invoice_check where batch_no = {0}) b 
+						on (a.batch_no = b.batch_no and a.seq_no = b.seq_no) 
+						when matched then 
+						  update 
+						     set a.import_status = b.import_status, a.error_reason = b.error_reason
+					</sql>
+				</SqlBean>
+				<SqlBean>
+					<sql>
+						merge into tiu_ap_invoice_tax a 
+						using (select * from tiu_ap_invoice_check where batch_no = {0}) b 
+						on (a.batch_no = b.batch_no and a.seq_no = b.seq_no) 
+						when matched then 
+						  update 
+						     set a.import_status = b.import_status, a.error_reason = b.error_reason
+					</sql>
+				</SqlBean>
+			</CheckUpdateSql>
+		</File>
+	</FMS>
+
+	<!--PRC_ERP_32-->
+	<FMS ID="32" TableName="TIU_PAY_CANCEL" CheckTableName="TIU_PAY_CANCEL_CHECK"
+		 TableNameTmp="TIU_PAY_CANCEL_CHECK_TMP">
+		<File>
+			<FileName>ERP_APLLY_{oucode}_{date8}_{seq}.TXT</FileName>
+			<ProcedureName>prc_fms_32</ProcedureName>
+			<DealBean>downloadData32</DealBean>
+		</File>
+	</FMS>
+
+	<!-- 预提待摊 校验文件 -->
+	<FMS ID="33" TableName="TIU_ACCOUNT" CheckTableName="TIU_ACCOUNT_CHECK"
+		 TableNameTmp="TIU_ACCOUNT_CHECK_TMP">
+		<File>
+			<FileName>ERP_GL_{oucode}_{date8}_{seq}.TXT</FileName>
+			<ProcedureName>prc_fms_33</ProcedureName>
+			<DealBean>downloadData33</DealBean>
+			<TranTmpSql>insert into tiu_account_check select {0},t.* from tiu_account_check_tmp t</TranTmpSql>
+			<TruncateTmpSql>truncate table tiu_account_check_tmp</TruncateTmpSql>
+			<CheckUpdateSql>
+				 <SqlBean>
+				 	<sql>
+						merge into tiu_account a 
+						using (select * from tiu_account_check where batch_no = {0}) b 
+						on (a.batch_no = b.batch_no and a.seq_no = b.seq_no) 
+						when matched then 
+						  update 
+						     set a.import_status = b.import_status, a.error_reason = b.error_reason
+					</sql>
+				 </SqlBean>
+			</CheckUpdateSql>
+		</File>
+	</FMS>
+
+	<!--读取订单详情34文件-->
+	<FMS ID="34" TableName="TIU_ORDER" CheckTableName="TIU_ORDER_CHECK"
+	    TableNameTmp="TIU_ORDER_CHECK_TMP">
+		<File>
+			<FileName>ERP_PO_{oucode}_{date8}_{seq}.TXT</FileName>
+			<ProcedureName>prc_fms_34</ProcedureName>
+			<DealBean>downloadData34</DealBean>
+			<TranTmpSql>insert into tiu_order_check select {0},t.* from tiu_order_check_tmp t</TranTmpSql>
+			<TruncateTmpSql>truncate table tiu_order_check_tmp</TruncateTmpSql>
+			<CheckUpdateSql>
+				<SqlBean>
+					<sql>
+						merge into tiu_order a 
+						using (select * from tiu_order_check where batch_no = {0}) b 
+						on (a.batch_no = b.batch_no and a.seq_no = b.seq_no) 
+						when matched then 
+						  update 
+						     set a.import_status = b.import_status, a.error_reason = b.error_reason
+					</sql>
+				</SqlBean>
+			</CheckUpdateSql>
+		</File>
+	</FMS>
+	
+	<FMS ID="31up">
+		<File>
+			<FileName>ERP_INVOICE_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<FileSql>SELECT MEMO
+			          FROM (SELECT SEQ_NO || &apos; | &apos; || OU_CODE || &apos; | &apos; || OU_NAME || &apos; | &apos; ||
+			                       INVOICE_TYPE || &apos; | &apos; || INVOICE_NO || &apos; | &apos; || INVOICE_IMAGE_ID || &apos; | &apos; ||
+			                       INVOICE_IMAGE_ADDRESS || &apos; | &apos; || CNT_IMAGE_ID || &apos; | &apos; ||
+			                       CNT_IMAGE_ADDRESS || &apos; | &apos; || INVOICE_DATE || &apos; | &apos; ||
+			                       PROVIDER_CODE || &apos; | &apos; || PROVIDER_NAME || &apos; | &apos; ||
+			                       PROVIDER_ADDR_CODE || &apos; | &apos; || PROVIDER_ADDR_NAME || &apos; | &apos; ||
+			                       TO_CHAR(INVOICE_AMT,'fm9999999999999990.00') || &apos; | &apos; || CURRENCY || &apos; | &apos; || EXCHANGE_RATE || &apos; | &apos; ||
+			                       PAY_CONDITION || &apos; | &apos; || ACT_NAME || &apos; | &apos; || ACT_NO || &apos; | &apos; ||
+			                       BANK_INFO || &apos; | &apos; || BANK_CODE || &apos; | &apos; || BANK_AREA || &apos; | &apos; ||
+			                       TO_CHAR(PAY_AMT,'fm9999999999999990.00') || &apos; | &apos; || TO_CHAR(SUSPENSE_AMT,'fm9999999999999990.00') || &apos; | &apos; || TO_CHAR(CANCEL_AMT,'fm9999999999999990.00') || &apos; | &apos; ||
+			                       PAY_END_DATE || &apos; | &apos; || INVOICE_MEMO || &apos; | &apos; || PAY_WAY || &apos; | &apos; ||
+			                       ACCOUNT_DATE || &apos; | &apos; || CNT_NUM || &apos; | &apos; || PAY_ID || &apos; | &apos; ||
+			                       IAP_PROVIDER_NAME || &apos; | &apos; || IAP_BANK_NAME || &apos; | &apos; ||
+			                       IAP_BANK_CODE || &apos; | &apos; || IAP_ACT_NAME || &apos; | &apos; || IAP_ACT_NO || &apos; | &apos; ||
+			                       IAP_TYPE || &apos; | &apos; || IVROW_SEQNO || &apos; | &apos; || IVROW_TYPE || &apos; | &apos; || TO_CHAR(IVROW_AMT,'fm9999999999999990.00') || &apos; | &apos; ||
+			                       IVROW_DATE || &apos; | &apos; || IVROW_MEMO || &apos; | &apos; || ORG_CODE || &apos; | &apos; ||
+			                       DUTY_CODE || &apos; | &apos; || CGL_CODE || &apos; | &apos; || REFERENCE || &apos; | &apos; ||
+			                       PRODUCT || &apos; | &apos; || COMPANY || &apos; | &apos; || SPECIAL || &apos; | &apos; || 
+			                       RESERVE1 || &apos; | &apos; || RESERVE2 || &apos; | &apos; ||
+			                       TAX_CODE || &apos; | &apos; || IS_GDZC || &apos; | &apos; || INVOICE_ID_BLUE || &apos; | &apos;||
+			                       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || 
+			                       INST_USER || &apos; | &apos;|| PAY_EXAMINE_USER || &apos; | &apos;|| PAY_SURE_USER || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos;   as MEMO
+			                  FROM TIU_AP_INVOICE
+			                 WHERE BATCH_NO = {0}
+			                 ORDER BY SEQ_NO, IVROW_SEQNO)
+			        union
+			        SELECT MEMO
+			          FROM (SELECT SEQ_NO || &apos; | &apos; || OU_CODE || &apos; | &apos; || OU_NAME || &apos; | &apos; || &apos; | &apos; ||
+			                       INVOICE_NO || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; ||
+			                       PROVIDER_CODE || &apos; | &apos; || PROVIDER_NAME || &apos; | &apos; ||
+			                       PROVIDER_ADDR_CODE || &apos; | &apos; || PROVIDER_ADDR_NAME || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || 
+			                       IVROW_TYPE || &apos; | &apos; ||
+			                       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || 
+			                       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || 
+			                       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || 
+			                       CANCEL_INVOICE_NO || &apos; | &apos; || ADVANCE_NO || &apos; | &apos; ||
+			                       TO_CHAR(ADVANCE_CANCEL_AMT,'fm9999999999999990.00') || &apos; | &apos; || CHECK_DATE || &apos; | &apos;|| 
+			                       INST_USER || &apos; | &apos;|| PAY_EXAMINE_USER || &apos; | &apos; || PAY_SURE_USER || &apos; | &apos; || 
+			                       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos;  as MEMO
+			                  FROM TIU_PAY_CANCEL
+			                 WHERE BATCH_NO = {0}
+			                 ORDER BY SEQ_NO)
+			        union 
+			        SELECT MEMO
+			          FROM (SELECT SEQ_NO || &apos; | &apos; || OU_CODE || &apos; | &apos; || OU_NAME || &apos; | &apos; ||
+			                       INVOICE_TYPE || &apos; | &apos; || INVOICE_NO || &apos; | &apos; || INVOICE_IMAGE_ID || &apos; | &apos; ||
+			                       INVOICE_IMAGE_ADDRESS || &apos; | &apos; || CNT_IMAGE_ID || &apos; | &apos; ||
+			                       CNT_IMAGE_ADDRESS || &apos; | &apos; || INVOICE_DATE || &apos; | &apos; ||
+			                       PROVIDER_CODE || &apos; | &apos; || PROVIDER_NAME || &apos; | &apos; ||
+			                       PROVIDER_ADDR_CODE || &apos; | &apos; || PROVIDER_ADDR_NAME || &apos; | &apos; ||
+			                       TO_CHAR(INVOICE_AMT,'fm9999999999999990.00') || &apos; | &apos; || CURRENCY || &apos; | &apos; || EXCHANGE_RATE || &apos; | &apos; ||
+			                       PAY_CONDITION || &apos; | &apos; || ACT_NAME || &apos; | &apos; || ACT_NO || &apos; | &apos; ||
+			                       BANK_INFO || &apos; | &apos; || BANK_CODE || &apos; | &apos; || BANK_AREA || &apos; | &apos; ||
+			                       TO_CHAR(PAY_AMT,'fm9999999999999990.00') || &apos; | &apos; || TO_CHAR(SUSPENSE_AMT,'fm9999999999999990.00') || &apos; | &apos; || TO_CHAR(CANCEL_AMT,'fm9999999999999990.00') || &apos; | &apos; ||
+			                       PAY_END_DATE || &apos; | &apos; || INVOICE_MEMO || &apos; | &apos; || PAY_WAY || &apos; | &apos; ||
+			                       ACCOUNT_DATE || &apos; | &apos; || CNT_NUM || &apos; | &apos; || PAY_ID || &apos; | &apos; ||
+			                       IAP_PROVIDER_NAME || &apos; | &apos; || IAP_BANK_NAME || &apos; | &apos; ||
+			                       IAP_BANK_CODE || &apos; | &apos; || IAP_ACT_NAME || &apos; | &apos; || IAP_ACT_NO || &apos; | &apos; ||
+			                       IAP_TYPE || &apos; | &apos; || IVROW_SEQNO || &apos; | &apos; || IVROW_TYPE || &apos; | &apos; || TO_CHAR(IVROW_AMT,'fm9999999999999990.00') || &apos; | &apos; ||
+			                       IVROW_DATE || &apos; | &apos; || IVROW_MEMO || &apos; | &apos; || ORG_CODE || &apos; | &apos; ||
+			                       DUTY_CODE || &apos; | &apos; || CGL_CODE || &apos; | &apos; || REFERENCE || &apos; | &apos; ||
+			                       PRODUCT || &apos; | &apos; || COMPANY || &apos; | &apos; || SPECIAL || &apos; | &apos; || 
+			                       RESERVE1 || &apos; | &apos; || RESERVE2 || &apos; | &apos; ||
+			                       TAX_CODE || &apos; | &apos; || IS_GDZC || &apos; | &apos; || INVOICE_ID_BLUE || &apos; | &apos;||
+			                       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || 
+			                       INST_USER || &apos; | &apos;|| PAY_EXAMINE_USER || &apos; | &apos;|| PAY_SURE_USER || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos;   as MEMO
+			                  FROM TIU_AP_INVOICE_TAX
+			                 WHERE BATCH_NO = {0}
+			                 ORDER BY SEQ_NO, IVROW_SEQNO)
+  			</FileSql>
+		</File>
+	</FMS>
+
+	<!-- 预提待摊 校验文件 -->
+	<FMS ID="33up">
+		<File>
+			<FileName>ERP_GL_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<FileSql>SELECT SEQ_NO || &apos; | &apos; || VOUCHER_BATCH_NAME || &apos; | &apos; || VOUCHER_NAME ||
+				       &apos; | &apos; || CGL_TRADE_NO || &apos; | &apos; || ACCOUNT_DATE || &apos; | &apos; || CURRENCY ||
+				       &apos; | &apos; || EXCHANGE_RATE || &apos; | &apos; || IMAGE_ID || &apos; | &apos; || IMAGE_ADDR ||
+				       &apos; | &apos; || VOUCHER_SEQ_NO || &apos; | &apos; || ORG_CODE || &apos; | &apos; || DUTY_CODE ||
+				       &apos; | &apos; || CGL_CODE || &apos; | &apos; || REFERENCE || &apos; | &apos; || 
+				       PRODUCT || &apos; | &apos; || COMPANY || &apos; | &apos; || SPECIAL || &apos; | &apos; || RESERVE1 || &apos; | &apos; ||
+				       RESERVE2 || &apos; | &apos; || TO_CHAR(DEBIT_AMT,'fm9999999999999990.00') || &apos; | &apos; || TO_CHAR(CREDIT_AMT,'fm9999999999999990.00') || &apos; | &apos; ||
+				       ROW_MEMO || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; ||
+				       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; as MEMO
+				  FROM TIU_ACCOUNT
+				 WHERE BATCH_NO = {0} ORDER BY CGL_TRADE_NO,SEQ_NO
+			</FileSql>
+		</File>
+	</FMS>
+
+	<!--读取订单详情34文件-->
+	<FMS ID="34up">
+		<File>
+			<FileName>ERP_PO_{oucode}_{date8}_{seq}.TXT</FileName>
+			<CharSet>GBK</CharSet>
+			<FileSql>SELECT SEQ_NO || &apos; | &apos; || OU_CODE || &apos; | &apos; || OU_NAME || &apos; | &apos; ||
+				       ORDER_TYPE || &apos; | &apos; || ORDER_ID || &apos; | &apos; || PROVIDER_CODE || &apos; | &apos; || PROVIDER_NAME || &apos; | &apos; ||
+				       PROVIDER_ADDR_CODE || &apos; | &apos; || PROVIDER_ADDR_NAME || &apos; | &apos; || CURRENCY || &apos; | &apos; || EXCHANGE_RATE ||
+				       &apos; | &apos; || ORDER_USER || &apos; | &apos; || ORDER_MEMO || &apos; | &apos; || STOCK_NUM ||
+				       &apos; | &apos; || TO_CHAR(STOCK_AMT,'fm9999999999999990.00') || &apos; | &apos; || STOCK_PROV || &apos; | &apos; || CNT_NUM ||
+				       &apos; | &apos; || DEPT_ID || &apos; | &apos; || SIGN_DATE || &apos; | &apos; || CNT_IMAGE_ID ||
+				       &apos; | &apos; || CNT_IMAGE_ADDRESS || &apos; | &apos; || START_DATE || &apos; | &apos; ||
+				       END_DATE || &apos; | &apos; || PAY_TERM_MEMO || &apos; | &apos; || PROCUREMENT_ROUTE ||
+				       &apos; | &apos; || ROW_SEQNO || &apos; | &apos; || MATR_CODE || &apos; | &apos; || FAMILY || &apos; | &apos; || MEMO ||
+				       &apos; | &apos; || UNIT || &apos; | &apos; || AMOUNT || &apos; | &apos; || PRICE || &apos; | &apos;||TAX_CODE||&apos; | &apos; ||
+				       SEND_NETNO || &apos; | &apos; || SEND_ORGAN_NO || &apos; | &apos; || SEND_ORGAN_NAME ||
+				       &apos; | &apos; || RECEIVE_NETNO || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; ||
+				       &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; || &apos; | &apos; as MEMO
+				  FROM TIU_ORDER
+				 WHERE BATCH_NO = {0} ORDER BY SEQ_NO
+			</FileSql>
+		</File>
+	</FMS>
+
+</FMSConfig>

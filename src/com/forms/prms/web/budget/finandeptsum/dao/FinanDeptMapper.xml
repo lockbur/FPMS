@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.budget.finandeptsum.dao.FinanDeptDAO">
+	<!--本级财管汇总-->
+	<select id="selList" 	parameterType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean"
+							resultType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean">
+		select e.duty_name matr_audit_dept_name,
+                       b.MATR_AUDIT_DEPT,
+                       b.fee_dept,
+                       c.matr_code,
+                       g.matr_name,
+                       d.ADD_AMT,
+                       d.OLD_AMT,
+                       sum(d.audit_amt) audit_amt,
+                       d.AUDIT_FLAG,
+                       decode(d.AUDIT_FLAG,'00','待初审','01','初审通过','02','本级汇总审批通过','03','本级汇总审批退回','04','二级汇总审批通过') AUDIT_FLAG_NAME
+                  from TD_BUDGET_WRITE_DETAIL a
+                  join tb_budget_tmplt_detail c
+                    on c.tmplt_id = a.tmplt_id
+                   and a.row_seq = c.row_seq
+                  join tb_approve_chain b
+                    on b.matr_code = c.matr_code
+                    and b.fee_dept = a.duty_code
+                   and b.IS_PROVINCE_BUY = '0'
+                  left join TB_FNDWRR e
+                    on e.DUTY_CODE = b.MATR_AUDIT_DEPT
+                  join tb_matr_type g
+                    on g.matr_code = c.matr_code
+                  left join td_budget_first_audit d
+                    on d.tmplt_id = a.tmplt_id
+                   and d.matr_code = c.matr_code
+                   and d.duty_code = b.matr_audit_dept
+		where a.tmplt_id=#{tmpltId,jdbcType=VARCHAR} AND B.FINC_DEPT_S =#{dutyCode,jdbcType=VARCHAR}
+		<if test="matrName !=null and matrName != '' ">
+			AND g.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="matrCode !=null and matrCode != '' ">
+			AND C.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		</if>
+		<if test="matrAuditDept !=null and matrAuditDept != '' ">
+			AND b.MATR_AUDIT_DEPT = #{matrAuditDept,jdbcType=VARCHAR}
+		</if>
+		    group by e.duty_name,c.matr_code,b.fee_dept,b.MATR_AUDIT_DEPT , d.ADD_AMT ,   d.OLD_AMT,g.matr_name,d.AUDIT_FLAG 
+		 order by b.MATR_AUDIT_DEPT desc
+	</select>
+	<!--汇总明细-->
+	<select id="getSbList" 	parameterType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean"
+							resultType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean">
+		select a.IN_AMT ,a.duty_code ,c.duty_name from td_budget_write_detail a
+		join tb_budget_tmplt_detail b on a.tmplt_id = b.tmplt_id and a.row_seq = b.row_seq
+		join tb_fndwrr c on c.duty_code = a.duty_code
+		where a.tmplt_id=#{tmpltId,jdbcType=VARCHAR} and b.matr_code =#{matrCode,jdbcType=VARCHAR}
+		 and exists(select 1 from tb_approve_chain d where d.matr_audit_dept = #{matrAuditDept,jdbcType=VARCHAR} and d.matr_code = b.matr_code
+    and d.fee_dept = c.duty_code)
+	</select>
+	<!--本级退回审核状态-->
+	<update id="back" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		update TD_BUDGET_FIRST_AUDIT set AUDIT_FLAG ='03' 
+		where TMPLT_ID=#{tmpltId,jdbcType=VARCHAR} and DUTY_CODE=#{matrAuditDept,jdbcType=VARCHAR} and MATR_CODE =#{matrCode,jdbcType=VARCHAR} and AUDIT_FLAG ='01'
+	</update>
+	<!--日志信息-->
+	<insert id="insertLog" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		insert into TD_BUDGET_FIRST_AUDIT_LOG
+		 (
+		 	TMPLT_ID,
+		 	DUTY_CODE,
+		 	MATR_CODE,
+		 	AUDIT_SEQ,
+		 	AUDIT_LVL,
+		 	BEFORE_AMT,
+		 	AFTER_AMT,
+		 	AUDIT_OPER,
+		 	AUDIT_DATE,
+		 	AUDIT_TIME,
+		 	AUDIT_MEMO
+		 )
+		 (
+		 select
+		 #{tmpltId, jdbcType=VARCHAR},
+		 #{matrAuditDept, jdbcType=VARCHAR},
+		 #{matrCode, jdbcType=VARCHAR},
+		 decode(MAX(AUDIT_SEQ),null,'1', MAX(AUDIT_SEQ) + 1),
+		 #{auditLvl, jdbcType=VARCHAR},
+		 #{beforeAmt, jdbcType=VARCHAR},
+		 #{afterAmt, jdbcType=VARCHAR},
+		 #{auditOper},to_char(sysdate,'yyyy-MM-dd'),
+		 to_char(sysdate,'hh:mi:ss'),
+		 #{auditMemo, jdbcType=VARCHAR}
+		  from TD_BUDGET_FIRST_AUDIT_LOG 
+		 where TMPLT_ID =#{tmpltId, jdbcType=VARCHAR} and DUTY_CODE =#{matrAuditDept, jdbcType=VARCHAR} and MATR_CODE=#{matrCode, jdbcType=VARCHAR}
+		 )
+	</insert>
+	<!--本级提交-->
+	<update id="submit" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		update TD_BUDGET_FIRST_AUDIT set AUDIT_FLAG ='02' 
+		where TMPLT_ID=#{tmpltId, jdbcType=VARCHAR} and DUTY_CODE=#{matrAuditDept, jdbcType=VARCHAR} and MATR_CODE =#{matrCode, jdbcType=VARCHAR} and AUDIT_FLAG ='01'
+	</update>
+	<!--二级汇总-->
+	<select id="secondList" 	parameterType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean"
+							resultType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean">
+		select e.duty_name matr_audit_dept_name,
+                       b.MATR_AUDIT_DEPT,
+                       b.fee_dept,
+                       c.matr_code,
+                       g.matr_name,
+                       d.ADD_AMT,
+                       d.OLD_AMT,
+                       sum(d.audit_amt) audit_amt,
+                       d.AUDIT_FLAG,
+                       decode(d.AUDIT_FLAG,'00','待初审','01','初审通过','02','本级汇总审批通过','03','本级汇总审批退回','04','二级汇总审批通过') AUDIT_FLAG_NAME
+                  from TD_BUDGET_WRITE_DETAIL a
+                  join tb_budget_tmplt_detail c
+                    on c.tmplt_id = a.tmplt_id
+                   and a.row_seq = c.row_seq
+                  join tb_approve_chain b
+                    on b.matr_code = c.matr_code
+                    and b.fee_dept = a.duty_code
+                   and b.IS_PROVINCE_BUY = '0'
+                  left join TB_FNDWRR e
+                    on e.DUTY_CODE = b.MATR_AUDIT_DEPT
+                  join tb_matr_type g
+                    on g.matr_code = c.matr_code
+                  left join td_budget_first_audit d
+                    on d.tmplt_id = a.tmplt_id
+                   and d.matr_code = c.matr_code
+                   and d.duty_code = b.matr_audit_dept
+		where a.tmplt_id=#{tmpltId,jdbcType=VARCHAR} AND B.FINC_DEPT_2 =#{dutyCode,jdbcType=VARCHAR}  and d.audit_flag ='02' 
+		<if test="matrName !=null and matrName != '' ">
+			AND g.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="matrCode !=null and matrCode != '' ">
+			AND C.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		</if>
+		<if test="matrAuditDept !=null and matrAuditDept != '' ">
+			AND b.MATR_AUDIT_DEPT = #{matrAuditDept,jdbcType=VARCHAR}
+		</if>
+		    group by e.duty_name,c.matr_code,b.fee_dept,b.MATR_AUDIT_DEPT , d.ADD_AMT ,   d.OLD_AMT,g.matr_name,d.AUDIT_FLAG 
+		 order by b.MATR_AUDIT_DEPT desc
+	</select>
+	<!--二级提交-->
+	<update id="secondSubmit" parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		update TD_BUDGET_FIRST_AUDIT set AUDIT_FLAG ='04' ,audit_amt =#{auditAmt,jdbcType=VARCHAR} 
+		where TMPLT_ID=#{tmpltId, jdbcType=VARCHAR} and DUTY_CODE=#{matrAuditDept, jdbcType=VARCHAR} and MATR_CODE =#{matrCode, jdbcType=VARCHAR} and AUDIT_FLAG ='02'
+	</update>
+	<!--一级汇总-->
+	<select id="firList" 	parameterType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean"
+							resultType="com.forms.prms.web.budget.finandeptsum.domain.FinanDeptSumBean">
+		select e.duty_name matr_audit_dept_name,
+                       b.MATR_AUDIT_DEPT,
+                       b.fee_dept,
+                       c.matr_code,
+                       g.matr_name,
+                       d.ADD_AMT,
+                       d.OLD_AMT,
+                       sum(d.audit_amt) audit_amt,
+                       d.AUDIT_FLAG,
+                       decode(d.AUDIT_FLAG,'00','待初审','01','初审通过','02','本级汇总审批通过','03','本级汇总审批退回','04','二级汇总审批通过') AUDIT_FLAG_NAME
+                  from TD_BUDGET_WRITE_DETAIL a
+                  join tb_budget_tmplt_detail c
+                    on c.tmplt_id = a.tmplt_id
+                   and a.row_seq = c.row_seq
+                  join tb_approve_chain b
+                    on b.matr_code = c.matr_code
+                    and b.fee_dept = a.duty_code
+                   and b.IS_PROVINCE_BUY = '0'
+                  left join TB_FNDWRR e
+                    on e.DUTY_CODE = b.MATR_AUDIT_DEPT
+                  join tb_matr_type g
+                    on g.matr_code = c.matr_code
+                  left join td_budget_first_audit d
+                    on d.tmplt_id = a.tmplt_id
+                   and d.matr_code = c.matr_code
+                   and d.duty_code = b.matr_audit_dept
+		where a.tmplt_id=#{tmpltId,jdbcType=VARCHAR} AND B.FINC_DEPT_1 =#{dutyCode,jdbcType=VARCHAR}  and d.audit_flag ='04' 
+		<if test="matrName !=null and matrName != '' ">
+			AND g.MATR_NAME LIKE '%' || #{matrName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="matrCode !=null and matrCode != '' ">
+			AND C.MATR_CODE = #{matrCode,jdbcType=VARCHAR}
+		</if>
+		<if test="matrAuditDept !=null and matrAuditDept != '' ">
+			AND b.MATR_AUDIT_DEPT = #{matrAuditDept,jdbcType=VARCHAR}
+		</if>
+		    group by e.duty_name,c.matr_code,b.fee_dept,b.MATR_AUDIT_DEPT , d.ADD_AMT ,   d.OLD_AMT,g.matr_name,d.AUDIT_FLAG 
+		 order by b.MATR_AUDIT_DEPT desc
+	</select>
+	<!-- 查询本级汇总的模板列表 -->
+	<select id="budgetTempSumList" 	parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean"
+									resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		SELECT  
+			DISTINCT
+			T3.ORG2_NAME	ORG2_NAME,
+			T1.TMPLT_ID		TMPLT_ID,
+			T2.PARAM_NAME  	DATA_ATTR_NAME,
+			T1.ORG21_CODE	ORG21_CODE,
+			T1.DATA_TYPE	DATA_TYPE,
+			T1.DATA_YEAR	DATA_YEAR,
+			T1.DATA_ATTR	DATA_ATTR,
+			T1.INST_OPER	INST_OPER,
+			T1.MEMO			MEMO
+		FROM 			TB_BUDGET_TMPLT		T1 
+		LEFT JOIN 		SYS_SELECT			T2
+		ON		T1.DATA_ATTR = T2.PARAM_VALUE
+			AND	T2.CATEGORY_ID = 'CNT_TYPE'
+		LEFT JOIN		TB_FNDWRR			T3
+		ON		T1.ORG21_CODE = T3.ORG2_CODE
+		WHERE 	T1.DATA_FLAG = '04'
+			AND	T1.ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		<if test="dataType != null and dataType != ''">
+			AND T1.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+		<if test="dataYear != null and dataYear != ''">
+			AND T1.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="dataAttr != null and dataAttr != ''">
+			AND T1.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+		ORDER BY TMPLT_ID DESC
+	</select>
+	
+	<!-- 查询一级汇总的模板列表 -->
+	<select id="budgetTempLvl1SumList"		parameterType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean"
+											resultType="com.forms.prms.web.budget.budgetplan.domain.BudgetPlanBean">
+		SELECT 
+			DISTINCT
+      		T1.TMPLT_ID		TMPLT_ID,
+			T1.DATA_YEAR ||' - '|| T2.PARAM_NAME ||' - '|| DECODE(T1.DATA_TYPE,'0','年初预算','1','追加预算') 	TMPLT_NAME,
+      		T3.ORG2_CODE  ORG2_CODE,
+			T3.ORG2_NAME	ORG2_NAME
+		FROM 		TB_BUDGET_TMPLT 	T1
+		LEFT JOIN 		
+					SYS_SELECT			T2
+		ON		
+			T1.DATA_ATTR = T2.PARAM_VALUE
+			AND	
+			T2.CATEGORY_ID = 'CNT_TYPE'
+		LEFT JOIN		
+					TB_FNDWRR			T3
+		ON		
+			T1.ORG21_CODE = T3.ORG2_CODE
+		WHERE T1.ORG21_CODE IN
+			<!-- 查询指定一级行下的所有二级行编号 -->
+        	(SELECT DISTINCT ORG2_CODE FROM TB_FNDWRR WHERE ORG1_CODE = #{org1Code ,jdbcType=VARCHAR} AND ORG2_CODE IS NOT NULL) 
+		AND DATA_FLAG = '04'
+		<if test="dataType != null and dataType != ''">
+			AND T1.DATA_TYPE = #{dataType,jdbcType=VARCHAR}
+		</if>
+		<if test="dataYear != null and dataYear != ''">
+			AND T1.DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		</if>
+		<if test="dataAttr != null and dataAttr != ''">
+			AND T1.DATA_ATTR = #{dataAttr,jdbcType=VARCHAR}
+		</if>
+    	ORDER BY TMPLT_ID DESC
+	</select>
+	
+	
+</mapper>

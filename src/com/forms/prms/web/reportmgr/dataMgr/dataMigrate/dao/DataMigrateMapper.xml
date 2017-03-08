@@ -1,0 +1,629 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.dao.DataMigrateDao">
+	<!-- 测试Excel导入使用 -->
+	<insert id="dataMigrateToTb1" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.ZsysRoleBean">
+		INSERT INTO SYS_ROLE
+		(
+			ROLE_ID,
+			ROLE_NAME,
+			MEMO,
+			ENABLE_DEL,
+			ROLE_LEVEL
+		)
+		VALUES
+		(
+			#{roleId,jdbcType=VARCHAR},
+			#{roleName,jdbcType=VARCHAR},
+			#{memo,jdbcType=VARCHAR},
+			#{enableDel,jdbcType=VARCHAR},
+			#{roleLevel,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 创建获得导入批次号 -->
+	<select id="createImportBatchSeq" resultType="string">
+		SELECT RM_GET_COMMON_ID('DMUPBATCHID') FROM DUAL
+	</select>
+	
+	<!-- 【合同数据】(合同信息Sheet)		从Excel导入至DB表 -->
+	<insert id="addCntInfo" parameterType="java.util.List">
+		INSERT INTO UPLOAD_TD_CNT
+		(
+			CNT_NUM,	 		CNT_NAME,			PAY_DUTY_CODE,		
+			PAY_DUTY_NAME,		PROVIDER_NAME,		CNT_AMT,			
+			ZB_AMT,				LXJE, 				LXSL,				
+			CNT_TYPE,  			IS_SPEC,			IS_PROVINCE_BUY,	
+			FEE_TYPE,			FEE_SUB_TYPE,		FEE_START_DATE,		
+			FEE_END_DATE,		IS_ORDER,			FEE_AMT,			
+			FEE_PENALTY,		STOCK_NUM,			PSBH,				
+			LXLX,				PROVIDER_TAX_RATE,	PROVIDER_TAX,		
+			CNT_NUM_RELATED,	PAY_TERM,			MEMO,				
+			JF,					YF_ID,				YF,					
+			WDJG_ID,			WDJG_NAME,			AUTO_BANK_NAME,		
+			AREA,				HOUSE_KIND_ID,		WYGLF,				
+			YJ,					BEGIN_DATE,			END_DATE,				
+			FZ_REMARK,			BATCH_NO,			ROW_NO,				
+			UPLOAD_TYPE,		DATA_TYPE,			STAGE_TYPE,			
+			PROV_ACT_NO,		PROV_ACT_CURR,		SIGN_DATE,			
+			WYDZ		
+		)
+		
+		(
+	 		<foreach collection="cntInfoList" item="item" index="index" separator="union all" > 
+				SELECT 
+						#{item.cntNum,jdbcType=VARCHAR},			#{item.cntName,jdbcType=VARCHAR},			#{item.payDutyCode,jdbcType=VARCHAR}, 
+						#{item.payDutyName,jdbcType=VARCHAR},		#{item.providerName,jdbcType=VARCHAR},		#{item.cntAmt,jdbcType=NUMERIC},			
+						#{item.zbAmt,jdbcType=NUMERIC},				#{item.lxje,jdbcType=NUMERIC},				#{item.lxsl,jdbcType=NUMERIC},			
+						#{item.cntType,jdbcType=VARCHAR},			#{item.isSpec,jdbcType=VARCHAR},			#{item.isProvinceBuy,jdbcType=VARCHAR},	
+						#{item.feeType,jdbcType=VARCHAR},			#{item.feeSubType,jdbcType=VARCHAR},		#{item.feeStartDate,jdbcType=VARCHAR},	
+						#{item.feeEndDate,jdbcType=VARCHAR},		#{item.isOrder,jdbcType=VARCHAR},			#{item.feeAmt,jdbcType=NUMERIC},			
+						#{item.feePenalty,jdbcType=NUMERIC},		#{item.stockNum,jdbcType=VARCHAR},			#{item.psbh,jdbcType=VARCHAR},			
+						#{item.lxlx,jdbcType=VARCHAR},				#{item.providerTaxRate,jdbcType=NUMERIC},	#{item.providerTax,jdbcType=NUMERIC},	
+						#{item.cntNumRelated,jdbcType=VARCHAR},		#{item.payTerm,jdbcType=VARCHAR},			#{item.memo,jdbcType=VARCHAR},			
+						#{item.jf,jdbcType=VARCHAR},				#{item.yfId,jdbcType=VARCHAR},				#{item.yf,jdbcType=VARCHAR},				
+						#{item.wdjgId,jdbcType=VARCHAR},			#{item.wdjgName,jdbcType=VARCHAR},			#{item.autoBankName,jdbcType=VARCHAR},	
+						#{item.area,jdbcType=NUMERIC},				#{item.houseKindId,jdbcType=VARCHAR},		#{item.wyglf,jdbcType=NUMERIC},			
+						#{item.yj,jdbcType=NUMERIC},				#{item.beginDate,jdbcType=VARCHAR},			#{item.endDate,jdbcType=VARCHAR},		
+						#{item.fzRemark,jdbcType=VARCHAR},			#{item.batchNo,jdbcType=VARCHAR},			#{item.rowNo,jdbcType=VARCHAR},			
+						#{item.uploadType,jdbcType=VARCHAR},		#{item.dataType,jdbcType=VARCHAR},			#{item.stageType,jdbcType=VARCHAR},		
+						#{item.provActNo,jdbcType=VARCHAR},			#{item.provActCurr,jdbcType=VARCHAR},		#{item.signDate,jdbcType=VARCHAR},		
+						#{item.wydz,jdbcType=VARCHAR}
+				    FROM DUAL 
+	  		 </foreach> 
+			
+		)
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},			#{cntName,jdbcType=VARCHAR},		#{payDutyCode,jdbcType=VARCHAR}, -->
+<!-- 			#{payDutyName,jdbcType=VARCHAR},	#{providerName,jdbcType=VARCHAR},	#{cntAmt,jdbcType=NUMERIC},			 -->
+<!-- 			#{zbAmt,jdbcType=NUMERIC},			#{lxje,jdbcType=NUMERIC},			#{lxsl,jdbcType=NUMERIC},			 -->
+<!-- 			#{cntType,jdbcType=VARCHAR},		#{isSpec,jdbcType=VARCHAR},			#{isProvinceBuy,jdbcType=VARCHAR},	 -->
+<!-- 			#{feeType,jdbcType=VARCHAR},		#{feeSubType,jdbcType=VARCHAR},		#{feeStartDate,jdbcType=VARCHAR},	 -->
+<!-- 			#{feeEndDate,jdbcType=VARCHAR},		#{isOrder,jdbcType=VARCHAR},		#{feeAmt,jdbcType=NUMERIC},			 -->
+<!-- 			#{feePenalty,jdbcType=NUMERIC},		#{stockNum,jdbcType=VARCHAR},		#{psbh,jdbcType=VARCHAR},			 -->
+<!-- 			#{lxlx,jdbcType=VARCHAR},			#{providerTaxRate,jdbcType=NUMERIC},#{providerTax,jdbcType=NUMERIC},	 -->
+<!-- 			#{cntNumRelated,jdbcType=VARCHAR},	#{payTerm,jdbcType=VARCHAR},		#{memo,jdbcType=VARCHAR},			 -->
+<!-- 			#{jf,jdbcType=VARCHAR},				#{yfId,jdbcType=VARCHAR},			#{yf,jdbcType=VARCHAR},				 -->
+<!-- 			#{wdjgId,jdbcType=VARCHAR},			#{wdjgName,jdbcType=VARCHAR},		#{autoBankName,jdbcType=VARCHAR},	 -->
+<!-- 			#{area,jdbcType=NUMERIC},			#{houseKindId,jdbcType=VARCHAR},	#{wyglf,jdbcType=NUMERIC},			 -->
+<!-- 			#{yj,jdbcType=NUMERIC},				#{beginDate,jdbcType=VARCHAR},		#{endDate,jdbcType=VARCHAR},		 -->
+<!-- 			#{fzRemark,jdbcType=VARCHAR},		#{batchNo,jdbcType=VARCHAR},		#{rowNo,jdbcType=VARCHAR},			 -->
+<!-- 			#{uploadType,jdbcType=VARCHAR},		#{dataType,jdbcType=VARCHAR},		#{stageType,jdbcType=VARCHAR},		 -->
+<!-- 			#{provActNo,jdbcType=VARCHAR},		#{provActCurr,jdbcType=VARCHAR},	#{signDate,jdbcType=VARCHAR},		 -->
+<!-- 			#{wydz,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	
+	</insert>
+	
+	<!-- 【合同数据】(合同物料信息Sheet)  从Excel导入至DB表 -->
+	<insert id="addCntDevice"  parameterType="java.util.List">
+		INSERT INTO UPLOAD_TD_CNT_DEVICE
+		(
+			CNT_NUM,			FEE_DEPT_ID,	FEE_DEPT_NAME,
+			MATR_CODE,			MATR_NAME,		SPECIAL,
+			REFERENCE,			EXEC_NUM,       EXEC_PRICE,		
+			DEVICE_MODEL_NAME,	WARRANTY,		PRODUCTOR,
+			BATCH_NO,			ROW_NO,			UPLOAD_TYPE,
+			DATA_TYPE
+		)
+		(
+			<foreach collection="cntMatrList" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},			#{item.feeDeptId,jdbcType=VARCHAR},	#{item.feeDeptName,jdbcType=VARCHAR},
+					#{item.matrCode,jdbcType=VARCHAR},			#{item.matrName,jdbcType=VARCHAR},	#{item.special,jdbcType=VARCHAR},
+					#{item.reference,jdbcType=VARCHAR},			#{item.execNum,jdbcType=NUMERIC},	#{item.execPrice,jdbcType=NUMERIC},
+					#{item.deviceModelName,jdbcType=VARCHAR},	#{item.warranty,jdbcType=NUMERIC},	#{item.productor,jdbcType=VARCHAR},
+					#{item.batchNo,jdbcType=VARCHAR},			#{item.rowNo,jdbcType=VARCHAR},		#{item.uploadType,jdbcType=VARCHAR},
+					#{item.dataType,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{CNTNUM,JDBCTYPE=VARCHAR},				#{FEEDEPTID,JDBCTYPE=VARCHAR},	#{FEEDEPTNAME,JDBCTYPE=VARCHAR}, -->
+<!-- 			#{MATRCODE,JDBCTYPE=VARCHAR},			#{MATRNAME,JDBCTYPE=VARCHAR},	#{SPECIAL,JDBCTYPE=VARCHAR}, -->
+<!-- 			#{REFERENCE,JDBCTYPE=VARCHAR},			#{EXECNUM,JDBCTYPE=NUMERIC},	#{EXECPRICE,JDBCTYPE=NUMERIC}, -->
+<!-- 			#{DEVICEMODELNAME,JDBCTYPE=VARCHAR},	#{WARRANTY,JDBCTYPE=NUMERIC},	#{PRODUCTOR,JDBCTYPE=VARCHAR}, -->
+<!-- 			#{BATCHNO,JDBCTYPE=VARCHAR},			#{ROWNO,JDBCTYPE=VARCHAR},		#{UPLOADTYPE,JDBCTYPE=VARCHAR}, -->
+<!-- 			#{DATATYPE,JDBCTYPE=VARCHAR} -->
+<!-- 		) -->
+	</insert>	
+	
+	<!-- 【合同数据】(合同分期付款信息Sheet)	从Excel导入至DB表 -->
+	<insert id="addCntFk" parameterType="java.util.List">
+		INSERT INTO UPLOAD_TD_CNT_FK
+		(
+			CNT_NUM,	JD_DATE,	JDTJ,
+			JDZF,		DHZF,		YSZF,	
+			JSZF,		RQTJ, 		RQZF,	
+			BATCH_NO,	ROW_NO,		UPLOAD_TYPE,	
+			DATA_TYPE		
+		)	
+		(
+			<foreach collection="cntFqfkList" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},		#{item.jdDate,jdbcType=VARCHAR}, 	#{item.jdtj,jdbcType=NUMERIC},
+					#{item.jdzf,jdbcType=NUMERIC},			#{item.dhzf,jdbcType=NUMERIC},		#{item.yszf,jdbcType=NUMERIC},	
+					#{item.jszf,jdbcType=NUMERIC},			#{item.rqtj,jdbcType=VARCHAR},   	#{item.rqzf,jdbcType=NUMERIC},
+					#{item.batchNo,jdbcType=VARCHAR},		#{item.rowNo,jdbcType=VARCHAR},		#{item.uploadType,jdbcType=VARCHAR},
+					#{item.dataType,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																												
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},		#{jdDate,jdbcType=VARCHAR}, 	#{jdtj,jdbcType=NUMERIC}, -->
+<!-- 			#{jdzf,jdbcType=NUMERIC},		#{dhzf,jdbcType=NUMERIC},		#{yszf,jdbcType=NUMERIC},	 -->
+<!-- 			#{jszf,jdbcType=NUMERIC},		#{rqtj,jdbcType=VARCHAR},   	#{rqzf,jdbcType=NUMERIC}, -->
+<!-- 			#{batchNo,jdbcType=VARCHAR},	#{rowNo,jdbcType=VARCHAR},		#{uploadType,jdbcType=VARCHAR}, -->
+<!-- 			#{dataType,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	</insert>
+	
+	<!-- 【合同数据】(租金递增条件Sheet) 从Excel导入至DB表-->
+	<insert id="addCntTenancy" parameterType="java.util.List">
+		INSERT INTO UPLOAD_TD_CNT_TENANCY_DZ
+		(
+			CNT_NUM,	FROM_DATE,		TO_DATE,
+			DZLX,		DZED,			FDBL,
+			GLFY,
+			BATCH_NO,	ROW_NO,			UPLOAD_TYPE,	
+			DATA_TYPE
+		)
+		(
+			<foreach collection="cntTenancyList" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},		#{item.fromDate,jdbcType=VARCHAR},		#{item.toDate,jdbcType=VARCHAR},
+					#{item.dzlx,jdbcType=VARCHAR},			#{item.dzed,jdbcType=NUMERIC},			#{item.fdbl,jdbcType=VARCHAR},
+					#{item.glfy,jdbcType=NUMERIC},	
+					#{item.batchNo,jdbcType=VARCHAR},		#{item.rowNo,jdbcType=VARCHAR},			#{item.uploadType,jdbcType=VARCHAR},
+					#{item.dataType,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},		#{fromDate,jdbcType=VARCHAR},		#{toDate,jdbcType=VARCHAR}, -->
+<!-- 			#{dzlx,jdbcType=VARCHAR},		#{dzed,jdbcType=NUMERIC},			#{fdbl,jdbcType=VARCHAR}, -->
+<!-- 			#{glfy,jdbcType=NUMERIC}, -->
+<!-- 			#{batchNo,jdbcType=VARCHAR},	#{rowNo,jdbcType=VARCHAR},			#{uploadType,jdbcType=VARCHAR}, -->
+<!-- 			#{dataType,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	</insert>
+	
+	<!-- 【普通付款数据】(Sheet1：预付款信息)	从Excel导入至DB表  -->
+	<insert id="addTdPayAdvance"  parameterType="java.util.List">
+		INSERT INTO	UPLOAD_TD_PAY_ADVANCE
+		(
+			CNT_NUM,		PAY_ID,			PROVIDER_NAME,
+			PROV_ACT_NO,	PROV_ACT_CURR,	INVOICE_AMT,	
+			PAY_DATE,		PAY_MODE,		INVOICE_MEMO,
+			BATCH_NO,		ROW_NO,			UPLOAD_TYPE,
+			DATA_TYPE,		PROVIDER_CODE
+		)
+		(
+			<foreach collection="payAdvanceInfo" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},		#{item.payId,jdbcType=VARCHAR},			#{item.providerName,jdbcType=VARCHAR},
+					#{item.provActNo,jdbcType=VARCHAR},		#{item.provActCurr,jdbcType=VARCHAR},	#{item.invoiceAmt,jdbcType=NUMERIC},	
+					#{item.payDate,jdbcType=VARCHAR},		#{item.payMode,jdbcType=VARCHAR},		#{item.invoiceMemo,jdbcType=VARCHAR},
+					#{item.batchNo,jdbcType=VARCHAR},		#{item.rowNo,jdbcType=VARCHAR},			#{item.uploadType,jdbcType=VARCHAR}, 
+					#{item.dataType,jdbcType=VARCHAR},		#{item.providerCode,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)
+		
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},		#{payId,jdbcType=VARCHAR},		#{providerName,jdbcType=VARCHAR}, -->
+<!-- 			#{provActNo,jdbcType=VARCHAR},	#{provActCurr,jdbcType=VARCHAR},#{invoiceAmt,jdbcType=NUMERIC},	 -->
+<!-- 			#{payDate,jdbcType=VARCHAR},	#{payMode,jdbcType=VARCHAR},	#{invoiceMemo,jdbcType=VARCHAR}, -->
+<!-- 			#{batchNo,jdbcType=VARCHAR},	#{rowNo,jdbcType=VARCHAR},		#{uploadType,jdbcType=VARCHAR},  -->
+<!-- 			#{dataType,jdbcType=VARCHAR},	#{providerCode,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	</insert>
+	
+	<!-- 【普通付款数据】(Sheet2：付款信息)	从Excel导入至DB表 -->
+	<insert id="addTdPayInfo"  parameterType="java.util.List">
+		INSERT INTO UPLOAD_TD_PAY
+		(
+			CNT_NUM,			PAY_ID,				IS_CREDIT_NOTE,
+			PROVIDER_NAME,		PROV_ACT_NO,		PROV_ACT_CURR,
+			INVOICE_AMT,		PAY_AMT,			ADVANCE_CANCEL_AMT,	
+			SUSPENSE_AMT,		SUS_TOTAL_AMT,		PAY_DATE,		
+			PAY_MODE,			SUSPENSE_DATE,		SUSPENSE_NAME,
+			SUSPENSE_REASON,	SUSPENSE_PERIOD,	INVOICE_MEMO,
+			BATCH_NO,			ROW_NO,				UPLOAD_TYPE,
+			DATA_TYPE,			PROVIDER_CODE
+		)
+		(
+			<foreach collection="payInfo" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},			#{item.payId,jdbcType=VARCHAR},				#{item.isCreditNote,jdbcType=VARCHAR},
+					#{item.providerName,jdbcType=VARCHAR},		#{item.provActNo,jdbcType=VARCHAR},			#{item.provActCurr,jdbcType=VARCHAR},
+					#{item.invoiceAmt,jdbcType=NUMERIC},		#{item.payAmt,jdbcType=NUMERIC},			#{item.advanceCancelAmt,jdbcType=NUMERIC},	
+					#{item.suspenseAmt,jdbcType=NUMERIC},		#{item.susTotalAmt,jdbcType=NUMERIC},		#{item.payDate,jdbcType=VARCHAR},
+					#{item.payMode,jdbcType=VARCHAR},			#{item.suspenseDate,jdbcType=VARCHAR},		#{item.suspenseName,jdbcType=VARCHAR},
+					#{item.suspenseReason,jdbcType=VARCHAR},	#{item.suspensePeriod,jdbcType=NUMERIC},	#{item.invoiceMemo,jdbcType=VARCHAR},
+					#{item.batchNo,jdbcType=VARCHAR},			#{item.rowNo,jdbcType=VARCHAR},				#{item.uploadType,jdbcType=VARCHAR},
+					#{item.dataType,jdbcType=VARCHAR},			#{item.providerCode,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)
+		
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},			#{payId,jdbcType=VARCHAR},				#{isCreditNote,jdbcType=VARCHAR}, -->
+<!-- 			#{providerName,jdbcType=VARCHAR},	#{provActNo,jdbcType=VARCHAR},			#{provActCurr,jdbcType=VARCHAR}, -->
+<!-- 			#{invoiceAmt,jdbcType=NUMERIC},		#{payAmt,jdbcType=NUMERIC},				#{advanceCancelAmt,jdbcType=NUMERIC},	 -->
+<!-- 			#{suspenseAmt,jdbcType=NUMERIC},	#{susTotalAmt,jdbcType=NUMERIC},		#{payDate,jdbcType=VARCHAR}, -->
+<!-- 			#{payMode,jdbcType=VARCHAR},		#{suspenseDate,jdbcType=VARCHAR},		#{suspenseName,jdbcType=VARCHAR}, -->
+<!-- 			#{suspenseReason,jdbcType=VARCHAR},	#{suspensePeriod,jdbcType=NUMERIC},		#{invoiceMemo,jdbcType=VARCHAR}, -->
+<!-- 			#{batchNo,jdbcType=VARCHAR},		#{rowNo,jdbcType=VARCHAR},				#{uploadType,jdbcType=VARCHAR}, -->
+<!-- 			#{dataType,jdbcType=VARCHAR},		#{providerCode,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	</insert>
+	
+	<!-- 【普通付款数据】(Sheet3：预付款核销信息)	从Excel导入至DB表 -->
+	<insert id="addTdPayAdvanceCancel"  parameterType="java.util.List">
+		INSERT INTO UPLOAD_TD_PAY_ADVANCE_CANCEL
+		(
+			CNT_NUM,		NORMAL_PAY_ID,		ADVANCE_PAY_ID,	
+			CANCEL_AMT,		
+			BATCH_NO,			ROW_NO,			UPLOAD_TYPE,	
+			DATA_TYPE
+		)
+		(
+			<foreach collection="payAdvanceCancelInfo" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},			#{item.normalPayId,jdbcType=VARCHAR},		#{item.advancePayId,jdbcType=VARCHAR},	
+					#{item.cancelAmt,jdbcType=NUMERIC},
+					#{item.batchNo,jdbcType=VARCHAR},			#{item.rowNo,jdbcType=VARCHAR},				#{item.uploadType,jdbcType=VARCHAR},
+					#{item.dataType,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},			#{normalPayId,jdbcType=VARCHAR},		#{advancePayId,jdbcType=VARCHAR},	 -->
+<!-- 			#{cancelAmt,jdbcType=NUMERIC}, -->
+<!-- 			#{batchNo,jdbcType=VARCHAR},		#{rowNo,jdbcType=VARCHAR},				#{uploadType,jdbcType=VARCHAR}, -->
+<!-- 			#{dataType,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	</insert>
+	
+	<!-- 【普通付款数据】(Sheet4：预付款合同采购设备信息	/  Sheet5：预付款合同采购设备信息)	从Excel导入至DB表  		当属性payType=0时导入Sheet4，payType=1时导入Sheet5-->
+	<insert id="addTdPayDevice"  parameterType="java.util.Map">
+		INSERT INTO ${paramObj.table} 
+		(
+			CNT_NUM,	PAY_ID,				MATR_CODE,	
+			MATR_NAME,	SUB_INVOICE_AMT,	IVROW_MEMO,
+			BATCH_NO,			ROW_NO,			UPLOAD_TYPE,	
+			DATA_TYPE
+		)
+		(
+			<foreach collection="paramObj.payDeviceInfo" item="item" index="index" separator="union all">
+				SELECT
+					#{item.cntNum,jdbcType=VARCHAR},		#{item.payId,jdbcType=VARCHAR},			#{item.matrCode,jdbcType=VARCHAR},	
+					#{item.matrName,jdbcType=VARCHAR},		#{item.subInvoiceAmt,jdbcType=NUMERIC},	#{item.ivrowMemo,jdbcType=VARCHAR},
+					#{item.batchNo,jdbcType=VARCHAR},		#{item.rowNo,jdbcType=VARCHAR},			#{item.uploadType,jdbcType=VARCHAR},
+					#{item.dataType,jdbcType=VARCHAR}
+				FROM DUAL
+			</foreach>
+		)
+		
+<!-- 		VALUES -->
+<!-- 		( -->
+<!-- 			#{cntNum,jdbcType=VARCHAR},		#{payId,jdbcType=VARCHAR},			#{matrCode,jdbcType=VARCHAR},	 -->
+<!-- 			#{matrName,jdbcType=VARCHAR},	#{subInvoiceAmt,jdbcType=NUMERIC},	#{ivrowMemo,jdbcType=VARCHAR}, -->
+<!-- 			#{batchNo,jdbcType=VARCHAR},		#{rowNo,jdbcType=VARCHAR},				#{uploadType,jdbcType=VARCHAR}, -->
+<!-- 			#{dataType,jdbcType=VARCHAR} -->
+<!-- 		) -->
+	</insert>	
+	
+	<!-- 导入Excel任务，Deal中Start()处理时插入处理记录 (首次插入，其dataFlag为00待确认)-->
+	<insert id="addUpDataControlInfo" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.UploadDataControlInfoBean">
+		INSERT INTO UPLOAD_DATA_CONTROL_INFO
+		(
+			BATCH_NO,		ORG1_CODE,
+			INST_OPER,		INST_TIME,			DATA_FLAG,
+			TASK_CNT_ID,	TASK_PAY_ID
+		)
+		VALUES
+		(
+			#{batchNo,jdbcType=VARCHAR},	#{org1Code,jdbcType=VARCHAR},
+			#{instOper,jdbcType=VARCHAR},	SYSDATE,	'00',
+			#{taskCntId,jdbcType=VARCHAR},	#{taskPayId,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<!-- 根据处理结果，更新导入Excel任务的数据状态(01已推送，02已失效) -->
+	<update id="updateUpDataConInfoDataFlag" parameterType="string">
+		UPDATE UPLOAD_DATA_CONTROL_INFO
+		SET	DATA_FLAG = #{dataFlag , jdbcType=VARCHAR}
+		WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}
+	</update>
+	
+	<!-- 调用总的存储过程校验[合同数据]+[付款数据]的初始化数据 -->
+	<insert id="callInitMainCheck" parameterType="string">
+		CALL DATA_INIT_MAIN_CHECK(#{batchNo , jdbcType=VARCHAR})
+	</insert>
+
+	<!-- 根据当前登录用户的一级行，查询该一级行导入批次信息(导入状态+导入批次中存在错误行) -->
+	<select id="queryUploadControlByOrg1Code" parameterType="string"  
+			resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.UploadDataControlInfoBean">
+		SELECT 
+				T1.BATCH_NO ,	T1.ORG1_CODE ,	T1.INST_OPER , T1.INST_TIME , 	
+				T1.DATA_FLAG ,  NVL(T2.ERR_HEAD_COUNT,0) ERR_HEAD_COUNT , NVL(T3.ERR_INFO_COUNT,0) ERR_INFO_COUNT
+		FROM 
+		  	UPLOAD_DATA_CONTROL_INFO  T1
+		LEFT JOIN 
+		    (
+		        SELECT  
+		         	BATCH_NO , COUNT(1) ERR_HEAD_COUNT
+		        FROM
+		        	UPLOAD_DATA_ERROR_INFO
+		        WHERE SECTION_TYPE = '01'
+		        GROUP BY  
+		        	BATCH_NO 
+		    )T2
+			ON T1.BATCH_NO = T2.BATCH_NO
+		LEFT JOIN
+			(
+				SELECT BATCH_NO , COUNT(1) ERR_INFO_COUNT 
+					FROM
+			    (
+			        SELECT  
+			         	BATCH_NO , COUNT(1) ERR_INFO_COUNT
+			        FROM
+			        	UPLOAD_DATA_ERROR_INFO
+			        WHERE SECTION_TYPE = '02'
+			        	GROUP BY  BATCH_NO , UPLOAD_TYPE , DATA_TYPE , ROW_NO
+			    )TEMP3 GROUP BY BATCH_NO
+			 )T3
+		  	ON T1.BATCH_NO = T3.BATCH_NO
+		WHERE T1.ORG1_CODE = #{org1Code, jdbcType = VARCHAR}
+		   	AND T1.DATA_FLAG != '02'
+		   	AND T1.DATA_FLAG != '03'
+	</select>
+	
+	<select id="queryCntList" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean"  
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean">
+	SELECT		
+		CNT_NUM, CNT_NAME,		CNT_TYPE,	PROVIDER_NAME,
+		CNT_AMT, PROV_ACT_CURR,	SIGN_DATE,	PAY_DUTY_CODE,
+		PAY_DUTY_NAME,	BATCH_NO
+	 FROM UPLOAD_TD_CNT T
+	 WHERE T.BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		 <if test="cntNum != null and cntNum != ''">
+				AND CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		 </if>
+		 <if test="cntName != null and cntName != ''">
+				AND CNT_NAME LIKE '%'||#{cntName ,jdbcType=VARCHAR}||'%'
+		 </if>
+		 <if test="cntType != null and cntType != ''">
+				AND CNT_TYPE = #{cntType ,jdbcType=VARCHAR} 
+		 </if>
+		 <if test="providerName != null and providerName != ''">
+				AND PROVIDER_NAME LIKE '%'||#{providerName ,jdbcType=VARCHAR}||'%'
+		 </if>
+		 <if test="payDutyName != null and payDutyName != ''">
+				AND PAY_DUTY_NAME LIKE '%'||#{payDutyName ,jdbcType=VARCHAR}||'%'
+		 </if>
+	</select>
+	
+	<!-- 1.调用存储过程将导入数据从缓存表中转移至生产表中	2.更新udcBean当次[确认]操作的相关信息(数据状态、更新者、更新时间) -->
+	<select id="callDataInitFlash" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.UploadDataControlInfoBean"   >
+			CALL DATA_INIT_MAIN_FLASH(#{batchNo ,jdbcType=VARCHAR} , #{updtOper , jdbcType=VARCHAR})
+	</select>
+	
+	<!-- 数据迁移-导入批次[删除]操作：将该导入批次状态置为03删除，并添加更新操作者和更新时间字段值 -->
+	<update id="dmExecDelOperByBatchNo" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.UploadDataControlInfoBean">
+		UPDATE UPLOAD_DATA_CONTROL_INFO
+		SET 		DATA_FLAG = '03',
+					UPDT_OPER = #{updtOper , jdbcType=VARCHAR},
+					UPDT_TIME = SYSDATE
+		WHERE 	BATCH_NO = #{batchNo , jdbcType=VARCHAR}
+	</update>
+	
+	<select id="getUpDataControllerDataFlagByBatchNo" parameterType="string" resultType="string">
+		SELECT 	DATA_FLAG
+		FROM 	UPLOAD_DATA_CONTROL_INFO
+		WHERE 
+				BATCH_NO = #{batchNo , jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getUpDataControlByOneTaskId" parameterType="string" 
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.UploadDataControlInfoBean">
+		SELECT 	* 
+		FROM 	UPLOAD_DATA_CONTROL_INFO
+		WHERE	
+				TASK_CNT_ID = #{taskId,jdbcType=VARCHAR}
+			OR
+				TASK_PAY_ID = #{taskId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 根据导入批次号，查找当前导入批次中校验为错误的错误信息(UploadDataErrorInfoBean)List -->
+	<select id="getUpDataErrByBatchNo" parameterType="com.forms.prms.tool.exceltool.domain.UploadDataErrorInfoBean"
+				resultType="com.forms.prms.tool.exceltool.domain.UploadDataErrorInfoBean">
+		SELECT E.BATCH_NO, S1.PARAM_NAME UPLOAD_TYPE, S2.PARAM_NAME DATA_TYPE, E.ROW_NO, E.ERR_DESC, E.SECTION_TYPE
+  				FROM UPLOAD_DATA_ERROR_INFO E
+  				LEFT JOIN SYS_SELECT 		S1
+  				ON S1.CATEGORY_ID = 'STOCK_DATAIMP_UPTYPE' AND	 E.UPLOAD_TYPE = S1.PARAM_VALUE
+  				LEFT JOIN SYS_SELECT		S2
+  				ON S2.CATEGORY_ID = 'STOCK_DATAIMP_SHEETTYPE' AND E.DATA_TYPE = S2.PARAM_VALUE
+ 				WHERE BATCH_NO = #{batchNo, jdbcType = VARCHAR}
+	</select>
+	
+	<!-- 根据导入批次号，查找导入批次Bean对象 -->
+	<select id="getUdcBeanByBatchNo" parameterType="string"
+					resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.UploadDataControlInfoBean">
+		SELECT 	* 
+		FROM 	UPLOAD_DATA_CONTROL_INFO
+		WHERE 	BATCH_NO = #{batchNo , jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 根据批次号(BATCH_NO)、上传模板(UPLOAD_TYPE)、错误校验区(SECTION_TYPE [表头、主体数据])，按Sheet和row行号分组统计查询存在多少条校验错误信息 -->
+	<select id="getUpDataErrCountByBatchAndUpType" parameterType="String" resultType="String">
+		<!-- 根据批次号batchNo查找【合同数据01】Excel导入模板的错误信息 -->
+		<!-- 该uploadType对应UPLOAD_DATA_CONTROL_INFO表中Batch下的Task1(当uploadType=01时为合同Task,uploadType=02时为付款Task) -->
+		SELECT COUNT(1) ERR_ROW_COUNT FROM 
+			(
+				SELECT 
+					UPLOAD_TYPE , DATA_TYPE , ROW_NO 
+				FROM 
+					UPLOAD_DATA_ERROR_INFO 
+				WHERE 
+						UPLOAD_TYPE = #{uploadType , jdbcType=VARCHAR} 
+					AND BATCH_NO = #{batchNo , jdbcType=VARCHAR} 
+					AND SECTION_TYPE = #{sectionType , jdbcType=VARCHAR}
+				GROUP BY UPLOAD_TYPE , DATA_TYPE , ROW_NO
+			)
+	</select>
+	
+	<select id="getCntSuccImpCountByBatchNo" parameterType="String" resultType="String">
+		SELECT 
+		    (SELECT COUNT(1) CNT_COUNT FROM UPLOAD_TD_CNT WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) CNTDEV_COUNT FROM UPLOAD_TD_CNT_DEVICE WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) CNTFK_COUNT FROM UPLOAD_TD_CNT_FK WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) CNTTEN_COUNT FROM UPLOAD_TD_CNT_TENANCY_DZ WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) 
+		  AS CNT_SUC_COUNT
+		FROM DUAL
+	</select>	
+	
+	<select id="getPaySuccImpCountByBatchNo" parameterType="String" resultType="String">
+		SELECT 
+		    (SELECT COUNT(1) PAY_COUNT FROM UPLOAD_TD_PAY WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) PAYAD_COUNT FROM UPLOAD_TD_PAY_ADVANCE WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) PAYAD_CAN_COUNT FROM UPLOAD_TD_PAY_ADVANCE_CANCEL WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) PAYAD_DEV_COUNT FROM UPLOAD_TD_PAY_ADVANCE_DEVICE WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR}) +
+		    (SELECT COUNT(1) PAYDEV_COUNT FROM UPLOAD_TD_PAY_DEVICE WHERE BATCH_NO = #{batchNo , jdbcType=VARCHAR})
+		  AS CNT_SUC_COUNT
+		FROM DUAL
+	</select>
+	
+	<select id="getCntMainInfoByCntNum" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean"
+					resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean">
+		SELECT 
+			CNT_NUM,		CNT_NAME,		PAY_DUTY_CODE,	PAY_DUTY_NAME,	SIGN_DATE,
+			PROVIDER_NAME,	PROV_ACT_NO,	PROV_ACT_CURR,	CNT_AMT,		ZB_AMT,
+			LXJE,			LXSL,			CNT_TYPE,		IS_SPEC,		IS_PROVINCE_BUY,
+			FEE_TYPE,		FEE_SUB_TYPE,	FEE_START_DATE,	FEE_END_DATE,	IS_ORDER,
+			FEE_AMT,		FEE_PENALTY,	STOCK_NUM,		PSBH,			LXLX,
+			PROVIDER_TAX_RATE,PROVIDER_TAX,	CNT_NUM_RELATED,PAY_TERM,		STAGE_TYPE,
+			MEMO,			JF,				YF_ID,			YF,				WDJG_ID,
+			WDJG_NAME,		AUTO_BANK_NAME,	AREA,			HOUSE_KIND_ID,	WYGLF,
+			YJ,				BEGIN_DATE,		END_DATE,		FZ_REMARK,
+
+			BATCH_NO,		ROW_NO,			UPLOAD_TYPE,	DATA_TYPE,
+
+			PROVIDER_CODE,	WYDZ,			JF_ID
+		
+		FROM UPLOAD_TD_CNT
+		WHERE 
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		AND
+			CNT_NUM = #{cntNum , jdbcType=VARCHAR}
+	</select>		
+		
+	<select id="getCntRelDevices" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean" 
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntMatrInfoBean">
+		SELECT 
+			CNT_NUM,	FEE_DEPT_ID,		FEE_DEPT_NAME,	MATR_CODE,
+			MATR_NAME,	SPECIAL,			REFERENCE,		EXEC_NUM,
+			EXEC_PRICE,	DEVICE_MODEL_NAME,	WARRANTY,		PRODUCTOR,
+			BATCH_NO,	ROW_NO,				UPLOAD_TYPE,	DATA_TYPE
+		FROM 	UPLOAD_TD_CNT_DEVICE
+		WHERE 
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		AND
+			CNT_NUM = #{cntNum , jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getCntRelTenancies" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean" 
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntTenancyCondiBean">
+		SELECT 
+			CNT_NUM , 	FROM_DATE , 	TO_DATE , 
+			DZLX , 		DZED , 			FDBL , 			GLFY ,
+			BATCH_NO,	ROW_NO,			UPLOAD_TYPE,	DATA_TYPE
+		FROM 	UPLOAD_TD_CNT_TENANCY_DZ 
+		WHERE 
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR} 
+		AND CNT_NUM = #{cntNum , jdbcType=VARCHAR}
+	</select>
+		
+	<select id="getCntRelFqfkInfos" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean"
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntFqfkBean">
+		SELECT 
+			CNT_NUM,	JD_DATE,	JDTJ,			JDZF,
+			DHZF,		YSZF,		JSZF,			RQTJ,	RQZF,
+			BATCH_NO,	ROW_NO,		UPLOAD_TYPE,	DATA_TYPE
+		FROM 	UPLOAD_TD_CNT_FK
+		WHERE 
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR}
+		AND
+			CNT_NUM = #{cntNum , jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 根据合同号查询下属的“正常付款单”和“预付款单”(根据PAY_TYPE进行区分) -->
+	<select id="getImpPayListByCntAndBatchNo" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntVerifyBean"
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntRelPayInfo">
+		SELECT 
+			PAY_ID, '01' PAY_TYPE, PROVIDER_NAME,'发票编号' INVOICE_CODE,
+			TO_CHAR(INVOICE_AMT)||' '||PROV_ACT_CURR  INVOICE_AMT,PAY_AMT,'状态' STATUS 
+		FROM 
+		    UPLOAD_TD_PAY T1
+		    WHERE  T1.CNT_NUM = #{cntNum,jdbcType=VARCHAR} AND T1.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		
+		UNION
+		
+		SELECT 
+			PAY_ID, '02' PAY_TYPE ,PROVIDER_NAME,'发票编号' INVOICE_CODE,
+			TO_CHAR(INVOICE_AMT)||' '||PROV_ACT_CURR  INVOICE_AMT,000,'状态' STATUS 
+		FROM 
+		    UPLOAD_TD_PAY_ADVANCE T2
+		    WHERE  T2.CNT_NUM = #{cntNum,jdbcType=VARCHAR} AND T2.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		ORDER BY PAY_TYPE 
+	</select>
+	
+	<select id="getNormalPayDetail" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntRelPayInfo"
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayBean">
+		SELECT * FROM UPLOAD_TD_PAY 
+		WHERE 
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR} 
+		AND PAY_ID = #{payId ,jdbcType=VARCHAR} 
+	</select>
+	
+	<select id="getPayAdCancelByBatchAndPayId" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntRelPayInfo"
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayAdvanceCancelBean">
+		SELECT NORMAL_PAY_ID , ADVANCE_PAY_ID , CANCEL_AMT FROM UPLOAD_TD_PAY_ADVANCE_CANCEL 
+		WHERE
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR} 
+		AND NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR} 
+	</select>
+	
+	<select id="getPayDevByBatchAndPayId" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntRelPayInfo"
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayDeviceBean">
+		SELECT PAY_ID , '1' PAY_TYPE , MATR_CODE , MATR_NAME , SUB_INVOICE_AMT , IVROW_MEMO 
+	          FROM UPLOAD_TD_PAY_DEVICE WHERE BATCH_NO = #{batchNo ,jdbcType=VARCHAR} AND PAY_ID = #{payId ,jdbcType=VARCHAR}
+	    UNION
+	    SELECT PAY_ID , '2' PAY_TYPE , MATR_CODE , MATR_NAME , SUB_INVOICE_AMT , IVROW_MEMO 
+	          FROM UPLOAD_TD_PAY_ADVANCE_DEVICE WHERE BATCH_NO = 'DMBATCH000123' 
+	            AND PAY_ID IN 
+	            	(SELECT ADVANCE_PAY_ID FROM UPLOAD_TD_PAY_ADVANCE_CANCEL 
+	            		WHERE BATCH_NO = #{batchNo ,jdbcType=VARCHAR} 
+							AND PAY_ID = #{payId ,jdbcType=VARCHAR} 
+					)
+	</select>
+	
+	<select id="getAdPayDetail" parameterType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.CntRelPayInfo"
+				resultType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayAdvanceBean">
+		SELECT * FROM UPLOAD_TD_PAY_ADVANCE 
+		WHERE 
+			BATCH_NO = #{batchNo ,jdbcType=VARCHAR} 
+		AND PAY_ID = #{payId ,jdbcType=VARCHAR}
+	</select>
+	
+</mapper>

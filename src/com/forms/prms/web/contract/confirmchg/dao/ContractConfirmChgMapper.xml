@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.confirmchg.dao.IContractConfirmChgDAO">
+	<!-- 获取合同列表 -->
+	<select id="confirmChgList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.confirmchg.domain.ConfirmChgContract">
+		SELECT CNT.cnt_num,CNT.cnt_name,CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.provider_name,TF.DUTY_NAME AS createDeptName
+			,SS.PARAM_NAME as cntTypeName,SS1.PARAM_NAME as dataFlagName,CNT.is_order,CNT.CNT_TAX_AMT,CNT.APPLY_EDIT_USER as INST_USER,NVL2(TEMP.CNT_NUM, 'N', 'Y') AS IS_ENABLE
+		FROM TD_CNT CNT
+		LEFT JOIN (SELECT CNT_NUM FROM TD_CNT A WHERE A.APPLY_EDIT_USER = #{instUser,jdbcType=VARCHAR}) TEMP ON TEMP.CNT_NUM = CNT.CNT_NUM
+		LEFT JOIN SYS_SELECT SS ON SS.param_value = CNT.CNT_TYPE
+		LEFT JOIN SYS_SELECT SS1 ON SS1.param_value = CNT.DATA_FLAG
+		LEFT JOIN TB_FNDWRR TF ON CNT.create_dept = TF.DUTY_CODE
+		where  CNT.data_flag = '21'
+		AND SS.category_id = 'CNT_TYPE' AND SS1.category_id = 'CNT_DATE_FLAG'
+		<if test="con.cntNum != null and '' != con.cntNum">
+			AND CNT.cnt_num LIKE '%' || #{con.cntNum, jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="con.cntType != null and '' != con.cntType">
+			AND CNT.cnt_type = #{con.cntType, jdbcType=VARCHAR}
+		</if>
+		<if test="con.providerName != null and '' != con.providerName">
+			AND CNT.PROVIDER_NAME LIKE '%' || #{con.providerName, jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="con.befDate != null and '' != con.befDate">
+			<![CDATA[ AND CNT.sign_date >= #{con.befDate}]]>
+		</if>
+		<if test="con.aftDate != null and '' != con.aftDate">
+			<![CDATA[ AND CNT.sign_date <= #{con.aftDate}]]>
+		</if>
+		
+		<!-- 省行 -->
+		<if test="con.orgFlag == 1">
+			AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+		</if>
+		<!-- 二级行 -->
+		<if test="con.orgFlag == 2">
+			AND EXISTS
+			(
+			   SELECT 1 FROM TB_FNDWRR TBF WHERE TBF.ORG2_CODE = #{org2Code,jdbcType=VARCHAR} AND 
+			   (
+			   	    TBF.DUTY_CODE = CNT.CREATE_DEPT OR 
+			   		TBF.DUTY_CODE = CNT.PAY_DUTY_CODE
+			   )
+			)
+		</if>
+		<!-- 业务部门 -->		
+		<if test="con.orgFlag == 3">
+			AND (CNT.CREATE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+				OR CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+				)
+		</if>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	<!-- 获取合同详情 -->
+	<select id="getDetail" parameterType="String" resultType="com.forms.prms.web.contract.confirmchg.domain.ConfirmChgContract">
+		SELECT CNT.cnt_num,CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.stock_num,CNT.psbh,CNT.provider_tax_rate,CNT.provider_tax
+		,CNT.qbh,CNT.lxsl,CNT.lxje,CNT.fee_start_date,CNT.fee_end_date,CNT.fee_amt,CNT.pay_term,CNT.currency,CNT.zb_amt,CNT.total_num,CNT.memo,CNT.is_spec
+		,CNT.pay_duty_code,CNT.lxlx,CNT.fee_type,CNT.fee_sub_type,CNT.provider_name
+		FROM TD_CNT CNT
+		WHERE CNT.cnt_num = #{cntNum, jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 更新合同 -->
+	<update id="updCnt" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+		UPDATE TD_CNT
+		   SET PSBH 			 = #{psbh           ,jdbcType=VARCHAR}, 
+			   STOCK_NUM 		 = #{stockNum       ,jdbcType=VARCHAR}, 
+			   QBH 				 = #{qbh            ,jdbcType=VARCHAR}, 
+			   LXLX 			 = #{lxlx           ,jdbcType=VARCHAR}, 
+			   LXSL 			 = #{lxsl           ,jdbcType=DECIMAL}, 
+			   LXJE 			 = #{lxje           ,jdbcType=DECIMAL}, 
+			   CNT_AMT 			 = #{cntAmt         ,jdbcType=DECIMAL}, 
+			   TOTAL_NUM 		 = #{totalNum       ,jdbcType=DECIMAL}, 
+			   CNT_TYPE 		 = #{cntType        ,jdbcType=VARCHAR}, 
+			   FEE_TYPE 		 = #{feeType        ,jdbcType=VARCHAR}, 
+			   FEE_SUB_TYPE 	 = #{feeSubType     ,jdbcType=VARCHAR}, 
+			   FEE_START_DATE 	 = #{feeStartDate   ,jdbcType=VARCHAR}, 
+		       FEE_END_DATE		 = #{feeEndDate     ,jdbcType=VARCHAR}, 
+			   FEE_AMT 			 = #{feeAmt         ,jdbcType=DECIMAL}, 
+			   FEE_PENALTY 		 = #{feePenalty     ,jdbcType=DECIMAL}, 
+			   SIGN_DATE 		 = #{signDate       ,jdbcType=VARCHAR}, 
+			   IS_PROVINCE_BUY 	 = #{isProvinceBuy  ,jdbcType=VARCHAR}, 
+			   ZB_AMT 			 = #{zbAmt          ,jdbcType=DECIMAL}, 
+			   DELIVER_DUTY_CODE = #{deliverDutyCode,jdbcType=VARCHAR}, 
+			   PROVIDER_CODE 	 = #{providerCode   ,jdbcType=VARCHAR}, 
+			   PROV_ACT_NO       = #{provActNo      ,jdbcType=VARCHAR}, 
+			   PROV_ACT_CURR     = #{provActCurr    ,jdbcType=VARCHAR}, 
+			   SRC_POVIDER_NAME  = #{srcPoviderName ,jdbcType=VARCHAR}, 
+			   PAY_TERM          = #{payTerm        ,jdbcType=VARCHAR}, 
+			   STAGE_TYPE        = #{stageType      ,jdbcType=VARCHAR}, 
+			   MEMO              = #{memo           ,jdbcType=VARCHAR}, 
+			   IS_ORDER 		 = #{isOrder        ,jdbcType=VARCHAR},
+			   DATA_FLAG         = #{dataFlag       ,jdbcType=VARCHAR},
+			   PROVIDER_TAX_RATE = #{providerTaxRate,jdbcType=DECIMAL},
+			   PROVIDER_TAX      = #{providerTax    ,jdbcType=DECIMAL},
+			   IS_SPEC			 = #{isSpec    		,jdbcType=VARCHAR},
+			   CNT_NAME 		 = #{cntName		,jdbcType=VARCHAR},
+			   CNT_NUM_RELATED   = #{cntNumRelated  ,jdbcType=VARCHAR},
+			   
+			   PROVIDER_NAME   = #{providerName  ,jdbcType=VARCHAR},
+			   PROVIDER_ADDR   = #{providerAddr  ,jdbcType=VARCHAR},
+			   PROVIDER_ADDR_CODE =  #{providerAddrCode  ,jdbcType=VARCHAR},
+			   ACT_NAME   = #{actName  ,jdbcType=VARCHAR},
+			   BANK_INFO   = #{bankInfo  ,jdbcType=VARCHAR},
+			   BANK_CODE   = #{bankCode  ,jdbcType=VARCHAR},
+			   BANK_AREA   = #{bankArea  ,jdbcType=VARCHAR},
+			   ACT_TYPE   = #{actType  ,jdbcType=VARCHAR},
+			   BANK_NAME   = #{bankName  ,jdbcType=VARCHAR},
+			   PAY_MODE   = #{payMode  ,jdbcType=VARCHAR},
+			   PROVIDER_TYPE   = #{providerType  ,jdbcType=VARCHAR}
+			   
+		WHERE CNT_NUM = #{cntNum     ,jdbcType=VARCHAR}	
+			  AND DATA_FLAG = '21'	
+	</update>
+	
+	<insert id="insertCntDeviceHis" parameterType="com.forms.prms.web.contract.modify.domain.ModifyContract" >
+		insert into td_cnt_device_log tcd
+			(tcd.cnt_num, 
+			 tcd.sub_id, 
+			 tcd.proj_id, 
+			 tcd.matr_code, 
+			 tcd.device_model_name, 
+			 tcd.exec_amt, 
+			 tcd.exec_num, 
+			 tcd.exec_price, 
+			 tcd.warranty, 
+			 tcd.productor, 
+			 tcd.fee_dept, 
+			 tcd.data_flag, 
+			 tcd.reference, 
+			 tcd.special, 
+			 tcd.version_no,
+			 tcd.oper_type,
+			 tcd.audit_memo,
+			 tcd.mont_code)
+			select 
+			 tc.cnt_num, 
+			 tc.sub_id, 
+			 tc.proj_id, 
+			 tc.matr_code, 
+			 tc.device_model_name, 
+			 tc.exec_amt, 
+			 tc.exec_num, 
+			 tc.exec_price, 
+			 tc.warranty, 
+			 tc.productor, 
+			 tc.fee_dept, 
+			 tc.data_flag, 
+			 tc.reference, 
+			 tc.special,
+			 #{versionNo,jdbcType=NUMERIC} as version_no,
+			 #{operType,jdbcType=VARCHAR} as oper_type,
+			 tc.audit_memo,
+			 tc.mont_code
+			 from td_cnt_device tc where tc.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</insert>
+	
+	<select id="getInfo" parameterType="String" resultType="com.forms.prms.web.contract.confirmchg.domain.ConfirmChgContract">
+		select t.operate_log from  (SELECT twb.operate_log,substr(twb.wb_num,15,23) wb_num,twb.bus_num
+			FROM tl_water_book TWB
+			WHERE TWB.bus_num=#{cntNum,jdbcType=VARCHAR} 
+			ORDER BY WB_NUM DESC) t where rownum=1
+	</select>
+	
+	<!--调用处理合同变更 费用承担部门变更数据处理-->
+	<select id="calCntChange" statementType="CALLABLE" parameterType ="java.util.Map">
+		CALL PRC_CNT_CHANGE(#{cntNum,jdbcType=VARCHAR,mode=IN},
+                            #{cntType,jdbcType=VARCHAR,mode=IN},
+                            #{feeDeptOld,jdbcType=VARCHAR,mode=IN},
+                            #{feeDeptNew,jdbcType=VARCHAR,mode=IN},
+                            #{ret,jdbcType=VARCHAR,mode=OUT},
+                            #{retInfo,jdbcType=VARCHAR,mode=OUT}
+                           )
+		
+	</select>
+	
+	<select id="getTotalPayAmt" parameterType="String" resultType="com.forms.prms.web.contract.confirmchg.domain.ConfirmChgContract">
+		SELECT NVL(SUM(NVL(TPD.SUB_INVOICE_AMT,0) + NVL(TPD.ADD_TAX_NAMT,0)),0) PAY_AMT
+		  FROM TD_PAY TP
+		  LEFT JOIN TD_PAY_DEVICE TPD
+		    ON TP.PAY_ID = TPD.PAY_ID
+		  LEFT JOIN TD_CNT_DEVICE TCD
+		    ON TPD.CNT_NUM = TCD.CNT_NUM
+		   AND TPD.SUB_ID = TCD.SUB_ID
+		 WHERE TPD.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		       AND TPD.SUB_ID = #{subId ,jdbcType=VARCHAR}
+		       AND ((TP.IS_FROZEN_BGT = '0' AND TP.DATA_FLAG_INVOICE = '2') OR
+		       (TP.IS_FROZEN_BGT = '1' AND TP.DATA_FLAG IN ('F1', 'F2', 'F4') AND
+		       TP.DATA_FLAG_INVOICE != '3'))
+	</select>
+	 
+	 <update id="ruduceProjPayAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET PAY_TOTAL_AMT = NVL(PAY_TOTAL_AMT,0) - #{payAmt, jdbcType=DECIMAL}
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR} 
+	</update>
+	
+	<update id="addProjPayAmt" parameterType="String">
+		UPDATE TD_PROJECT 
+		   SET PAY_TOTAL_AMT = NVL(PAY_TOTAL_AMT,0) + #{payAmt, jdbcType=DECIMAL}
+		 WHERE PROJ_ID = #{projId, jdbcType=VARCHAR}
+	</update>
+	
+</mapper>

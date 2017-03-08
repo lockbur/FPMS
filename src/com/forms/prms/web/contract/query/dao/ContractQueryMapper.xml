@@ -1,0 +1,1007 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.query.dao.IContractQueryDAO">
+	<!-- 获取合同列表 -->
+	<select id="queryList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.query.domain.QueryContract">
+		SELECT distinct CNT.cnt_num,
+			   CNT.CNT_NAME,
+			   CNT.IS_PREPAID_PROVISION,
+		       CNT.FEE_START_DATE,
+		       CNT.FEE_END_DATE,CNT.IS_ORDER,
+		       CNT.cnt_type,CNT.cnt_amt,CNT.CNT_TAX_AMT,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.provider_name,TF.DUTY_NAME as createDeptName,
+		       SS.PARAM_NAME as cntTypeName,SS1.PARAM_NAME as dataFlagName,c.proj_name
+		FROM TD_CNT CNT
+		LEFT JOIN TB_FNDWRR TF ON CNT.CREATE_DEPT = TF.DUTY_CODE
+		LEFT JOIN TD_CNT_DEVICE TCD  ON TCD.CNT_NUM = CNT.CNT_NUM
+		left JOIN (
+          select a.cnt_num, zh_concat(distinct b.proj_name) as proj_name 
+          from td_cnt_device a, td_project b
+          where a.proj_id = b.proj_id
+          group by a.cnt_num
+       )    c
+          on CNT.cnt_num=c.cnt_num
+        left JOIN (
+          select a.cnt_num, zh_concat(distinct b.CGL_CODE) as cgl_code 
+          from td_cnt_device a, TB_MATR_TYPE b
+          where a.MATR_CODE = b.MATR_CODE
+          group by a.cnt_num
+       )    d
+          on CNT.cnt_num=d.cnt_num  
+		LEFT JOIN SYS_SELECT SS ON SS.param_value = CNT.CNT_TYPE
+		LEFT JOIN SYS_SELECT SS1 ON SS1.param_value = CNT.DATA_FLAG
+		LEFT JOIN TB_FNDWRR TFR ON TFR.DUTY_CODE = TCD.FEE_DEPT
+		<!-- 非专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			AND TACN.FEE_CODE IS NOT NULL 
+			AND TACN.FEE_CODE = TCD.FEE_DEPT 
+			AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code)) 
+			AND TACN.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE
+			AND TACN2.ORG_CODE = TFR.ORG_CODE 
+			AND TACN2.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			AND TACN2.DATA_YEAR = to_char(sysdate,'yyyy')
+		<!-- 专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+			AND TAC.MONT_CODE =  decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code)) 
+			AND TAC.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = TCD.FEE_DEPT AND TF1.ORG1_CODE = TAC.ORG1_CODE 
+		LEFT JOIN TD_CNT_TENANCY TCT ON TCT.CNT_NUM = CNT.CNT_NUM
+		<where>
+			<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.cnt_num LIKE '%' || #{con.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.cnt_type = #{con.cntType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeType != null and '' != con.feeType">
+				AND CNT.fee_type = #{con.feeType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeSubType != null and '' != con.feeSubType">
+				AND CNT.fee_sub_type = #{con.feeSubType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND CNT.provider_name LIKE '%' || #{con.providerName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.sign_date >= #{con.befDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate,jdbcType=VARCHAR} >= CNT.sign_date
+			</if>
+			<if test="con.beginCreateDate != null and '' != con.beginCreateDate">
+				AND CNT.create_date >= #{con.beginCreateDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.endCreateDate != null and '' != con.endCreateDate">
+				AND #{con.endCreateDate,jdbcType=VARCHAR} >= CNT.create_date
+			</if>
+			<if test="con.createDept != null and '' != con.createDept">
+				AND CNT.create_dept = #{con.createDept,jdbcType=VARCHAR}
+			</if>
+			<if test="con.stockNum != null and '' != con.stockNum">
+				AND CNT.STOCK_NUM = #{con.stockNum,jdbcType=VARCHAR}
+			</if>
+			<if test="con.psbh != null and '' != con.psbh">
+				AND CNT.PSBH = #{con.psbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.lxlx != null and '' != con.lxlx">
+				AND CNT.lxlx = #{con.lxlx,jdbcType=VARCHAR}
+			</if>
+			<if test="con.qbh != null and '' != con.qbh">
+				AND CNT.qbh = #{con.qbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.cntAmtgt != null and '' != con.cntAmtgt">
+				AND CNT.CNT_AMT &gt;= #{con.cntAmtgt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.cntAmtlt != null and '' != con.cntAmtlt">
+				AND CNT.CNT_AMT &lt;= #{con.cntAmtlt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjegt != null and '' != con.lxjegt">
+				AND CNT.LXJE &gt;= #{con.lxjegt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjelt != null and '' != con.lxjelt">
+				AND CNT.LXJE  &lt;= #{con.lxjelt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.isProvinceBuy != null and '' != con.isProvinceBuy">
+				AND CNT.IS_PROVINCE_BUY = #{con.isProvinceBuy,jdbcType=VARCHAR}
+			</if>
+			<if test="con.projName != null and '' != con.projName">
+				AND c.proj_name  LIKE '%' || #{con.projName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.conCglCode != null and '' != con.conCglCode">
+				AND d.cgl_code  LIKE '%' || #{con.conCglCode,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntMatrCode != null and '' != con.cntMatrCode">
+				AND TCD.MATR_CODE = #{con.cntMatrCode,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jfId != null and '' != con.jfId">
+				AND TCT.JF_ID = #{con.jfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jf != null and '' != con.jf">
+				AND TCT.JF   LIKE '%' || #{con.jf,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.yfId != null and '' != con.yfId">
+				AND TCT.YF_ID = #{con.yfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.yf != null and '' != con.yf">
+				AND TCT.YF    LIKE '%' || #{con.yf,jdbcType=VARCHAR} || '%'
+			</if>
+			<!-- <if test="con.glbmId != null and '' != con.glbmId">
+				AND TCT.GLBM_ID = #{con.glbmId}
+			</if> -->
+			<if test="con.wdjgId != null and '' != con.wdjgId">
+				AND TCT.WDJG_ID = #{con.wdjgId,jdbcType=VARCHAR}
+			</if>
+			<!-- 是否预提待摊类 -->
+			<if test="con.isPrepaidProvision != null and '' != con.isPrepaidProvision">
+				AND CNT.IS_PREPAID_PROVISION = #{con.isPrepaidProvision,jdbcType=VARCHAR}
+			</if>
+			<if test="con.notDataFlag != null and '' != con.notDataFlag">
+				AND CNT.DATA_FLAG NOT IN ('10','11','12')
+			</if>
+			<if test="con.cntDataFlag != null and '' != con.cntDataFlag">
+				AND CNT.DATA_FLAG = #{con.cntDataFlag,jdbcType=VARCHAR}
+			</if>
+			<!-- 省行 -->
+			<if test="con.orgFlag == 1">
+				AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>
+			<!-- 二级行 -->
+			<if test="con.orgFlag == 2">
+				and exists
+				(
+				   select 1 from tb_fndwrr tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+				   (
+				   	    tbf.duty_code = cnt.create_dept or 
+				   		tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT)
+				   )
+				)
+			</if>
+			<!-- 业务部门 -->		
+			<if test="con.orgFlag == 3">
+				AND (CNT.create_dept = #{dutyCode,jdbcType=VARCHAR}
+					OR CNT.pay_duty_code = #{dutyCode,jdbcType=VARCHAR}
+					OR TCD.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_AUDIT_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_BUY_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					)
+			</if>
+			AND SS.category_id = 'CNT_TYPE' AND SS1.category_id = 'CNT_DATE_FLAG'
+		</where>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	<!-- 获取合同列表(关联查询) -->
+	<select id="queryRelevanceList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.query.domain.QueryContract">
+		SELECT distinct CNT.cnt_num,
+		CNT.CNT_TAX_AMT,
+			   CNT.CNT_NAME,
+			   CNT.IS_PREPAID_PROVISION,
+		       CNT.FEE_START_DATE,
+		       CNT.FEE_END_DATE,CNT.IS_ORDER,
+		       CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.provider_name,TF.DUTY_NAME as createDeptName,
+		       SS.PARAM_NAME as cntTypeName,SS1.PARAM_NAME as dataFlagName,c.proj_name
+		FROM (
+			select distinct *
+			from ( 
+				select * from TD_CNT a
+				connect by prior CNT_NUM_RELATED = cnt_num
+				start with a.cnt_num = #{con.cntNum,jdbcType=VARCHAR} 
+				union all
+				select * from TD_CNT b
+				connect by prior cnt_num = CNT_NUM_RELATED
+				start with b.cnt_num = #{con.cntNum,jdbcType=VARCHAR} 
+			)
+		)CNT
+		LEFT JOIN TB_FNDWRR TF ON CNT.CREATE_DEPT = TF.DUTY_CODE
+		LEFT JOIN TD_CNT_DEVICE TCD  ON TCD.CNT_NUM = CNT.CNT_NUM
+		left JOIN (
+          select a.cnt_num, zh_concat(distinct b.proj_name) as proj_name 
+          from td_cnt_device a, td_project b
+          where a.proj_id = b.proj_id
+          group by a.cnt_num
+       )    c
+        on CNT.cnt_num=c.cnt_num
+		LEFT JOIN SYS_SELECT SS ON SS.param_value = CNT.CNT_TYPE
+		LEFT JOIN SYS_SELECT SS1 ON SS1.param_value = CNT.DATA_FLAG
+		LEFT JOIN TB_FNDWRR TFR ON TFR.DUTY_CODE = TCD.FEE_DEPT
+		<!-- 非专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			AND TACN.FEE_CODE IS NOT NULL
+			AND TACN.FEE_CODE = TCD.FEE_DEPT 
+			AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			AND TACN.DATA_YEAR = to_char(sysdate,'yyyy')
+			
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE 
+			AND TACN2.ORG_CODE = TFR.ORG_CODE 
+			AND TACN2.MONT_CODE =decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			AND TACN2.DATA_YEAR = to_char(sysdate,'yyyy')
+		<!-- 专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+			AND TAC.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,NVL2(TCD.next_mont_code,TCD.next_mont_code,TCD.CURR_mont_code))
+			AND TAC.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = TCD.FEE_DEPT AND TF1.ORG1_CODE = TAC.ORG1_CODE 
+		LEFT JOIN TD_CNT_TENANCY TCT ON TCT.CNT_NUM = CNT.CNT_NUM
+		<where>
+		 	<!--<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.cnt_num LIKE '%' || #{con.cntNum} || '%'
+			</if>-->
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.cnt_type = #{con.cntType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeType != null and '' != con.feeType">
+				AND CNT.fee_type = #{con.feeType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeSubType != null and '' != con.feeSubType">
+				AND CNT.fee_sub_type = #{con.feeSubType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND CNT.provider_name LIKE '%' || #{con.providerName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.sign_date >= #{con.befDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate,jdbcType=VARCHAR} >= CNT.sign_date
+			</if>
+			<if test="con.beginCreateDate != null and '' != con.beginCreateDate">
+				AND CNT.create_date >= #{con.beginCreateDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.endCreateDate != null and '' != con.endCreateDate">
+				AND #{con.endCreateDate,jdbcType=VARCHAR} >= CNT.create_date
+			</if>
+			<if test="con.createDept != null and '' != con.createDept">
+				AND CNT.create_dept = #{con.createDept,jdbcType=VARCHAR}
+			</if>
+			<if test="con.stockNum != null and '' != con.stockNum">
+				AND CNT.STOCK_NUM = #{con.stockNum,jdbcType=VARCHAR}
+			</if>
+			<if test="con.psbh != null and '' != con.psbh">
+				AND CNT.PSBH = #{con.psbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.lxlx != null and '' != con.lxlx">
+				AND CNT.lxlx = #{con.lxlx,jdbcType=VARCHAR}
+			</if>
+			<if test="con.qbh != null and '' != con.qbh">
+				AND CNT.qbh = #{con.qbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.cntAmtgt != null and '' != con.cntAmtgt">
+				AND CNT.CNT_AMT &gt;= #{con.cntAmtgt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.cntAmtlt != null and '' != con.cntAmtlt">
+				AND CNT.CNT_AMT &lt;= #{con.cntAmtlt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjegt != null and '' != con.lxjegt">
+				AND CNT.LXJE &gt;= #{con.lxjegt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjelt != null and '' != con.lxjelt">
+				AND CNT.LXJE  &lt;= #{con.lxjelt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.isProvinceBuy != null and '' != con.isProvinceBuy">
+				AND CNT.IS_PROVINCE_BUY = #{con.isProvinceBuy,jdbcType=VARCHAR}
+			</if>
+			<if test="con.projName != null and '' != con.projName">
+				AND c.proj_name  LIKE '%' || #{con.projName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntMatrCode != null and '' != con.cntMatrCode">
+				AND TCD.MATR_CODE = #{con.cntMatrCode,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jfId != null and '' != con.jfId">
+				AND TCT.JF_ID = #{con.jfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jf != null and '' != con.jf">
+				AND TCT.JF   LIKE '%' || #{con.jf,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.yfId != null and '' != con.yfId">
+				AND TCT.YF_ID = #{con.yfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.yf != null and '' != con.yf">
+				AND TCT.YF    LIKE '%' || #{con.yf,jdbcType=VARCHAR} || '%'
+			</if>
+			<!-- <if test="con.glbmId != null and '' != con.glbmId">
+				AND TCT.GLBM_ID = #{con.glbmId}
+			</if> -->
+			<if test="con.wdjgId != null and '' != con.wdjgId">
+				AND TCT.WDJG_ID = #{con.wdjgId,jdbcType=VARCHAR}
+			</if>
+			<!-- 是否预提待摊类 -->
+			<if test="con.isPrepaidProvision != null and '' != con.isPrepaidProvision">
+				AND CNT.IS_PREPAID_PROVISION = #{con.isPrepaidProvision,jdbcType=VARCHAR}
+			</if>
+			<if test="con.notDataFlag != null and '' != con.notDataFlag">
+				AND CNT.DATA_FLAG NOT IN ('10','11','12')
+			</if>
+			<if test="con.cntDataFlag != null and '' != con.cntDataFlag">
+				AND CNT.DATA_FLAG = #{con.cntDataFlag,jdbcType=VARCHAR}
+			</if>
+			<!-- 省行 -->
+			<if test="con.orgFlag == 1">
+				AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>
+			<!-- 二级行 -->
+			<if test="con.orgFlag == 2">
+				and exists
+				(
+				   select 1 from tb_fndwrr tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+				   (
+				   	    tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT)
+				   )
+				)
+			</if>
+			<!-- 业务部门 -->		
+			<if test="con.orgFlag == 3">
+				AND (CNT.create_dept = #{dutyCode,jdbcType=VARCHAR}
+					OR CNT.pay_duty_code = #{dutyCode,jdbcType=VARCHAR}
+					OR TCD.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_AUDIT_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_BUY_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					)
+			</if>
+			AND SS.category_id = 'CNT_TYPE' AND SS1.category_id = 'CNT_DATE_FLAG'
+		</where>
+		ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 获取合同详情 -->
+	<select id="getDetail" parameterType="String" resultType="com.forms.prms.web.contract.query.domain.QueryContract">
+		SELECT CNT.cnt_num,CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.stock_num,CNT.psbh,CNT.is_order,CNT.is_spec,CNT.cnt_name,CNT.cnt_num_related
+		,CNT.qbh,CNT.lxsl,CNT.lxje,CNT.fee_start_date,substr(CNT.fee_start_date,0,7) feeStartDateShow,CNT.fee_end_date,substr(CNT.fee_end_date,0,7) feeEndDateShow,CNT.actual_fee_end_date,CNT.fee_amt
+		,CNT.fee_penalty,CNT.pay_term,CNT.stage_type,CNT.currency,CNT.zb_amt,CNT.total_num,CNT.memo
+		,CNT.DELIVER_DUTY_CODE,CNT.pay_duty_code,CNT.lxlx,CNT.fee_type,CNT.fee_sub_type,CNT.src_povider_name,CNT.provider_code,CNT.PROVIDER_NAME,CNT.is_province_buy,CNT.provider_tax_rate,CNT.provider_tax
+		,<!--TCY.jf,TCY.yf,TCY.wdjg,-->TCY.wydz,TCY.auto_bank_name,TCY.area,TCY.house_kind_id
+		,<!--TCY.wyglf,TCY.yj,TCY.begin_date,TCY.end_date,-->TCY.remark,TF1.DUTY_NAME AS createDeptName,TF2.DUTY_NAME AS payDutyCodeName,
+		TIP.ID,S1.PARAM_NAME AS lxlxName,S2.PARAM_NAME AS cntTypeName,S3.PARAM_NAME AS dataFlagName,S4.PARAM_NAME AS stageTypeName,
+		S5.PARAM_NAME AS payTermName,S6.PARAM_NAME AS feeTypeName,S7.PARAM_NAME AS feeSubTypeName,S8.PARAM_NAME AS houseKindName,
+		TIP.ICMS_PKUUID,
+		CNT.IS_PREPAID_PROVISION,
+		CNT.PROVIDER_CODE,
+		CNT.PROV_ACT_NO,
+		CNT.PROV_ACT_CURR,
+		CNT.PROVIDER_NAME,
+		CNT.PROVIDER_ADDR,
+		CNT.ACT_NAME,
+		CNT.BANK_INFO,
+		CNT.BANK_CODE,
+		CNT.BANK_AREA,
+		CNT.ACT_TYPE,
+		CNT.BANK_NAME,
+		CNT.PAY_MODE,
+		CNT.PROVIDER_TYPE,
+		CNT.CNT_TAX_AMT,
+		CNT.CNT_ALL_AMT
+		FROM TD_CNT CNT
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  CNT.cnt_num=TIP.ID
+		LEFT JOIN TD_CNT_TENANCY TCY ON CNT.cnt_num = TCY.cnt_num
+		LEFT JOIN TB_FNDWRR TF1 ON CNT.CREATE_DEPT = TF1.DUTY_CODE
+		LEFT JOIN TB_FNDWRR TF2 ON CNT.PAY_DUTY_CODE = TF2.DUTY_CODE
+		LEFT JOIN SYS_SELECT S1 ON CNT.lxlx = S1.PARAM_VALUE AND S1.CATEGORY_ID = 'CNT_APPROVE_TYPE' 
+		LEFT JOIN SYS_SELECT S2 ON CNT.cnt_type = S2.PARAM_VALUE AND S2.CATEGORY_ID = 'CNT_TYPE'
+		LEFT JOIN SYS_SELECT S3 ON CNT.data_flag = S3.PARAM_VALUE AND S3.CATEGORY_ID = 'CNT_DATE_FLAG' 
+		LEFT JOIN SYS_SELECT S4 ON CNT.stage_type = S4.PARAM_VALUE AND S4.CATEGORY_ID = 'CNT_STAGE_TYPE' 
+		LEFT JOIN SYS_SELECT S5 ON CNT.pay_term = S5.PARAM_VALUE AND S5.CATEGORY_ID = 'CNT_PAY_TERM' 
+		LEFT JOIN SYS_SELECT S6 ON CNT.fee_type = S6.PARAM_VALUE AND S6.CATEGORY_ID = 'CNT_FEE_TYPE' 
+		LEFT JOIN SYS_SELECT S7 ON CNT.fee_sub_type = S7.PARAM_VALUE AND S7.CATEGORY_ID = 'CNT_FEE_SUB_TYPE'
+		LEFT JOIN SYS_SELECT S8 ON CNT.fee_type = S8.PARAM_VALUE AND S8.CATEGORY_ID = 'HOUSE_KIND'
+		WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR} 
+	</select>
+	
+	<!-- 获取合同项目列表 -->
+	<select id="getCntProj" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+       
+        
+      select TA.*, (TA.auditDeptCode || TF4.DUTY_NAME) AS auditDeptName ,
+(TA.matrBuyDeptCode || TF41.DUTY_NAME) AS matrBuyDeptName 
+from(
+SELECT  DISTINCT
+      DEV.cnt_num           ,
+		  DEV.sub_id            ,
+		  DEV.proj_id           ,
+		  DEV.matr_code         ,
+		  DEV.device_model_name ,
+		  DEV.exec_amt          ,
+		  DEV.exec_num          ,
+		  DEV.exec_price        ,
+		  DEV.warranty          ,
+		  DEV.productor         ,
+		  DEV.fee_dept          ,
+		  DEV.reference         ,
+		  DEV.special           ,
+		  DEV.payed_amt         ,
+		  DEV.freeze_amt        ,
+		  DEV.order_id          ,
+		  DEV.po_number         ,
+		  DEV.po_lineno         ,
+		  decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,NVL2(DEV.NEXT_MONT_CODE,DEV.NEXT_MONT_CODE,DEV.CURR_MONT_CODE)) MONT_CODE,
+	 
+		  DEV.data_flag         ,
+		  DEV.audit_memo        ,
+		  DEV.audit_dept        ,
+		  DEV.audit_oper        ,
+		  DEV.audit_date        ,
+		  DEV.audit_time      ,  
+          DEV.TAX_CODE,
+          DEV.TAX_NAMT,
+          DEV.TAX_RATE,
+          DEV.DEDUCT_FLAG,
+          DECODE(DEV.DEDUCT_FLAG,'Y',DEV.TAX_YAMT,'N',DEV.TAX_NAMT)CNT_TR_AMT,
+        PRO.proj_name,WRR.duty_name AS fee_dept_name,MATR.matr_name,MATR.cgl_code,
+        TM.mont_name,
+        TR.reference_name,TS.special_name,
+        NVL(DEV.AUDIT_DEPT,NVL(TAS1.MATR_AUDIT_DEPT,NVL(TAS2.MATR_AUDIT_DEPT,TAS3.MATR_AUDIT_DEPT))) AS auditDeptCode,
+        NVL(TAS1.MATR_BUY_DEPT,NVL(TAS2.MATR_BUY_DEPT,TAS3.MATR_BUY_DEPT))  AS matrBuyDeptCode,
+    SS2.PARAM_NAME AS data_flag_name
+    
+    FROM TD_CNT CNT
+    INNER JOIN TD_CNT_DEVICE DEV ON CNT.cnt_num = DEV.cnt_num
+    LEFT JOIN TD_PROJECT PRO ON DEV.proj_id = PRO.proj_id
+    LEFT JOIN TB_FNDWRR WRR ON DEV.fee_dept = WRR.duty_code
+    LEFT JOIN TB_MATR_TYPE MATR ON DEV.matr_code = MATR.matr_code
+    LEFT JOIN TB_MONT_NAME TM ON TM.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,NVL2(DEV.NEXT_MONT_CODE,DEV.NEXT_MONT_CODE,DEV.CURR_MONT_CODE))
+    LEFT JOIN TB_REFERENCE TR ON DEV.reference = TR.reference_id
+    LEFT JOIN TB_SPECIAL TS ON DEV.special = TS.special_id
+      LEFT JOIN TB_APRV_CHAIN_SPEC TAS1 ON TAS1.MATR_CODE = DEV.MATR_CODE 
+           AND TAS1.DATA_YEAR = to_char(sysdate,'yyyy') and TAS1.ORG1_CODE = WRR.ORG1_CODE
+           and TAS1.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,NVL2(DEV.next_mont_code,DEV.next_mont_code,DEV.CURR_mont_code))
+ 
+     
+      LEFT JOIN TB_APRV_CHAIN_NOSPEC TAS2 ON TAS2.MATR_CODE = DEV.MATR_CODE  
+          AND TAS2.DATA_YEAR = to_char(sysdate,'yyyy') and TAS2.fee_code = DEV.FEE_DEPT AND TAS2.FEE_CODE IS NOT NULL
+          and TAS2.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,NVL2(DEV.next_mont_code,DEV.next_mont_code,DEV.CURR_mont_code))
+ 
+       LEFT JOIN TB_APRV_CHAIN_NOSPEC TAS3 ON TAS3.MATR_CODE = DEV.MATR_CODE  
+          AND TAS3.DATA_YEAR = to_char(sysdate,'yyyy') 
+          and TAS3.ORG_CODE = WRR.ORG_CODE
+          and TAS3.mont_code = decode(DEV.curr_year,to_char(sysdate,'yyyy'),DEV.curr_mont_code,NVL2(DEV.next_mont_code,DEV.next_mont_code,DEV.CURR_mont_code)) 
+      
+      LEFT JOIN SYS_SELECT SS2 ON DEV.DATA_FLAG = SS2.PARAM_VALUE AND SS2.CATEGORY_ID = 'DATA_FLAG_DEVICE' 
+      WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR} order by sub_id
+      )TA
+      LEFT JOIN TB_FNDWRR TF4 ON TF4.DUTY_CODE = TA.auditDeptCode  
+      LEFT JOIN TB_FNDWRR TF41 ON TF41.DUTY_CODE = TA.matrBuyDeptCode
+      ORDER BY TA.SUB_ID
+	</select>
+	
+	<!-- 获取合同项目列表 -->
+	<select id="getCntProj1" parameterType="String" resultType="String">
+        SELECT FEE_DEPT FROM(SELECT DISTINCT fee_dept,SUb_ID
+  FROM TD_CNT_DEVICE
+ WHERE cnt_num =  #{cntNum,jdbcType=VARCHAR}
+ )
+ ORDER BY SUB_ID
+	</select>
+	<!-- 获取电子审批列表 -->
+	<select id="getDZSPProj" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.DzspInfo">
+		SELECT DZSP.ABCDE,DZSP.ABCDE_NUM,DZSP.ABCDE_AMT
+		,PRJ.PROJ_CR_ID,PRJ.CREATE_DATE,PRJ.PROJ_CR_NUM,PRJ.EXE_NUM,PRJ.PROJ_CR_AMT,PRJ.EXE_AMT 
+		FROM TD_CNT CNT
+		INNER JOIN TD_CNT_DZSP DZSP ON CNT.cnt_num = DZSP.cnt_num 
+		LEFT JOIN TB_PROJECTCR_INFO PRJ ON PRJ.AB_CDE = DZSP.ABCDE
+        WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取租金递增条件列表 -->
+	<select id="getTcyDz" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.TenancyDz">
+		SELECT  DZ.MATR_CODE MATR_CODE_FZ,DZ.ST_DATE FROM_DATE,DZ.ED_DATE TO_DATE,DZ.ALL_AMT CNT_AMT_TR,DZ.EXEC_AMT EXEC_AMT_TR,DZ.TAX_AMT TAX_AMT_TR,S1.PARAM_NAME AS dzlxName,S2.PARAM_NAME AS dzdwName 
+		FROM TD_CNT CNT
+		INNER JOIN TD_CNT_TENANCY_DETAIL DZ ON CNT.cnt_num = DZ.cnt_num 
+		LEFT JOIN SYS_SELECT S1 ON DZ.DZLX = S1.PARAM_VALUE AND S1.CATEGORY_ID = 'TENANCY_DZLX' 
+		LEFT JOIN SYS_SELECT S2 ON DZ.DZDW = S2.PARAM_VALUE AND S2.CATEGORY_ID = 'TENANCY_DZDW' 
+        WHERE CNT.cnt_num = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取按 进度分期付款列表 -->
+	<select id="getOnSchedule" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   SUB_ID,
+    		   JDZF,
+    		   JDTJ,
+    		   JD_DATE
+		FROM TD_CNT_FKJD
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取按 按日期分期付款 -->
+	<select id="getOnDate" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   SUB_ID,
+    		   RQZF,
+    		   RQTJ
+		FROM TD_CNT_FKRQ
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取按条件分期付款列表 -->
+	<select id="getOnTerm" parameterType="String" resultType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+		SELECT CNT_NUM,
+    		   DHZF,
+    		   YSZF,
+    		   JSZF
+		FROM TD_CNT_FKTJ
+        WHERE CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 获取下载总数 -->
+	<select id="getDownloadCount" parameterType="java.util.HashMap" resultType="String">
+		select count(1) from 
+		( 
+			SELECT distinct CNT.cnt_num,
+			   CNT.CNT_NAME,
+			   CNT.IS_PREPAID_PROVISION,
+		       CNT.FEE_START_DATE,
+		       CNT.FEE_END_DATE,CNT.IS_ORDER,
+		       CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.provider_name,TF.DUTY_NAME as createDeptName 
+		FROM TD_CNT CNT
+		LEFT JOIN TB_FNDWRR TF ON CNT.CREATE_DEPT = TF.DUTY_CODE
+		LEFT JOIN TD_CNT_DEVICE TCD  ON TCD.CNT_NUM = CNT.CNT_NUM
+		left JOIN (
+          select a.cnt_num, zh_concat(distinct b.proj_name) as proj_name 
+          from td_cnt_device a, td_project b
+          where a.proj_id = b.proj_id
+          group by a.cnt_num
+       )    c
+        on CNT.cnt_num=c.cnt_num
+		LEFT JOIN TB_FNDWRR TFR ON TFR.DUTY_CODE = TCD.FEE_DEPT
+		<!-- 非专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			AND TACN.FEE_CODE IS NOT NULL 
+			AND TACN.FEE_CODE = TCD.FEE_DEPT 
+			AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code)) 
+			AND TACN.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE
+			AND TACN2.ORG_CODE = TFR.ORG_CODE 
+			AND TACN2.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+			AND TACN2.DATA_YEAR = to_char(sysdate,'yyyy')
+		<!-- 专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+			AND TAC.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code)) 
+			AND TAC.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = TCD.FEE_DEPT AND TF1.ORG1_CODE = TAC.ORG1_CODE 
+		LEFT JOIN TD_CNT_TENANCY TCT ON TCT.CNT_NUM = CNT.CNT_NUM
+		<where>
+			<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.cnt_num LIKE '%' || #{con.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.cnt_type = #{con.cntType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeType != null and '' != con.feeType">
+				AND CNT.fee_type = #{con.feeType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeSubType != null and '' != con.feeSubType">
+				AND CNT.fee_sub_type = #{con.feeSubType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND CNT.provider_name LIKE '%' || #{con.providerName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.sign_date >= #{con.befDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate,jdbcType=VARCHAR} >= CNT.sign_date
+			</if>
+			<if test="con.beginCreateDate != null and '' != con.beginCreateDate">
+				AND CNT.create_date >= #{con.beginCreateDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.endCreateDate != null and '' != con.endCreateDate">
+				AND #{con.endCreateDate,jdbcType=VARCHAR} >= CNT.create_date
+			</if>
+			<if test="con.createDept != null and '' != con.createDept">
+				AND CNT.create_dept = #{con.createDept,jdbcType=VARCHAR}
+			</if>
+			<if test="con.stockNum != null and '' != con.stockNum">
+				AND CNT.STOCK_NUM = #{con.stockNum,jdbcType=VARCHAR}
+			</if>
+			<if test="con.psbh != null and '' != con.psbh">
+				AND CNT.PSBH = #{con.psbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.lxlx != null and '' != con.lxlx">
+				AND CNT.lxlx = #{con.lxlx,jdbcType=VARCHAR}
+			</if>
+			<if test="con.qbh != null and '' != con.qbh">
+				AND CNT.qbh = #{con.qbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.cntAmtgt  != null and '' != con.cntAmtgt">
+				AND CNT.CNT_AMT &gt;= #{con.cntAmtgt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.cntAmtlt  != null and '' != con.cntAmtlt">
+				AND CNT.CNT_AMT &lt;= #{con.cntAmtlt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjegt  != null and '' != con.lxjegt">
+				AND CNT.LXJE &gt;= #{con.lxjegt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjelt  != null and '' != con.lxjelt">
+				AND CNT.LXJE  &lt;= #{con.lxjelt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.isProvinceBuy != null and '' != con.isProvinceBuy">
+				AND CNT.IS_PROVINCE_BUY = #{con.isProvinceBuy,jdbcType=VARCHAR}
+			</if>
+			<if test="con.projName != null and '' != con.projName">
+				AND c.proj_name  LIKE '%' || #{con.projName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntMatrCode != null and '' != con.cntMatrCode">
+				AND TCD.MATR_CODE = #{con.cntMatrCode,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jfId != null and '' != con.jfId">
+				AND TCT.JF_ID = #{con.jfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jf != null and '' != con.jf">
+				AND TCT.JF   LIKE '%' || #{con.jf,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.yfId != null and '' != con.yfId">
+				AND TCT.YF_ID = #{con.yfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.yf != null and '' != con.yf">
+				AND TCT.YF    LIKE '%' || #{con.yf,jdbcType=VARCHAR} || '%'
+			</if>
+			<!-- <if test="con.glbmId != null and '' != con.glbmId">
+				AND TCT.GLBM_ID = #{con.glbmId}
+			</if> -->
+			<if test="con.wdjgId != null and '' != con.wdjgId">
+				AND TCT.WDJG_ID = #{con.wdjgId,jdbcType=VARCHAR}
+			</if>
+			<!-- 是否预提待摊类 -->
+			<if test="con.isPrepaidProvision != null and '' != con.isPrepaidProvision">
+				AND CNT.IS_PREPAID_PROVISION = #{con.isPrepaidProvision,jdbcType=VARCHAR}
+			</if>
+			<if test="con.notDataFlag != null and '' != con.notDataFlag">
+				AND CNT.DATA_FLAG NOT IN ('10','11','12')
+			</if>
+			<if test="con.cntDataFlag != null and '' != con.cntDataFlag">
+				AND CNT.DATA_FLAG = #{con.cntDataFlag,jdbcType=VARCHAR}
+			</if>
+			<!-- 省行 -->
+			<if test="con.orgFlag == 1">
+				AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>
+			<!-- 二级行 -->
+			<if test="con.orgFlag == 2">
+				and exists
+				(
+				   select 1 from tb_fndwrr tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+				   (
+				   	    tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT)
+				   )
+				)
+			</if>
+			<!-- 业务部门 -->		
+			<if test="con.orgFlag == 3">
+				AND (CNT.create_dept = #{dutyCode,jdbcType=VARCHAR}
+					OR CNT.pay_duty_code = #{dutyCode,jdbcType=VARCHAR}
+					OR TCD.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_AUDIT_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_BUY_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					)
+			</if>
+		</where>
+	    )
+	</select>
+	
+	<!-- 获取下载总数 -->
+	<select id="queryDownloadList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.query.domain.QueryContract">
+		select * from ( SELECT CNT2.cnt_num,S1.PARAM_NAME AS cnt_type,CNT2.cnt_amt,CNT2.create_dept,CNT2.create_date,S2.PARAM_NAME AS data_flag,CNT2.sign_date,CNT2.provider_name,CNT2.proj_name
+		FROM 
+		(
+			SELECT distinct CNT.cnt_num,
+			   CNT.CNT_NAME,
+			   CNT.IS_PREPAID_PROVISION,
+		       CNT.FEE_START_DATE,
+		       CNT.FEE_END_DATE,CNT.IS_ORDER,
+		       CNT.cnt_type,CNT.cnt_amt,CNT.create_dept,CNT.create_date,CNT.data_flag,CNT.sign_date,CNT.provider_name,TF.DUTY_NAME as createDeptName,c.proj_name
+		FROM TD_CNT CNT
+		LEFT JOIN TB_FNDWRR TF ON CNT.CREATE_DEPT = TF.DUTY_CODE
+		LEFT JOIN TD_CNT_DEVICE TCD  ON TCD.CNT_NUM = CNT.CNT_NUM
+		left JOIN (
+          select a.cnt_num, zh_concat(distinct b.proj_name) as proj_name 
+          from td_cnt_device a, td_project b
+          where a.proj_id = b.proj_id
+          group by a.cnt_num
+       )    c
+          on CNT.cnt_num=c.cnt_num
+		LEFT JOIN TB_FNDWRR TFR ON TFR.DUTY_CODE = TCD.FEE_DEPT
+		<!-- 非专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN ON TACN.MATR_CODE = TCD.MATR_CODE 
+			AND TACN.FEE_CODE IS NOT NULL 
+			AND TACN.FEE_CODE = TCD.FEE_DEPT 
+			AND TACN.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+			AND TACN.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_APRV_CHAIN_NOSPEC TACN2 ON TACN2.MATR_CODE = TCD.MATR_CODE
+			AND TACN2.ORG_CODE = TFR.ORG_CODE 
+			AND TACN2.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+			AND TACN2.DATA_YEAR = to_char(sysdate,'yyyy')
+		<!-- 专项包 -->
+		LEFT JOIN TB_APRV_CHAIN_SPEC TAC ON TAC.MATR_CODE = TCD.MATR_CODE 
+			AND TAC.MONT_CODE = decode(TCD.curr_year,to_char(sysdate,'yyyy'),TCD.curr_mont_code,nvl2(TCD.next_mont_code,TCD.next_mont_code,TCD.curr_mont_code))
+			AND TAC.DATA_YEAR = to_char(sysdate,'yyyy')
+		LEFT JOIN TB_FNDWRR TF1 ON TF1.DUTY_CODE = TCD.FEE_DEPT AND TF1.ORG1_CODE = TAC.ORG1_CODE 
+		LEFT JOIN TD_CNT_TENANCY TCT ON TCT.CNT_NUM = CNT.CNT_NUM
+		<where>
+			<if test="con.cntNum != null and '' != con.cntNum">
+				AND CNT.cnt_num LIKE '%' || #{con.cntNum,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntType != null and '' != con.cntType">
+				AND CNT.cnt_type = #{con.cntType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeType != null and '' != con.feeType">
+				AND CNT.fee_type = #{con.feeType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.feeSubType != null and '' != con.feeSubType">
+				AND CNT.fee_sub_type = #{con.feeSubType,jdbcType=VARCHAR}
+			</if>
+			<if test="con.providerName != null and '' != con.providerName">
+				AND CNT.provider_name LIKE '%' || #{con.providerName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.befDate != null and '' != con.befDate">
+				AND CNT.sign_date >= #{con.befDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.aftDate != null and '' != con.aftDate">
+				AND #{con.aftDate,jdbcType=VARCHAR} >= CNT.sign_date
+			</if>
+			<if test="con.beginCreateDate != null and '' != con.beginCreateDate">
+				AND CNT.create_date >= #{con.beginCreateDate,jdbcType=VARCHAR}
+			</if>
+			<if test="con.endCreateDate != null and '' != con.endCreateDate">
+				AND #{con.endCreateDate,jdbcType=VARCHAR} >= CNT.create_date
+			</if>
+			<if test="con.createDept != null and '' != con.createDept">
+				AND CNT.create_dept = #{con.createDept,jdbcType=VARCHAR}
+			</if>
+			<if test="con.stockNum != null and '' != con.stockNum">
+				AND CNT.STOCK_NUM = #{con.stockNum,jdbcType=VARCHAR}
+			</if>
+			<if test="con.psbh != null and '' != con.psbh">
+				AND CNT.PSBH = #{con.psbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.lxlx != null and '' != con.lxlx">
+				AND CNT.lxlx = #{con.lxlx,jdbcType=VARCHAR}
+			</if>
+			<if test="con.qbh != null and '' != con.qbh">
+				AND CNT.qbh = #{con.qbh,jdbcType=VARCHAR}
+			</if>
+			<if test="con.cntAmtgtsss">
+				AND CNT.CNT_AMT &gt;= #{con.cntAmtgt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.cntAmtlt  != null and '' != con.cntAmtlt">
+				AND CNT.CNT_AMT &lt;= #{con.cntAmtlt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjegt  != null and '' != con.lxjegt">
+				AND CNT.LXJE &gt;= #{con.lxjegt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.lxjelt  != null and '' != con.lxjelt">
+				AND CNT.LXJE  &lt;= #{con.lxjelt,jdbcType=NUMERIC}
+			</if>
+			<if test="con.isProvinceBuy != null and '' != con.isProvinceBuy">
+				AND CNT.IS_PROVINCE_BUY = #{con.isProvinceBuy,jdbcType=VARCHAR}
+			</if>
+			<if test="con.projName != null and '' != con.projName">
+				AND c.proj_name  LIKE '%' || #{con.projName,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.cntMatrCode != null and '' != con.cntMatrCode">
+				AND TCD.MATR_CODE = #{con.cntMatrCode,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jfId != null and '' != con.jfId">
+				AND TCT.JF_ID = #{con.jfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.jf != null and '' != con.jf">
+				AND TCT.JF   LIKE '%' || #{con.jf,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="con.yfId != null and '' != con.yfId">
+				AND TCT.YF_ID = #{con.yfId,jdbcType=VARCHAR}
+			</if>
+			<if test="con.yf != null and '' != con.yf">
+				AND TCT.YF    LIKE '%' || #{con.yf,jdbcType=VARCHAR} || '%'
+			</if>
+			<!-- <if test="con.glbmId != null and '' != con.glbmId">
+				AND TCT.GLBM_ID = #{con.glbmId}
+			</if> -->
+			<if test="con.wdjgId != null and '' != con.wdjgId">
+				AND TCT.WDJG_ID = #{con.wdjgId,jdbcType=VARCHAR}
+			</if>
+			<!-- 是否预提待摊类 -->
+			<if test="con.isPrepaidProvision != null and '' != con.isPrepaidProvision">
+				AND CNT.IS_PREPAID_PROVISION = #{con.isPrepaidProvision,jdbcType=VARCHAR}
+			</if>
+			<if test="con.notDataFlag != null and '' != con.notDataFlag">
+				AND CNT.DATA_FLAG NOT IN ('10','11','12')
+			</if>
+			<if test="con.cntDataFlag != null and '' != con.cntDataFlag">
+				AND CNT.DATA_FLAG = #{con.cntDataFlag,jdbcType=VARCHAR}
+			</if>
+			<!-- 省行 -->
+			<if test="con.orgFlag == 1">
+				AND CNT.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>
+			<!-- 二级行 -->
+			<if test="con.orgFlag == 2">
+				and exists
+				(
+				   select 1 from tb_fndwrr tbf where tbf.org2_code = #{org2Code,jdbcType=VARCHAR} and 
+				   (
+				   	    tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = cnt.pay_duty_code or 
+				   		tbf.duty_code = tcd.fee_dept or 
+				   		tbf.duty_code = tac.matr_buy_dept or 
+				   	    tbf.duty_code = tac.matr_audit_dept or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) or 
+				   	    tbf.duty_code = NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT)
+				   )
+				)
+			</if>
+			<!-- 业务部门 -->		
+			<if test="con.orgFlag == 3">
+				AND (CNT.create_dept = #{dutyCode,jdbcType=VARCHAR}
+					OR CNT.pay_duty_code = #{dutyCode,jdbcType=VARCHAR}
+					OR TCD.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_AUDIT_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR TAC.MATR_BUY_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_AUDIT_DEPT,TACN.MATR_AUDIT_DEPT,TACN2.MATR_AUDIT_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					OR NVL2(TACN.MATR_BUY_DEPT,TACN.MATR_BUY_DEPT,TACN2.MATR_BUY_DEPT) = #{dutyCode,jdbcType=VARCHAR}
+					)
+			</if>
+		</where>
+		ORDER BY CNT.CREATE_DATE DESC		
+		) CNT2
+		LEFT JOIN SYS_SELECT S1 ON S1.CATEGORY_ID = 'CNT_TYPE' AND CNT2.CNT_TYPE = S1.PARAM_VALUE 
+		LEFT JOIN SYS_SELECT S2 ON S2.CATEGORY_ID = 'CNT_DATE_FLAG' AND CNT2.DATA_FLAG = S2.PARAM_VALUE 
+		ORDER BY CNT2.CREATE_DATE ) 
+		<where>
+			Rownum &gt; #{start}
+			AND Rownum &lt;=  #{end}
+		</where>
+	</select>
+	
+	<select id="queryCntDevice" parameterType="String"
+			resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+		SELECT TCF.FEE_YYYYMM,TCF.SUB_ID,TCD.FEE_DEPT,TF.DUTY_NAME AS feeDeptName,
+		       TCD.MATR_CODE,TMT.MATR_NAME AS matrName,TMT.CGL_CODE,TCD.SPECIAL,TS.SPECIAL_NAME,
+		       TCD.REFERENCE,TR.REFERENCE_NAME,TCF.CGL_CAL_AMT,TCF.CGL_FEE_AMT
+		FROM TD_CNT_FEE TCF
+		LEFT JOIN TD_CNT_DEVICE TCD
+		ON TCF.CNT_NUM = TCD.CNT_NUM AND TCF.SUB_ID = TCD.SUB_ID
+		LEFT JOIN TB_FNDWRR TF
+		ON TCD.FEE_DEPT = TF.DUTY_CODE 
+		LEFT JOIN TB_MATR_TYPE TMT
+		ON TCD.MATR_CODE = TMT.MATR_CODE
+		LEFT JOIN TB_SPECIAL TS
+		ON TS.SPECIAL_ID = TCD.SPECIAL 
+		LEFT JOIN TB_REFERENCE TR
+		ON TCD.REFERENCE = TR.REFERENCE_ID
+		WHERE TCF.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		ORDER BY TCF.FEE_YYYYMM,TCF.SUB_ID
+	</select>
+	
+	<select id="book" parameterType="String" resultType="com.forms.prms.web.contract.query.domain.WaterBook">
+		SELECT   wb_num,
+			     bus_num,
+ 				 bus_type,
+ 				 bus_menu,
+ 				 operate_log,
+				 operate_type,
+				 operate_date,
+				 operate_time,
+				 operator,
+				 b.param_name as old_data_flag,
+        		 c.param_name as  new_data_flag
+    	FROM tl_water_book t 
+    		left join sys_select b on (t.old_data_flag = b.param_value and b.category_id = 'CNT_DATE_FLAG')
+    		left join sys_select c on (t.new_data_flag = c.param_value and c.category_id = 'CNT_DATE_FLAG') 
+		where bus_Num=#{cntNum,jdbcType=VARCHAR}
+		order by t.operate_date desc, t.operate_time desc
+	</select>
+	
+	<select id="selectCntDataFlag" resultType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+		select t.param_value DATA_FLAG,t.param_name DATA_FLAG_NAME from sys_select t where t.category_id = 'CNT_DATE_FLAG' 
+  		and t.param_value in ('10','50','19','20','21','25','30','32','35','40') order by t.param_value
+	</select>
+	<select  id="szQueryList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.query.domain.QueryContract" >
+		SELECT 
+	       A.CNT_NUM,
+	       A.CNT_NAME,
+	       A.CNT_ALL_AMT,
+	       A.PROVIDER_NAME,
+	       D.PARAM_NAME AS DATA_FLAG,
+	       B.SUB_ID SUB_ID_SZ,
+	       B.MATR_CODE MATR_CODE_SZ,
+	       C.MATR_NAME MATR_NAME_SZ,
+	       B.DEVICE_MODEL_NAME DEVICE_MODEL_NAME_SZ,
+	       B.EXEC_NUM EXEC_NUM_SZ,
+	       B.EXEC_PRICE EXEC_PRICE_SZ,
+	       B.EXEC_AMT EXEC_AMT_SZ,
+	       B.TAX_RATE TAX_RATE_SZ,
+	       DECODE(B.DEDUCT_FLAG,UPPER('Y'),B.TAX_YAMT,B.TAX_NAMT) AS TAX_AMT_SZ,
+	       B.DEDUCT_FLAG DEDUCT_FLAG_SZ,
+	       B.WARRANTY WARRANTY_SZ,
+	       B.PRODUCTOR PRODUCTOR_SZ
+
+		FROM TD_CNT A,TD_CNT_DEVICE B,TB_MATR_TYPE C,
+		(SELECT PARAM_VALUE, PARAM_NAME FROM SYS_SELECT WHERE CATEGORY_ID = 'CNT_DATE_FLAG') D
+		
+		WHERE A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+		AND A.CNT_NUM = B.CNT_NUM
+		AND B.MATR_CODE = C.MATR_CODE
+		AND A.DATA_FLAG = D.PARAM_VALUE
+		AND A.IS_PREPAID_PROVISION = '1'
+		AND EXISTS(SELECT 1 FROM TL_WATER_BOOK L WHERE L.BUS_NUM = A.CNT_NUM 
+		AND L.NEW_DATA_FLAG IN 
+		<foreach collection="dataFlags" item="dataFlag" open="(" close=")"  separator="," > 
+          	#{dataFlag,jdbcType=VARCHAR}
+    	</foreach>
+    	
+		<if test="con.befDate != null and '' != con.befDate">
+			AND L.OPERATE_DATE >= #{con.befDate,jdbcType=VARCHAR}
+		</if>
+		<if test="con.aftDate != null and '' != con.aftDate">
+			AND #{con.aftDate,jdbcType=VARCHAR} >= L.OPERATE_DATE
+		</if>)
+		
+		ORDER BY A.CNT_NUM,B.SUB_ID 
+	</select>
+	
+	
+	
+	<!-- 获取下载列表 -->
+	<select id="szGetDownloadList" parameterType="java.util.HashMap" resultType="com.forms.prms.web.contract.query.domain.QueryContract" >
+		SELECT 
+	       A.CNT_NUM,
+	       A.CNT_NAME,
+	       A.CNT_ALL_AMT,
+	       A.PROVIDER_NAME,
+	       A.DATA_FLAG||'-'||D.PARAM_NAME AS DATA_FLAG,
+	       B.SUB_ID SUB_ID_SZ,
+	       B.MATR_CODE MATR_CODE_SZ,
+	       C.MATR_NAME MATR_NAME_SZ,
+	       B.DEVICE_MODEL_NAME DEVICE_MODEL_NAME_SZ,
+	       B.EXEC_NUM EXEC_NUM_SZ,
+	       B.EXEC_PRICE EXEC_PRICE_SZ,
+	       B.EXEC_AMT EXEC_AMT_SZ,
+	       B.TAX_RATE TAX_RATE_SZ,
+	       DECODE(B.DEDUCT_FLAG,UPPER('Y'),B.TAX_YAMT,B.TAX_NAMT) AS TAX_AMT_SZ,
+	       B.DEDUCT_FLAG DEDUCT_FLAG_SZ,
+	       B.WARRANTY WARRANTY_SZ,
+	       B.PRODUCTOR PRODUCTOR_SZ
+
+		FROM TD_CNT A,TD_CNT_DEVICE B,TB_MATR_TYPE C,(SELECT PARAM_VALUE, PARAM_NAME FROM SYS_SELECT WHERE CATEGORY_ID = 'CNT_DATE_FLAG') D
+ 
+		WHERE A.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+		AND A.CNT_NUM = B.CNT_NUM
+		AND B.MATR_CODE = C.MATR_CODE
+		AND A.DATA_FLAG = D.PARAM_VALUE
+		AND A.IS_PREPAID_PROVISION = '1'
+		AND EXISTS(SELECT 1 FROM TL_WATER_BOOK L WHERE L.BUS_NUM = A.CNT_NUM 
+		AND L.NEW_DATA_FLAG IN 
+		<foreach collection="dataFlags" item="dataFlag" open="(" close=")"  separator="," > 
+          	#{dataFlag,jdbcType=VARCHAR}
+    	</foreach>
+    	
+		<if test="startDate != null and '' != startDate">
+			AND L.OPERATE_DATE >= #{startDate,jdbcType=VARCHAR}
+		</if>
+		<if test="endDate != null and '' != endDate">
+			AND #{endDate,jdbcType=VARCHAR} >= L.OPERATE_DATE
+		</if>)
+		
+		ORDER BY A.CNT_NUM,B.SUB_ID 
+	</select>
+	
+</mapper>

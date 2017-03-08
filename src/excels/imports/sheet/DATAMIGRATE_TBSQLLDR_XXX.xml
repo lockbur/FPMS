@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="2">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+<!-- 		<mapping cell="A1">bean.tmpltId</mapping> -->
+		<mapping cell="B2" formatDesc="表头值F1校验有误(应为[合同事项])">bean.tmpltId</mapping>
+		<mapping cell="F1" formatDesc="表头值F1校验有误([合同编号])">bean.title</mapping>
+	</section>
+	<loop startRow="2" endRow="2" datasource="ds1" tableName="SYS_ROLE" loadType="APPEND" >
+		<section startRow="2" endRow="2">
+			<mapping row="2" col="0" columnName="ROLE_ID">ROLE_ID</mapping>
+			<mapping row="2" col="1" columnName="ROLE_NAME">ROLE_NAME</mapping>
+			<mapping row="2" col="2" columnName="MEMO">MEMO</mapping>
+			<mapping row="2" col="3" columnName="ENABLE_DEL">ENABLE_DEL</mapping>
+			<mapping row="2" col="4" columnName="ROLE_LEVEL">ROLE_LEVEL</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0" type="0">123</cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

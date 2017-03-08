@@ -1,0 +1,714 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.initiate.dao.ContractInitiateDAO">
+
+	<!-- 获取新的合同ID -->
+	<select id="getNewContractId" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean" resultType="String">
+		SELECT 'BOC'||#{org1Code, jdbcType=VARCHAR}||RM_GET_COMMON_ID('CONTRACT')||#{createDept, jdbcType=VARCHAR} AS CNT_NUM FROM DUAL   
+	</select>
+	
+	<!-- 新增合同 -->
+	<insert id="add" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+		INSERT INTO TD_CNT(
+					 CNT_NUM, 
+					 ORG1_CODE, 
+					 PSBH, 
+					 STOCK_NUM, 
+					 QBH, 
+					 LXLX, 
+					 LXSL, 
+					 LXJE, 
+					 CNT_AMT, 
+					 TOTAL_NUM, 
+					 CNT_TYPE, 
+					 FEE_TYPE, 
+					 FEE_SUB_TYPE, 
+					 FEE_START_DATE, 
+					 FEE_END_DATE, 
+					 ACTUAL_FEE_END_DATE,
+					 FEE_AMT, 
+					 FEE_PENALTY, 
+					 SIGN_DATE, 
+					 IS_PROVINCE_BUY, 
+					 ZB_AMT, 
+					 PAY_DUTY_CODE, 
+					 DELIVER_DUTY_CODE, 
+					 
+					 PROVIDER_CODE, 
+					 PROV_ACT_NO, 
+					 PROV_ACT_CURR, 
+					 
+					 SRC_POVIDER_NAME, 
+					 PAY_TERM, 
+					 STAGE_TYPE, 
+					 MEMO, 
+					 CURRENCY, 
+					 IS_ORDER, 
+					 DATA_FLAG, 
+					 CREATE_DATE, 
+					 CREATE_DEPT,
+					 IS_PREPAID_PROVISION,
+					 PROVIDER_TAX_RATE,
+					 PROVIDER_TAX,
+					 IS_SPEC,
+					 CNT_NAME,
+					 CNT_NUM_RELATED,
+					
+					 PROVIDER_NAME,
+					 PROVIDER_ADDR,
+					 PROVIDER_ADDR_CODE,
+					 ACT_NAME,
+					 BANK_INFO,
+					 BANK_CODE,
+					 BANK_AREA,
+					 ACT_TYPE,
+					 BANK_NAME,
+					 PAY_MODE,
+					 PROVIDER_TYPE,
+					 CNT_ALL_AMT,
+					 CNT_TAX_AMT,
+					 INST_USER
+				)
+				VALUES
+				(
+				  #{cntNum         ,jdbcType=VARCHAR},
+				  #{org1Code       ,jdbcType=VARCHAR},
+				  #{psbh           ,jdbcType=VARCHAR},
+				  #{stockNum       ,jdbcType=VARCHAR},
+				  #{qbh            ,jdbcType=VARCHAR},
+				  #{lxlx           ,jdbcType=VARCHAR},
+				  #{lxsl           ,jdbcType=DECIMAL},
+				  #{lxje           ,jdbcType=DECIMAL},
+				  #{cntAmt         ,jdbcType=DECIMAL},
+				  #{totalNum       ,jdbcType=DECIMAL},
+				  #{cntType        ,jdbcType=VARCHAR},
+				  #{feeType        ,jdbcType=VARCHAR},
+				  #{feeSubType     ,jdbcType=VARCHAR},
+				  #{feeStartDate   ,jdbcType=VARCHAR},
+				  #{feeEndDate     ,jdbcType=VARCHAR},
+				  #{actualFeeEndDate     ,jdbcType=VARCHAR},
+				  #{feeAmt         ,jdbcType=DECIMAL},
+				  #{feePenalty     ,jdbcType=DECIMAL},
+				  #{signDate       ,jdbcType=VARCHAR},
+				  #{isProvinceBuy  ,jdbcType=VARCHAR},
+				  #{zbAmt          ,jdbcType=DECIMAL},
+				  #{payDutyCode    ,jdbcType=VARCHAR},
+				  #{deliverDutyCode,jdbcType=VARCHAR},
+				  #{providerCode   ,jdbcType=VARCHAR},
+				  #{provActNo      ,jdbcType=VARCHAR},
+				  #{provActCurr    ,jdbcType=VARCHAR},
+				  #{srcPoviderName ,jdbcType=VARCHAR},
+				  #{payTerm        ,jdbcType=VARCHAR},
+				  #{stageType      ,jdbcType=VARCHAR},
+				  #{memo           ,jdbcType=VARCHAR},
+				  #{currency       ,jdbcType=VARCHAR},
+				  #{isOrder        ,jdbcType=VARCHAR},
+				  #{dataFlag       ,jdbcType=VARCHAR},
+				  TO_CHAR(sysdate,'yyyy-MM-dd'),
+				  #{createDept     ,jdbcType=VARCHAR},
+				  #{isPrepaidProvision,jdbcType=VARCHAR},
+				  #{providerTaxRate,jdbcType=DECIMAL},
+				  #{providerTax,jdbcType=DECIMAL},
+				  #{isSpec		   ,jdbcType=VARCHAR},
+				  #{cntName		   ,jdbcType=VARCHAR},
+				  #{cntNumRelated  ,jdbcType=VARCHAR},
+				  
+				  #{providerName  ,jdbcType=VARCHAR},
+				  #{providerAddr  ,jdbcType=VARCHAR},
+				  #{providerAddrCode  ,jdbcType=VARCHAR},
+				  #{actName  ,jdbcType=VARCHAR},
+				  #{bankInfo  ,jdbcType=VARCHAR},
+				  #{bankCode  ,jdbcType=VARCHAR},
+				  #{bankArea  ,jdbcType=VARCHAR},
+				  #{actType  ,jdbcType=VARCHAR},
+				  #{bankName  ,jdbcType=VARCHAR},
+				  #{payMode  ,jdbcType=VARCHAR},
+				  #{providerType  ,jdbcType=VARCHAR},
+				  #{cntAllAmt  ,jdbcType=DECIMAL},
+				  #{cntTaxAmt  ,jdbcType=DECIMAL},
+				  #{operUser  ,jdbcType=VARCHAR}
+				)
+	</insert>
+	
+	<!-- 新增按 进度分期付款-->
+    <insert id="addOnSchedule" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_FKJD
+    		(CNT_NUM,
+    		 SUB_ID,
+    		 JDZF,
+    		 JDTJ,
+    		 JD_DATE)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       SELECT 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.subId,jdbcType=NUMERIC},
+	       #{item.jdzf,jdbcType=NUMERIC},
+	       #{item.jdtj,jdbcType=NUMERIC},
+	       #{item.jdDate,jdbcType=VARCHAR}
+	       FROM DUAL
+   		</foreach>
+    </insert>
+    
+    <!-- 新增按日期分期付款-->
+    <insert id="addOnDate" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_FKRQ
+    		(CNT_NUM,
+    		 SUB_ID,
+    		 RQZF,
+    		 RQTJ)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.subId,jdbcType=NUMERIC},
+	       #{item.rqzf,jdbcType=NUMERIC},
+	       #{item.rqtj,jdbcType=VARCHAR}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增按条件分期付款-->
+    <insert id="addOnTerm" parameterType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+    	INSERT INTO TD_CNT_FKTJ
+    		(CNT_NUM,
+    		 DHZF,
+    		 YSZF,
+    		 JSZF)
+   		values(
+   			#{cntNum,jdbcType=VARCHAR},
+   			#{dhzf,jdbcType=DECIMAL},
+   			#{yszf,jdbcType=DECIMAL},
+   			#{jszf,jdbcType=DECIMAL}
+   		)
+    </insert>
+    
+    <!-- 新增电子审批-->
+    <insert id="addDZSP" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_DZSP
+    		(CNT_NUM,
+    		 ABCDE,
+	         ABCDE_AMT,
+	         ABCDE_NUM)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.abcde,jdbcType=VARCHAR},
+	       #{item.abcdeAmt,jdbcType=NUMERIC},
+	       #{item.abcdeNum,jdbcType=NUMERIC}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增房屋租赁-->
+    <insert id="addTenancy" parameterType="com.forms.prms.web.contract.initiate.domain.Tenancy">
+		INSERT INTO TD_CNT_TENANCY(
+			CNT_NUM, 
+			<!--BEGIN_DATE, 
+			END_DATE, -->
+			AREA, 
+			<!--JF, 
+			JF_ID, 
+			YF, 
+			YF_ID, -->
+			REMARK, 
+			HOUSE_KIND_ID, 
+			WDJG, 
+			WDJG_ID, 
+			WYDZ, 
+			WYGLF, 
+			YJ, 
+			AUTO_BANK_NAME
+		)
+		VALUES(
+			#{cntNum,      jdbcType=VARCHAR},
+			<!--#{beginDate,   jdbcType=VARCHAR},
+			#{endDate,     jdbcType=VARCHAR},-->
+			#{area,        jdbcType=DECIMAL},
+			<!--#{jf,          jdbcType=VARCHAR},
+			#{jfId,        jdbcType=VARCHAR},
+			#{yf,          jdbcType=VARCHAR},
+			#{yfId,        jdbcType=VARCHAR},-->
+			#{remark,      jdbcType=VARCHAR},
+			#{houseKindId, jdbcType=VARCHAR},
+			#{wdjg,        jdbcType=VARCHAR},
+			#{wdjgId,      jdbcType=VARCHAR},
+			#{wydz,        jdbcType=VARCHAR},
+			#{wyglf,       jdbcType=DECIMAL},
+			#{yj,          jdbcType=DECIMAL},
+			#{autoBankName,jdbcType=VARCHAR}
+		)
+    </insert>
+    
+    <!-- 新增租赁递增审批-->
+	<insert id="addTenancyDz" parameterType="java.util.HashMap">
+    	INSERT INTO td_cnt_tenancy_detail(
+			  CNT_NUM, 
+			  MATR_CODE, 
+			  ST_DATE, 
+			  ED_DATE, 
+			  ALL_AMT, 
+			  EXEC_AMT, 
+			  TAX_AMT
+			)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	          #{item.cntNum ,jdbcType=VARCHAR},
+			  #{item.matrCodeFz  ,jdbcType=VARCHAR},
+			  #{item.fromDate,jdbcType=VARCHAR},
+			  #{item.toDate ,jdbcType=VARCHAR},
+			  #{item.cntAmtTr   ,jdbcType=NUMERIC},
+			  #{item.execAmtTr   ,jdbcType=NUMERIC},
+			  #{item.taxAmtTr  ,jdbcType=NUMERIC}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增合同物料-->
+    <insert id="addCntDevice" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_DEVICE(
+			   CNT_NUM, 
+			   SUB_ID, 
+			   PROJ_ID, 
+			   MATR_CODE, 
+			   MONT_CODE, 
+			   DEVICE_MODEL_NAME, 
+			   EXEC_AMT, 
+			   EXEC_NUM, 
+			   EXEC_PRICE, 
+			   WARRANTY, 
+			   PRODUCTOR, 
+			   FEE_DEPT, 
+			   DATA_FLAG, 
+			   AUDIT_MEMO,
+			   REFERENCE, 
+			   SPECIAL,
+			   CURR_YEAR,
+			   CURR_MONT_CODE,
+			   TAX_CODE,
+			   TAX_RATE,
+			   DEDUCT_FLAG,
+			   TAX_YAMT,
+			   TAX_NAMT
+			   
+			   
+			)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	            #{item.cntNum     ,jdbcType=VARCHAR    },
+				#{item.subId      ,jdbcType=NUMERIC    },
+				#{item.projId     ,jdbcType=VARCHAR    },
+				#{item.matrCode   ,jdbcType=VARCHAR    },
+				#{item.montCode   ,jdbcType=VARCHAR    },
+				#{item.deviceModelName,jdbcType=VARCHAR},
+				#{item.execAmt    ,jdbcType=NUMERIC    },
+				#{item.execNum    ,jdbcType=NUMERIC    },
+				#{item.execPrice  ,jdbcType=NUMERIC    },
+				#{item.warranty   ,jdbcType=NUMERIC    },
+				#{item.productor  ,jdbcType=VARCHAR    },
+				#{item.feeDept    ,jdbcType=VARCHAR    },
+				#{item.dataFlag   ,jdbcType=VARCHAR    },
+				<if test="item.auditMemo != null and '' != item.auditMemo">
+				#{item.auditMemo  ,jdbcType=VARCHAR    },
+				</if>
+				<if test="item.auditMemo == null or '' == item.auditMemo">
+				null,
+				</if>
+				#{item.reference    ,jdbcType=VARCHAR  },
+				#{item.special      ,jdbcType=VARCHAR  },
+				to_char(sysdate,'yyyy'),
+				#{item.montCode    ,jdbcType=VARCHAR   },
+				#{item.taxCode     ,jdbcType=VARCHAR  },
+				#{item.taxRate     ,jdbcType=NUMERIC  },
+				#{item.deductFlag  ,jdbcType=CHAR   },
+				#{item.taxYamt     ,jdbcType=NUMERIC  },
+				#{item.taxNamt     ,jdbcType=NUMERIC  }
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增费用类型 -->
+    <insert id="addFeeType" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_FEE
+    		( CNT_NUM    ,
+    		  SUB_ID     ,
+			  FEE_YYYYMM ,
+			  CGL_CAL_AMT    ,
+			  CGL_FEE_AMT    )
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.subId,jdbcType=NUMERIC},
+	       #{item.feeYyyymm,jdbcType=VARCHAR},
+	       #{item.cglCalAmt,jdbcType=NUMERIC},
+	       #{item.cglFeeAmt,jdbcType=NUMERIC}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 获取历史记录中最大的版本号 -->
+    <select id="getHisMaxVersion" parameterType="com.forms.prms.web.contract.initiate.domain.HistoryContract"
+    	resultType="com.forms.prms.web.contract.initiate.domain.HistoryContract">
+    	select NVL(MAX(VERSION_NO),0) as versionNo
+    	from ${tableName} M
+    	where M.CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+    </select>
+    
+    <!-- 新增合同历史记录-->
+	<insert id="addCntHis" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+		INSERT INTO TD_CNT_LOG(
+					 CNT_NUM, 
+					 VERSION_NO,
+					 ORG1_CODE, 
+					 PSBH, 
+					 STOCK_NUM, 
+					 QBH, 
+					 LXLX, 
+					 LXSL, 
+					 LXJE, 
+					 CNT_AMT, 
+					 TOTAL_NUM, 
+					 CNT_TYPE, 
+					 FEE_TYPE, 
+					 FEE_SUB_TYPE, 
+					 FEE_START_DATE, 
+					 FEE_END_DATE, 
+					 FEE_AMT, 
+					 FEE_PENALTY, 
+					 SIGN_DATE, 
+					 IS_PROVINCE_BUY, 
+					 ZB_AMT, 
+					 PAY_DUTY_CODE, 
+					 DELIVER_DUTY_CODE, 
+					 PROVIDER_CODE, 
+					 PROV_ACT_NO, 
+					 PROV_ACT_CURR, 
+					 SRC_POVIDER_NAME, 
+					 PAY_TERM, 
+					 STAGE_TYPE, 
+					 MEMO, 
+					 CURRENCY, 
+					 IS_ORDER, 
+					 DATA_FLAG, 
+					 CREATE_DATE, 
+					 CREATE_DEPT,
+					 OPER_TYPE,
+					 OPER_MEMO,
+					 OPER_USER,
+					 OPER_DATE,
+					 OPER_TIME,
+					 OPER_DUTY_CODE,
+					 PROVIDER_TAX_RATE,
+					 PROVIDER_TAX,
+					 IS_SPEC,
+					 CNT_NAME,
+					 CNT_NUM_RELATED
+				)
+				VALUES
+				(
+				  #{cntNum         ,jdbcType=VARCHAR},
+				  #{versionNo      ,jdbcType=DECIMAL},
+				  #{org1Code       ,jdbcType=VARCHAR},
+				  #{psbh           ,jdbcType=VARCHAR},
+				  #{stockNum       ,jdbcType=VARCHAR},
+				  #{qbh            ,jdbcType=VARCHAR},
+				  #{lxlx           ,jdbcType=VARCHAR},
+				  #{lxsl           ,jdbcType=DECIMAL},
+				  #{lxje           ,jdbcType=DECIMAL},
+				  #{cntAmt         ,jdbcType=DECIMAL},
+				  #{totalNum       ,jdbcType=DECIMAL},
+				  #{cntType        ,jdbcType=VARCHAR},
+				  #{feeType        ,jdbcType=VARCHAR},
+				  #{feeSubType     ,jdbcType=VARCHAR},
+				  #{feeStartDate   ,jdbcType=VARCHAR},
+				  #{feeEndDate     ,jdbcType=VARCHAR},
+				  #{feeAmt         ,jdbcType=DECIMAL},
+				  #{feePenalty     ,jdbcType=DECIMAL},
+				  #{signDate       ,jdbcType=VARCHAR},
+				  #{isProvinceBuy  ,jdbcType=VARCHAR},
+				  #{zbAmt          ,jdbcType=DECIMAL},
+				  #{payDutyCode    ,jdbcType=VARCHAR},
+				  #{deliverDutyCode,jdbcType=VARCHAR},
+				  #{providerCode   ,jdbcType=VARCHAR},
+				  #{provActNo      ,jdbcType=VARCHAR},
+				  #{provActCurr    ,jdbcType=VARCHAR},
+				  #{srcPoviderName ,jdbcType=VARCHAR},
+				  #{payTerm        ,jdbcType=VARCHAR},
+				  #{stageType      ,jdbcType=VARCHAR},
+				  #{memo           ,jdbcType=VARCHAR},
+				  #{currency       ,jdbcType=VARCHAR},
+				  #{isOrder        ,jdbcType=VARCHAR},
+				  #{dataFlag       ,jdbcType=VARCHAR},
+				  TO_CHAR(sysdate,'yyyy-MM-dd'),
+				  #{createDept     ,jdbcType=VARCHAR},
+				  #{operType       ,jdbcType=VARCHAR},
+				  #{operMemo       ,jdbcType=VARCHAR},
+				  #{operUser       ,jdbcType=VARCHAR},
+				  TO_CHAR(sysdate,'yyyy-MM-dd'),
+				  TO_CHAR(sysdate,'hh24:mm:ss'),
+				  #{operDutyCode   ,jdbcType=VARCHAR},
+				  #{providerTaxRate,jdbcType=DECIMAL},
+				  #{providerTax    ,jdbcType=DECIMAL},
+				  #{isSpec		   ,jdbcType=VARCHAR},
+				  #{cntName		   ,jdbcType=VARCHAR},
+				  #{cntNumRelated  ,jdbcType=VARCHAR}
+				)
+	</insert>
+	
+	<!-- 新增按 进度分期付款 历史记录-->
+    <insert id="addOnScheduleHis" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_FKJD_LOG
+    		(CNT_NUM,
+    		 VERSION_NO,
+    		 SUB_ID,
+    		 JDZF,
+    		 JDTJ,
+    		 JD_DATE,
+    		 OPER_TYPE)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       SELECT 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.versionNo,jdbcType=NUMERIC},
+	       #{item.subId,jdbcType=NUMERIC},
+	       #{item.jdzf,jdbcType=NUMERIC},
+	       #{item.jdtj,jdbcType=NUMERIC},
+	       #{item.jdDate,jdbcType=VARCHAR},
+	       #{item.operType,jdbcType=VARCHAR}
+	       FROM DUAL
+   		</foreach>
+    </insert>
+    
+    <!-- 新增按日期分期付款 历史记录-->
+    <insert id="addOnDateHis" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_FKRQ_LOG
+    		(CNT_NUM,
+    		 VERSION_NO,
+    		 SUB_ID,
+    		 RQZF,
+    		 RQTJ,
+    		 OPER_TYPE)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.versionNo,jdbcType=NUMERIC},
+	       #{item.subId,jdbcType=NUMERIC},
+	       #{item.rqzf,jdbcType=NUMERIC},
+	       #{item.rqtj,jdbcType=VARCHAR},
+	       #{item.operType,jdbcType=VARCHAR}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增按条件分期付款 历史记录-->
+    <insert id="addOnTermHis" parameterType="com.forms.prms.web.contract.initiate.domain.StageInfo">
+    	INSERT INTO TD_CNT_FKTJ_LOG
+    		(CNT_NUM,
+    		 VERSION_NO,
+    		 DHZF,
+    		 YSZF,
+    		 JSZF,
+    		 OPER_TYPE)
+   		values(
+   			#{cntNum,jdbcType=VARCHAR},
+   			#{versionNo,jdbcType=DECIMAL},
+   			#{dhzf,jdbcType=DECIMAL},
+   			#{yszf,jdbcType=DECIMAL},
+   			#{jszf,jdbcType=DECIMAL},
+   			#{operType,jdbcType=VARCHAR}
+   		)
+    </insert>
+    
+    <!-- 新增电子审批 历史记录-->
+    <insert id="addDZSPHis" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_DZSP_LOG
+    		(CNT_NUM,
+    		 VERSION_NO,
+    		 ABCDE,
+	         ABCDE_AMT,
+	         ABCDE_NUM,
+	         OPER_TYPE)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.versionNo,jdbcType=NUMERIC},
+	       #{item.abcde,jdbcType=VARCHAR},
+	       #{item.abcdeAmt,jdbcType=NUMERIC},
+	       #{item.abcdeNum,jdbcType=NUMERIC},
+	       #{item.operType,jdbcType=VARCHAR}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增合同物料 历史记录-->
+    <insert id="addCntDeviceHis" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_DEVICE_LOG(
+			   CNT_NUM, 
+			   VERSION_NO,
+			   SUB_ID, 
+			   PROJ_ID, 
+			   MATR_CODE, 
+			   DEVICE_MODEL_NAME, 
+			   EXEC_AMT, 
+			   EXEC_NUM, 
+			   EXEC_PRICE, 
+			   WARRANTY, 
+			   PRODUCTOR, 
+			   FEE_DEPT, 
+			   DATA_FLAG, 
+			   REFERENCE, 
+			   SPECIAL,
+			   OPER_TYPE,
+			   AUDIT_MEMO,
+			   MONT_CODE
+			)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	            #{item.cntNum         ,jdbcType=VARCHAR},
+	            #{item.versionNo      ,jdbcType=DECIMAL},
+				#{item.subId          ,jdbcType=DECIMAL},
+				#{item.projId         ,jdbcType=VARCHAR},
+				#{item.matrCode       ,jdbcType=VARCHAR},
+				#{item.deviceModelName,jdbcType=VARCHAR},
+				#{item.execAmt        ,jdbcType=DECIMAL},
+				#{item.execNum        ,jdbcType=DECIMAL},
+				#{item.execPrice      ,jdbcType=DECIMAL},
+				#{item.warranty       ,jdbcType=DECIMAL},
+				#{item.productor      ,jdbcType=VARCHAR},
+				#{item.feeDept        ,jdbcType=VARCHAR},
+				#{item.dataFlag       ,jdbcType=VARCHAR},
+				#{item.reference      ,jdbcType=VARCHAR},
+				#{item.special        ,jdbcType=VARCHAR},
+				#{item.operType       ,jdbcType=VARCHAR},
+				#{item.auditMemo      ,jdbcType=VARCHAR},
+				#{item.montCode       ,jdbcType=VARCHAR}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 新增费用类型 历史记录 -->
+    <insert id="addFeeTypeHis" parameterType="java.util.HashMap">
+    	INSERT INTO TD_CNT_FEE_LOG
+    		( CNT_NUM    ,
+    		  SUB_ID	 ,
+    		  VERSION_NO ,
+			  FEE_YYYYMM ,
+			  CGL_CAL_AMT,
+			  CGL_FEE_AMT,
+			  OPER_TYPE  )
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	       #{item.cntNum,jdbcType=VARCHAR},
+	       #{item.subId,jdbcType=NUMERIC},
+	       #{item.versionNo,jdbcType=NUMERIC},
+	       #{item.feeYyyymm,jdbcType=VARCHAR},
+	       #{item.cglCalAmt,jdbcType=NUMERIC},
+	       #{item.cglFeeAmt,jdbcType=NUMERIC},
+	       #{item.operType,jdbcType=VARCHAR}
+	       from dual
+   		</foreach>
+    </insert>
+    
+    <!-- 查看合同是否扫描过 -->
+    <select id="hasSacned" parameterType="String" resultType="Integer">
+    	select count(1) from ti_icms_pkuuid where id = #{cntNum,jdbcType=VARCHAR}
+    </select>
+    
+    <select id="relatedCntPage" parameterType="com.forms.prms.web.contract.initiate.domain.ContractBean" 
+    	resultType="com.forms.prms.web.contract.initiate.domain.ContractBean">
+    	select tc.*,ss.param_name as cntTypeName from td_cnt tc 
+    	left join sys_select ss on ss.param_value = tc.cnt_type
+    	where tc.create_dept = #{createDept,jdbcType=VARCHAR} and ss.category_id = 'CNT_TYPE'
+    	<if test="cntNum != null and '' != cntNum">
+    		AND tc.cnt_num LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+    	</if>
+    	<if test="cntType != null and '' != cntType">
+			AND tc.cnt_type = #{cntType,jdbcType=VARCHAR}
+		</if>
+		<if test="cntName != null and '' != cntName">
+    		AND tc.cnt_name LIKE '%' || #{cntName,jdbcType=VARCHAR} || '%'
+    	</if>
+    	<if test="createDate != null and '' != createDate">
+			AND tc.create_date= #{createDate,jdbcType=VARCHAR}
+		</if>
+		order by tc.create_date desc
+    </select>
+    
+    <update id="updateCntFrozenYyyymm" parameterType="string">
+    	UPDATE TD_CNT
+    	SET FROZEN_YYYYMM =  #{frozenYyyymm,jdbcType=VARCHAR}
+    	WHERE CNT_NUM =  #{cntNum,jdbcType=VARCHAR}
+    </update>
+     <select id="taxCodeList" parameterType="com.forms.prms.web.contract.initiate.domain.CntDevice" 
+    	resultType="com.forms.prms.web.contract.initiate.domain.CntDevice">
+     		select A.TAX_CODE,A.TAX_RATE,A.DEDUCT_FLAG from TB_TAX_CODE A WHERE A.VALID_FLAG='Y'
+     </select>
+     
+     <!-- 新增房屋租赁 历史记录-->
+	<insert id="addTenancyHis" parameterType="com.forms.prms.web.contract.initiate.domain.Tenancy">
+		INSERT INTO TD_CNT_TENANCY_LOG(
+			CNT_NUM, 
+			VERSION_NO,
+			<!--BEGIN_DATE, 
+			END_DATE, -->
+			AREA, 
+			<!--JF, 
+			JF_ID, 
+			YF, 
+			YF_ID, -->
+			REMARK, 
+			HOUSE_KIND_ID, 
+			WDJG, 
+			WDJG_ID, 
+			WYDZ, 
+			WYGLF, 
+			YJ, 
+			AUTO_BANK_NAME,
+			OPER_TYPE
+		)
+		VALUES(
+			#{cntNum,      jdbcType=VARCHAR},
+			#{versionNo,   jdbcType=DECIMAL},
+			<!--#{beginDate,   jdbcType=VARCHAR},
+			#{endDate,     jdbcType=VARCHAR},-->
+			#{area,        jdbcType=DECIMAL},
+			<!--#{jf,          jdbcType=VARCHAR},
+			#{jfId,        jdbcType=VARCHAR},
+			#{yf,          jdbcType=VARCHAR},
+			#{yfId,        jdbcType=VARCHAR},-->
+			#{remark,      jdbcType=VARCHAR},
+			#{houseKindId, jdbcType=VARCHAR},
+			#{wdjg,        jdbcType=VARCHAR},
+			#{wdjgId,      jdbcType=VARCHAR},
+			#{wydz,        jdbcType=VARCHAR},
+			#{wyglf,       jdbcType=DECIMAL},
+			#{yj,          jdbcType=DECIMAL},
+			#{autoBankName,jdbcType=VARCHAR},
+			#{operType,    jdbcType=VARCHAR}
+		)
+    </insert>
+    
+    <!-- 新增租赁递增审批 历史记录-->
+    <insert id="addTenancyDzHis" parameterType="java.util.HashMap">
+   			INSERT INTO TD_CNT_TENANCY_DETAIL_LOG(
+			  CNT_NUM, 
+			  VER_NO, 
+			  MATR_CODE, 
+			  ST_DATE, 
+			  ED_DATE, 
+			  ALL_AMT, 
+			  EXEC_AMT, 
+			  TAX_AMT
+			)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	          #{item.cntNum ,jdbcType=VARCHAR},
+	          #{item.versionNo ,jdbcType=NUMERIC},
+			  #{item.matrCodeFz  ,jdbcType=VARCHAR},
+			  #{item.fromDate,jdbcType=VARCHAR},
+			  #{item.toDate ,jdbcType=VARCHAR},
+			  #{item.cntAmtTr   ,jdbcType=NUMERIC},
+			  #{item.execAmtTr   ,jdbcType=NUMERIC},
+			  #{item.taxAmtTr  ,jdbcType=NUMERIC}
+	       from dual
+   		</foreach>
+    </insert>
+</mapper>

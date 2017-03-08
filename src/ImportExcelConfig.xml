@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ImportExcelConfig>
+	<ImportExcel id="MONT_APRV_TEMP01_11" comments="监控指标导入-专项包 的汇总配置" tableName="TBL_MONT_NAME" type="01">
+		<TempletExcelFile>montAprvBatchExportTempExcel/export/montBatchExportZX.xlsx</TempletExcelFile>
+		<DealClass>importData01_11</DealClass>
+		<CallProc></CallProc>
+	</ImportExcel>	
+	<ImportExcel id="MONT_APRV_TEMP01_12" comments="监控指标导入-省行统购 的汇总配置" tableName="TBL_MONT_NAME" type="01">
+		<TempletExcelFile>montAprvBatchExportTempExcel/export/montBatchExport.xlsx</TempletExcelFile>
+		<DealClass>importData01_12</DealClass>
+		<CallProc></CallProc>
+	</ImportExcel>	
+	<ImportExcel id="MONT_APRV_TEMP02_11" comments="审批链导入-专项包费用的汇总配置" tableName="TBL_APRV_CHAIN" type="02">
+		<TempletExcelFile>montAprvBatchExportTempExcel/export/aprvBatchExportZX.xlsx</TempletExcelFile>
+		<DealClass>importData02_11</DealClass>
+		<CallProc></CallProc>
+	</ImportExcel>	
+	<ImportExcel id="MONT_APRV_TEMP02_12" comments="审批链导入-省行统购的汇总配置" tableName="TBL_APRV_CHAIN" type="02">
+		<TempletExcelFile>montAprvBatchExportTempExcel/export/aprvBatchExport.xlsx</TempletExcelFile>
+		<DealClass>importData02_12</DealClass>
+		<CallProc></CallProc>
+	</ImportExcel>	
+	<ImportExcel id="BGT_SUM_DATA_IMPORT" comments="预算导入" tableName="ERP_BUDGET_SUM_TEMP" type="03">
+		<TempletExcelFile>budgetImport/budgetTempExport.xlsx</TempletExcelFile>
+		<DealClass>importBudgetTemp</DealClass>
+		<CallProc></CallProc>
+	</ImportExcel>	
+	<ImportExcel id="USER_ROLE_RLN_IMPORT" comments="用户职责信息导入" tableName="TL_USER_INFO_DETAIL" type="04">
+		<TempletExcelFile>exportData/user/userRoleRlnExport.xlsx</TempletExcelFile>
+		<DealClass>importUserRoleRln</DealClass>
+		<CallProc></CallProc>
+	</ImportExcel>	
+</ImportExcelConfig>

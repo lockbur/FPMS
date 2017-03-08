@@ -1,0 +1,125 @@
+@charset "utf-8";
+/* CSS Document */
+
+.accordion,
+.accordion ul,
+.accordion li,
+.accordion a,
+.accordion span {
+	margin: 0;
+	padding:0;
+	border: none;
+	outline: none;
+}
+
+.accordion li {
+	list-style: none;
+/* 	 border-bottom:  1px solid #c9c9c9; */
+	 border-bottom:  1px solid #c9c9c9;
+}
+.sub-menu li {
+	list-style: none;
+	 border-bottom:  1px solid #c9c9c9;
+}
+
+/* Layout & Style */
+
+.accordion li > a {
+	display: block;
+	position: relative;
+	min-width: 110px;
+	height: 34px;
+	color:#5B5B5B; 
+	font:  14px/32px 'Microsoft Yahei',宋体, sans-serif;
+	font-weight:bold;
+	background:#FFFFFF url(../images/left_menu/menu2.gif)  30px  10px no-repeat;
+	text-decoration: none;
+
+	box-shadow: inset 0px 1px 0px 0px rgba(255,255,255, .1), 0px 1px 0px 0px rgba(0,0,0, .1);
+	padding-left:60px;
+	text-align: left;
+}
+/*第一级样式*/
+.accordion > li > a:hover  ,
+.accordion > li > a:target {
+	color:#EE4036; 
+/* 	background: #2BA4F3 url(../images/menu_close_hover.jpg)  165px  5px no-repeat; */
+	border-bottom:#B50028 solid 2px;
+	
+}
+.accordion > li > a.active {
+	 
+ 	color:#EE4036; 
+/* 	background: #2BA4F3 url(../images/menu_open_hover.jpg)  165px  5px no-repeat; */
+	border-bottom:#B50028 solid 2px;
+}
+/*这个是第二级菜单的样式*/
+.sub-menu > li > a:hover  ,
+.sub-menu > li > a:target { 
+	color:#EE4036;
+/* 	background:url(../images/left_menu/menu2.gif)  30px  10px no-repeat; */
+    border-bottom:#B50028 solid 2px;
+}
+.sub-menu > li > a.active {
+	color:#EE4036; 
+/* 	background: #2BA4F3 url(../images/menu_open_hover.jpg)  165px  5px no-repeat; */
+/* 	background:url(../images/left_menu/menu2.gif)  30px  10px no-repeat; */
+    border-bottom:#B50028 solid 2px;
+	
+
+}
+/*第三级的样式*/
+.sub-menu2> li > a:hover  ,
+.sub-menu2 > li > a:target{
+	color:#EE4036;
+	/*background: url(../img/active.png) repeat-x;*/
+/* 	background:url(../images/left_menu/menu3.png)  50px  10px no-repeat; */
+	background-size:10%;
+	border-bottom:#B50028 solid 2px;
+}
+.sub-menu2 > li > a.active {
+	color:#EE4036; 
+/* 	background: #2BA4F3 url(../images/menu_close_hover.jpg)  165px  5px no-repeat; */
+ 	
+	background-size:10%;
+	font-weight: bold;
+	border-bottom:#B50028 solid 2px;
+}
+
+/* Sub Menu */
+
+.sub-menu li a {
+	color:#282828;
+	text-shadow: 1px 1px 0px rgba(255,255,255, .2);
+/* 	background: #fffef5 url(../images/menu3.jpg)  12px  5px no-repeat; */
+	background:#F1F1F1 url(../images/left_menu/menu2.gif)  45px  10px no-repeat;
+	text-align: left;
+	font-weight:normal;
+	padding-left:63px;
+}
+.sub-menu2 li a {
+	color:#282828;
+/* 	background: #fffef5 url(../images/menu3.jpg)  30px  5px no-repeat; */
+	text-align: left;
+	padding-left:85px;
+	background:#D8D8D8 url(../images/left_menu/menu3.png)  60px  10px no-repeat;
+	background-size:10%;
+}
+/*
+.sub-menu li:hover a { background: #be2f4d url(../images/menu3_hover.jpg)  12px  5px no-repeat;color:#fdfcf8; }
+.sub-menu2 li:hover a { background: #be2f4d url(../images/menu3_hover.jpg)  12px  5px no-repeat;color:#fdfcf8; }
+*/
+ .sub-menu li:last-child a { border: none; } 
+ .sub-menu li:last-child a { border: none; }
+
+
+
+/* Functionality */
+
+.accordion li > .sub-menu {
+	display: none;
+}
+
+.accordion li:target > .sub-menu {
+	display: block;
+}

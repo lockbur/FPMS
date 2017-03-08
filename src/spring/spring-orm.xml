@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+	
+	<!-- ======= 数据源 配置开始 ========================================= -->
+ 	<jee:jndi-lookup id="dataSource" jndi-name="jdbc/fpms"/>
+<!--
+
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource">
+		<property name="driverClassName" value="${oracle.db.driver}" />
+		<property name="url" value="${oracle.db.url}" />
+		<property name="username" value="${oracle.db.username}" />
+		<property name="password" value="${oracle.db.password}" />
+	</bean>
+ 	 -->
+	
+	<bean id="ase" class="com.forms.platform.core.database.jndi.JndiImpl" p:dataSource-ref="dataSource" p:name="mysql" p:default="true"/>
+	<bean id="log4jdbcInterceptor" class="net.sf.log4jdbc.DataSourceSpyInterceptor" />  
+	<bean id="dataSourceLog4jdbcAutoProxyCreator" class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">  
+	   <property name="interceptorNames">  
+	       <list>  
+	          <value>log4jdbcInterceptor</value>          
+	       </list>  
+	   </property>  
+	   <property name="beanNames">  
+	       <list>  
+	          <value>dataSource</value>
+	       </list>  
+	   </property>  
+	</bean>
+	<!-- ======= 数据源 配置结束 ========================================= -->  
+	
+	<!-- ======= Mybatis 配置开始（配置文件以.myb.xml为后缀）  ========================================= -->
+	<bean id="sqlSessionFactory" p:dataSource-ref="dataSource" class="com.forms.platform.core.mybatis.SqlSessionFactoryBeanForSpring"
+		p:configLocation="classpath:mybatis/mybatis-config.xml"
+		p:mapperLocations="classpath:com/forms/**/*.xml"/>
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer" p:sqlSessionFactoryBeanName="sqlSessionFactory" p:basePackage="com.forms"
+		p:markerInterface="com.forms.platform.core.base.dao.AutoProxyDao" p:annotationClass="org.springframework.stereotype.Repository"
+	/>  
+	<!-- ======= Mybatis 配置结束 ========================================= -->
+	
+	
+	<!-- ======= 事务 配置开始 ========================================= -->
+	<!-- 开启注解事务 -->
+	<tx:annotation-driven transaction-manager="txManager"/>
+	<!-- 事务管理 -->
+	<bean id="txManager" p:dataSource-ref="dataSource" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"/>
+    <!-- ======= 事务 配置结束 ========================================= -->
+    <bean id="jdbcTemplate" p:dataSource-ref="dataSource" class="org.springframework.jdbc.core.JdbcTemplate"/>
+</beans>

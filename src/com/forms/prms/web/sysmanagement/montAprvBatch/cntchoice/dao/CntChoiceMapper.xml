@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.dao.CntChoiceDao">
+<select id="getList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		SELECT 	  batch_no,
+				  pro_type,
+				  sub_type,
+				  sst.param_name as sub_type_name,
+				  ss.PARAM_NAME as cntStatusName,
+				  CNT_STATUS,
+				  INST_TYPE,
+				  DATA_YEAR,
+				  inst_user,
+				  inst_memo,
+				  SOURCE_FILENAME
+				FROM tbl_mont_aprv tma
+				left join SYS_SELECT ss on ss.PARAM_VALUE=tma.CNT_STATUS
+				and ss.CATEGORY_ID='MONT_CNT_STATUS'
+				left join sys_select sst on tma.sub_type = sst.param_value and sst.category_id = 'MONT_TYPE'
+				where 
+				ss.PARAM_VALUE IN ('C1','C3')
+				and tma.org21_Code=#{org21Code,jdbcType=VARCHAR}
+				and tma.data_year >= to_char(sysdate, 'YYYY')
+				<if test="orgType == '01'">
+					AND TMA.SUB_TYPE IN ('11','12')
+				</if>
+				<if test="orgType == '02'">
+					AND TMA.SUB_TYPE IN ('21','22')
+				</if>
+				<if test="proType != null and proType != ''">
+					AND tma.pro_type = #{proType,jdbcType=VARCHAR}
+		  		</if>
+		  		<if test="subType != null and subType != ''">
+					AND tma.sub_type = #{subType,jdbcType=VARCHAR}
+			   </if>	
+		  		<if test="dataYear != null and dataYear != ''">
+					AND tma.data_year = #{dataYear,jdbcType=VARCHAR}
+			   </if>	
+	</select>
+	<!--得到待处理和退回的合同集合  -->
+	<select id="waitManageBackList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		SELECT 	  CNT_NUM,
+				  MATR_CODE,
+				  MATR_NAME,
+				  MONT_CODE_OLD,
+				  MONT_NAME_OLD,
+				  MONT_CODE_NEW,
+				  MONT_NAME_NEW,
+				  MONT_SELECT,
+				  STATUS,
+				  DECODE(STATUS,'00','待处理','01','待审核','02','退回','03','通过')STATUS_NAME,
+				  AUDIT_MEMO
+				FROM TBL_MONT_SPLIT tms
+				where BATCH_NO=#{batchNo,jdbcType=VARCHAR}
+				and STATUS in('00','02')
+	</select>
+	<!--得到复核通过合同集合  -->
+	<select id="checkPassList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		SELECT 	  CNT_NUM,
+				  MATR_CODE,
+				  MATR_NAME,
+				  MONT_CODE_OLD,
+				  MONT_NAME_OLD,
+				  MONT_CODE_NEW,
+				  MONT_NAME_NEW,
+				  MONT_SELECT
+				FROM TBL_MONT_SPLIT tms
+				where BATCH_NO=#{batchNo,jdbcType=VARCHAR}
+				and STATUS ='03'
+	</select>
+	<!--得到待复核合同集合  -->
+	<select id="waitCheckList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		SELECT 	  CNT_NUM,
+				  MATR_CODE,
+				  MATR_NAME,
+				  MONT_CODE_OLD,
+				  MONT_NAME_OLD,
+				  MONT_CODE_NEW,
+				  MONT_NAME_NEW,
+				  MONT_SELECT
+				FROM TBL_MONT_SPLIT tms
+				where BATCH_NO=#{batchNo,jdbcType=VARCHAR}
+				and STATUS ='01'
+	</select>
+	<!-- 改变勾选的合同的状态 -->
+	<update id="updateCntData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		UPDATE TBL_MONT_SPLIT 
+		   SET STATUS = '01'
+	     WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	     AND STATUS in('00','02')
+	      AND CNT_NUM IN 
+	     <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</update>
+	<!--查看是否还有待处理的合同  -->
+	<select id="cntChoiceList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		SELECT 	  CNT_NUM
+				FROM TBL_MONT_SPLIT tms
+				where BATCH_NO=#{batchNo,jdbcType=VARCHAR}
+				and STATUS in('00','02')
+	</select>
+	<!-- 改变合同的主状态 -->
+	<update id="updateCntMain" parameterType="String">
+		UPDATE TBL_MONT_APRV A 
+		set CNT_STATUS ='C2'
+		WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}  
+		AND CNT_STATUS in('C1','C3') 
+		AND NOT EXISTS(
+			SELECT 1 FROM TBL_MONT_SPLIT B WHERE A.BATCH_NO = B.BATCH_NO AND STATUS IN('00','02')
+			)
+	</update>	
+	<!-- 更新新的监控指标代码名称 -->
+	<update id="updateMontCodeName" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		UPDATE TBL_MONT_SPLIT  
+		set MONT_CODE_NEW =#{montCodeNew,jdbcType=VARCHAR} ,
+			MONT_NAME_NEW =#{montNameNew,jdbcType=VARCHAR} ,
+			STATUS  ='01'
+		WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}  
+		AND CNT_NUM =#{cntNum,jdbcType=VARCHAR}  
+		AND MONT_CODE_OLD = #{montCodeOld,jdbcType=VARCHAR}  
+		AND MATR_CODE = #{matrCode,jdbcType=VARCHAR}  
+		AND STATUS in('00','02')
+	</update>	
+	
+	<select id="exportExcute" parameterType="String"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.cntchoice.domain.CntChoiceBean">
+		SELECT 	  #{batchNo,jdbcType=VARCHAR} as batch_no,
+				  CNT_NUM,
+				  MATR_CODE,
+				  MATR_NAME,
+				  MONT_CODE_OLD,
+				  MONT_NAME_OLD,
+				  MONT_CODE_NEW,
+				  MONT_NAME_NEW,
+				  MONT_SELECT,
+				  STATUS,
+				  DECODE(STATUS,'00','待处理','01','待审核','02','退回','03','通过')STATUS_NAME,
+				  AUDIT_MEMO,
+				 DECODE(MONT_CODE_NEW,NULL,NULL,MONT_CODE_NEW || '@@' || MONT_NAME_NEW) MONT_SELECT_NEW
+				FROM TBL_MONT_SPLIT tms
+				where BATCH_NO=#{batchNo,jdbcType=VARCHAR}
+	</select>
+</mapper>	

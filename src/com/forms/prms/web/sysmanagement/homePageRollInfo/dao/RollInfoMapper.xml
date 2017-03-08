@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.homePageRollInfo.dao.RollInfoDao">
+	<select id="list" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean" 
+	resultType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean">
+		select  sri.roll_id,
+				sri.roll_title,
+				sri.roll_info,
+				sri.last_date,
+				sri.add_uid,
+				to_char(sri.add_time,'yyyy-mm-dd') add_time,
+				sri.lupd_uid,
+				sri.lupd_time,				
+				decode(sri.visual_grade, '1', '全国',  (select nvl(org1_name,visual_org)  from tb_fndwrr a where a.org1_code = sri.visual_org and rownum = 1)) as visual_grade,
+				sri.visual_org,
+				su.duty_code
+		from sys_roll_info sri
+		left join sys_user su on sri.add_uid=su.user_id		
+		<!--where (
+		  SRI.VISUAL_GRADE=1 
+		  OR 
+		  (SRI.VISUAL_GRADE=2 AND SRI.VISUAL_ORG = #{org1Code,jdbcType=VARCHAR})
+		OR (SRI.VISUAL_GRADE=3 AND SRI.VISUAL_ORG = #{org2Code,jdbcType=VARCHAR})
+		OR (SRI.VISUAL_GRADE=4 AND SRI.VISUAL_ORG = #{dutyCode,jdbcType=VARCHAR})
+		)-->
+		<where>		
+			<if test="isA0001SuperAdmin == 1">
+				AND SRI.roll_id LIKE 'Y%'
+			</if>				
+			<if test="isA0001SuperAdmin == 0">
+				AND SRI.roll_id LIKE 'N%' 
+			</if>
+			<if test="rollTitle != '' and rollTitle!= null">
+				AND sri.roll_title LIKE '%' || #{rollTitle ,jdbcType=VARCHAR} || '%'
+			</if>
+			<if test="befDate != null and '' != befDate">
+				AND sri.LAST_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+			</if>
+			<if test="aftDate != null and '' != aftDate">
+				AND sri.LAST_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+			</if>
+			<if test="addUid != null and '' != addUid">
+				AND sri.ADD_UID =  #{addUid ,jdbcType=VARCHAR}
+			</if>
+			<if test="visualGrade != null and '' != visualGrade">
+				AND sri.visual_grade = #{visualGrade,jdbcType=VARCHAR}
+			</if>
+			<if test="visualOrg != null and '' != visualOrg">
+				AND sri.visual_org = #{visualOrg,jdbcType=VARCHAR}
+			</if>
+		</where>
+		order by roll_id desc
+	</select>
+	
+	<insert id="addSubmit" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean">
+		insert into sys_roll_info
+		  (
+		   ROLL_ID,
+		   ROLL_TITLE,
+		   ROLL_INFO,
+		   LAST_DATE,
+		   ADD_UID,
+		   ADD_TIME,
+		   VISUAL_GRADE,
+		   VISUAL_ORG
+		   )
+		values
+		  (
+		   #{rollId,	jdbcType=VARCHAR},
+		   #{rollTitle,	jdbcType=VARCHAR},
+		   #{rollInfo,	jdbcType=VARCHAR},
+		   #{lastDate,	jdbcType=VARCHAR},
+		   #{addUid,	jdbcType=VARCHAR},
+		   sysdate,
+		   #{visualGrade,	jdbcType=VARCHAR},
+		   #{visualOrg,	jdbcType=VARCHAR}		   
+		  )
+	</insert>
+	
+	<update id="updateSubmit" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean">
+		UPDATE sys_roll_info
+		SET roll_title = #{rollTitle,jdbcType=VARCHAR},
+		ROLL_INFO = #{rollInfo,jdbcType=VARCHAR},
+		LUPD_UID = #{lupdUid,jdbcType=VARCHAR},
+		LAST_DATE = #{lastDate,jdbcType=VARCHAR},
+		LUPD_TIME = sysdate,
+		VISUAL_GRADE = #{visualGrade,jdbcType=VARCHAR},
+		VISUAL_ORG = #{visualOrg,jdbcType=VARCHAR}
+		WHERE roll_id = #{rollId,jdbcType=VARCHAR}
+	</update>
+	<delete id="del" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean">
+		delete from sys_roll_info where roll_id =#{rollId,jdbcType=VARCHAR}
+	</delete>
+	<select id="queryInfo" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean" 
+			resultType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean">
+		select * from sys_roll_info where roll_id = #{rollId,jdbcType=VARCHAR}
+	</select>
+	
+	<!--生成ID-->
+	
+	<select id="createRollId" parameterType="com.forms.prms.web.sysmanagement.homePageRollInfo.domain.RollInfoBean" 
+			resultType="String">
+		SELECT 
+			(CASE WHEN SU.ORG1_CODE = 'A0001' AND SU.IS_SUPER_ADMIN = '1' THEN 'Y' ELSE 'N' END)||TF.OU_CODE || TO_CHAR(SYSDATE, 'YYYYMMDD') || RM_GET_COMMON_ID('ROLLID')
+		FROM SYS_USER SU
+		LEFT JOIN TB_FNDWRR  TF ON SU.DUTY_CODE = TF.DUTY_CODE
+		WHERE SU.USER_ID = #{userId ,jdbcType=VARCHAR}
+	</select>
+</mapper>

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.orderedit.dao.OrderEditDAO">
+	<!--查找补录完成待复核的订单-->
+	<select id="queryList" parameterType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean" 
+			resultType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean">
+		SELECT 
+			TOR.ORDER_ID,
+			TOR.STOCK_NUM,
+			TOR.CNT_NUM,
+			TF.DUTY_NAME AS ORDER_DUTY_CODE_NAME,
+			SS.PARAM_NAME AS DATA_FLAG_NAME,
+			TC.CNT_NAME
+		FROM TD_ORDER TOR
+		LEFT JOIN TD_CNT TC ON TOR.CNT_NUM=TC.CNT_NUM
+		LEFT JOIN SYS_SELECT SS ON TOR.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='ORDER_DATA_FLAG'
+		LEFT JOIN TB_FNDWRR TF ON  TOR.ORDER_DUTY_CODE=TF.DUTY_CODE
+		WHERE (TOR.DATA_FLAG='13' OR TOR.DATA_FLAG='11')
+	        AND TOR.ORDER_DUTY_CODE=#{orderDutyCode,jdbcType=VARCHAR}
+		<if test="orderId != null and '' != orderId">
+			AND TOR.ORDER_ID LIKE '%' || #{orderId ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="cntName != null and '' != cntName">
+			AND TC.CNT_NAME  LIKE '%'|| #{cntName ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="cntNum != null and '' != cntNum">
+			AND TOR.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+	</select>
+	
+	
+	<!--通过订单号查找详细信息-->
+	<select id="orderInfo" parameterType="string"  resultType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean">
+		SELECT 
+			TOR.ORDER_ID,
+			TOR.ORDER_MEMO,
+			TOR.STOCK_NUM,
+			TOR.STOCK_AMT,
+			TOR.STOCK_PROV AS stockProv,
+			TOR.CNT_NUM,
+			TOR.DEPT_ID,
+			TOR.SIGN_DATE,
+			TOR.START_DATE,
+			TOR.END_DATE,
+			TOR.PROCUREMENT_ROUTE,
+			TF.DUTY_NAME AS instDutyCode,
+			TOR.INST_DATE,
+			TOR.INST_TIME,
+			TOR.INST_USER,
+			tor.ORDER_DUTY_CODE,
+			SS.PARAM_NAME AS payTermMemo,
+			TOR.PO_NUMBER,
+			TOR.DATA_FLAG,
+			(SELECT TO_CHAR(WM_CONCAT(ERROR_REASON)) FROM TIU_ORDER WHERE ORDER_ID = #{orderId,jdbcType=VARCHAR}) AS ERROR_REASON
+		FROM TD_ORDER TOR
+		LEFT JOIN TB_FNDWRR TF ON  TOR.INST_DUTY_CODE=TF.DUTY_CODE
+		LEFT JOIN TB_FNDWRR TF1 ON  TOR.ORDER_DUTY_CODE=TF1.DUTY_CODE
+		LEFT JOIN SYS_SELECT SS ON TOR.PAY_TERM_MEMO=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='CNT_PAY_TERM'
+		WHERE  TOR.ORDER_ID=#{orderId,jdbcType=VARCHAR}
+	</select>
+	
+	<!--修改提交-->
+	<update id="editSubmit" parameterType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean">
+		UPDATE TD_ORDER TOR 
+		SET 
+			TOR.ORDER_MEMO = #{orderMemo,jdbcType=VARCHAR},
+			<if test="startDate != null and '' != startDate">
+			TOR.START_DATE=#{startDate,jdbcType=VARCHAR},
+			</if>
+			<if test="endDate != null and '' != endDate">
+			TOR.END_DATE=#{endDate,jdbcType=VARCHAR},
+			</if>
+			TOR.PROCUREMENT_ROUTE = #{procurementRoute,jdbcType=VARCHAR},
+			TOR.DEPT_ID = #{deptId,jdbcType=VARCHAR},
+			TOR.DATA_FLAG = '02'
+		WHERE TOR.ORDER_ID=#{orderId,jdbcType=VARCHAR}
+		AND (TOR.DATA_FLAG = '11' OR TOR.DATA_FLAG='13')
+	</update>
+	<!---更改订单状态为退回-->
+	<update id="back"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		UPDATE TD_ORDER  SET 
+				DATA_FLAG=#{dataFlag,jdbcType=VARCHAR}
+				WHERE ORDER_ID = #{orderId,jdbcType=VARCHAR}
+				AND (DATA_FLAG='11' OR DATA_FLAG='13')
+	</update>
+	<!---更改合同表中的合同号为订单退回-->
+	<update id="updateCnt"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		UPDATE TD_CNT  TC SET 
+				TC.DATA_FLAG='40'
+				WHERE TC.CNT_NUM=
+								(
+								SELECT CNT_NUM FROM TD_ORDER  WHERE ORDER_ID= #{orderId,jdbcType=VARCHAR}
+								AND  (DATA_FLAG='11' OR DATA_FLAG='13')
+								)
+	</update>
+	<!--通过订单号判断是否存在不为订单取消或者订单失败的订单-->
+	<select id="checkOrder" parameterType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean"  resultType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean">
+		SELECT ORDER_ID FROM  TD_ORDER
+		WHERE DATA_FLAG!='11'
+		AND DATA_FLAG!='13'
+		AND CNT_NUM=(
+			SELECT CNT_NUM FROM TD_ORDER 
+			WHERE ORDER_ID=#{orderId,jdbcType=VARCHAR}
+		)
+	</select>
+	<!--查找订单号对应合同号下是否存在00状态的订单号-->
+	<select id="sureList" parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean" 
+			resultType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		select data_flag from td_order
+		where  (data_flag='00' or data_flag='01')
+		and cnt_num=(
+					select cnt_num from td_order
+					where order_id=#{orderId,jdbcType=VARCHAR}
+		)
+	</select>
+	<!---更新订单表中订单对应合同下的所有状态为02的为待发送(04)-->
+	<update id="updateOrder"
+		parameterType="com.forms.prms.web.pay.orderstart.domain.OrderStartBean">
+		update td_order  set
+		data_flag='04'
+		where data_flag='02'
+		and cnt_num=(
+		select cnt_num from td_order
+		where order_id=#{orderId,jdbcType=VARCHAR}
+		)
+	</update>
+	<!--订单操作添加到log表中-->
+	<insert id = "addLogOrder" parameterType="com.forms.prms.web.pay.orderedit.domain.OrderEditBean">
+		INSERT INTO TD_ORDER_AUDIT_LOG
+		(
+			ORDER_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{orderId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_ORDER_AUDIT_LOG WHERE ORDER_ID = #{orderId ,jdbcType=VARCHAR}),
+			#{dataFlag ,jdbcType=VARCHAR},
+			#{operMemo ,jdbcType=VARCHAR},
+			#{instUser ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYYMMDD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+</mapper>

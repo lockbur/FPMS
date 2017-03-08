@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<downloads>
+	
+	<download id="environmentStat">
+		<excel>
+			<header>
+				<col rowspan="2">系统实例标识</col>
+				<col rowspan="2">所属环境</col>
+				<col rowspan="2">平台类型</col>
+				<col rowspan="2">系统架构</col>
+				<col rowspan="2">物理设备编号</col>
+				<col colspan="4">硬件资源</col>
+				<col colspan="19">软件资源</col>
+				<col colspan="4">CPU利用率(单位：%)</col>
+				<col colspan="4">内存利用率(单位：%)</col>
+			</header>
+			<header>
+				<col>CPU数量</col>
+				<col>内存容量(单位：GB)</col>
+				<col>内置磁盘容量(单位：GB)</col>
+				<col>共享磁盘容量(单位：GB)</col>
+				<col>高可靠性软件名称</col>
+				<col>高可靠性软件版本</col>
+				<col>操作系统名称</col>
+				<col>操作系统版本</col>
+				<col>操作系统补丁或PTF版本</col>
+				<col>数据库系统名称</col>
+				<col>数据库系统版本</col>
+				<col>数据库系统补丁或PTF版本</col>
+				<col>应用服务器产品名称</col>
+				<col>应用服务器产品版本</col>
+				<col>应用服务器产品补丁或PTF版本</col>
+				<col>交易中间件名称</col>
+				<col>交易中间件版本</col>
+				<col>交易中间件补丁或PTF版本</col>
+				<col>消息中间件名称</col>
+				<col>消息中间件版本</col>
+				<col>消息中间件补丁或PTF版本</col>
+				<col>其他系统软件名称</col>
+				<col>其他系统软件版本</col>
+				<col>联机均值-OM</col>
+				<col>联机峰值-OP</col>
+				<col>批量均值-BM</col>
+				<col>批量峰值-BP</col>
+				<col>联机均值-OM</col>
+				<col>联机峰值-OP</col>
+				<col>批量均值-BM</col>
+				<col>批量峰值-BP</col>
+			</header>
+			<data>
+				<col property="enviCaseId"></col>
+				<col property="enviName"></col>
+				<col property="platformTypeName"></col>
+				<col property="sysArchitecName"></col>
+				<col property="physiDevi"></col>
+				<col property="cpuNum" format="#,##0.00"></col>
+				<col property="ramSize" format="#,##0.000"></col>
+				<col property="hardSize" format="#,##0.000"></col>
+				<col property="hardSizeShare" format="#,##0.000"></col>
+				<col property="hSoftName"></col>
+				<col property="hSoftVers"></col>
+				<col property="osName"></col>
+				<col property="osVers"></col>
+				<col property="osPatch"></col>
+				<col property="dbName"></col>
+				<col property="dbVers"></col>
+				<col property="dbPatch"></col>
+				<col property="appServName"></col>
+				<col property="appServVers"></col>
+				<col property="appServPatch"></col>
+				<col property="tMidwareName"></col>
+				<col property="tMidwareVers"></col>
+				<col property="tMidwarePatch"></col>
+				<col property="mMidwareName"></col>
+				<col property="mMidwareVers"></col>
+				<col property="mMidwarePatch"></col>
+				<col property="otherSysName"></col>
+				<col property="otherSysVers"></col>
+				<col property="cpuUseOm" format="#,##0.00"></col>
+				<col property="cpuUseOp" format="#,##0.00"></col>
+				<col property="cpuUseBm" format="#,##0.00"></col>
+				<col property="cpuUseBp" format="#,##0.00"></col>
+				<col property="ramUseOm" format="#,##0.00"></col>
+				<col property="ramUseOp" format="#,##0.00"></col>
+				<col property="ramUseBm" format="#,##0.00"></col>
+				<col property="ramUseBp" format="#,##0.00"></col>
+			</data>
+		</excel>
+		<class>
+			<innerEmType>
+				com.forms.prms.web.rm.environment.domain.EnvironmentBean
+			</innerEmType>
+		</class>
+	</download>
+	
+	<download id="baselineInfo">
+		<excel>
+			<header>
+				<col rowspan="2">平台类型</col>
+				<col rowspan="2">软件类型</col>
+				<col rowspan="2">基线日期</col>
+				<col colspan="6">软件版本基线</col>
+				<col colspan="6">推荐软件版本</col>
+			</header>
+			<header>
+				<col colspan="2">系统软件名称及版本号</col>
+				<col>发布日期</col>
+				<col>停止销售日期</col>
+				<col>停止服务日期</col>
+				<col>备注</col>
+				<col colspan="2">系统软件名称及版本号</col>
+				<col>发布日期</col>
+				<col>停止销售日期</col>
+				<col>停止服务日期</col>
+				<col>备注</col>
+			</header>
+			<data>
+				<col property="platformTypeName" canspan="true"></col>
+				<col property="softTypeName" canspan="true"></col>
+				<col property="baselineDate"></col>
+				<col property="softName"></col>
+				<col property="softVersion"></col>
+				<col property="releaseDate"></col>
+				<col property="stopSaleDate"></col>
+				<col property="stopServDate"></col>
+				<col property="memo"></col>
+				<col property="recomSoftName"></col>
+				<col property="recomSoftVersion"></col>
+				<col property="recomReleaseDate"></col>
+				<col property="recomStopSaleDate"></col>
+				<col property="recomStopServDate"></col>
+				<col property="recomMemo"></col>
+			</data>
+		</excel>
+		<class>
+			<innerEmType>
+				com.forms.prms.web.rm.baseline.domain.BaseLine
+			</innerEmType>
+		</class>
+	</download>
+	
+	<download id="deviceSeleInfo">
+		<excel>
+			<header>
+				<col>请购部门</col>
+				<col>项目名称</col>
+				<col>序号</col>
+				<col>分包名称</col>
+				<col>使用范围</col>
+				<col>开始时间</col>
+				<col>结束时间</col>
+				<col>品牌</col>
+				<col>供应商名称</col>
+				<col>负责人</col>
+				<col>价格更新</col>
+				<col>采购模式</col>
+			</header>
+			<data>
+				<col property="appDeptId" canspan="true"></col>
+				<col property="projName" canspan="true"></col>
+				<col property="bsifId" canspan="true"></col>
+				<col property="subpkgName" canspan="true"></col>
+				<col property="useRange" canspan="true"></col>
+				<col property="supplyStartDate"></col>
+				<col property="supplyEndDate"></col>
+				<col property="devBrand"></col>
+				<col property="supplier"></col>
+				<col property="head" canspan="true"></col>
+				<col property="priceUpdate" canspan="true"></col>
+				<col property="buyModel" canspan="true"></col>
+			</data>
+		</excel>
+		<class>
+			<innerEmType>
+				com.forms.prms.web.rm.deviceselection.domain.DeviceSelection
+			</innerEmType>
+		</class>
+	</download>
+</downloads>

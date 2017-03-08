@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.amortization.fmsMgr.dao.FmsMgrDAO">
+
+	<select id="getPayCntInfo" parameterType="string" resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsMgr">
+		SELECT COUNT(DISTINCT OU_CODE) as payOuCnt, COUNT(1) as payCnt, NVL(SUM(decode(duty_code,null,INVOICE_AMT,0)),0) as paySumAmt,
+		count(duty_code) as payNotSendCnt,COUNT(DISTINCT duty_code) as payNotSendOuCnt 
+		  FROM (SELECT TF.OU_CODE, TP.INVOICE_AMT,TP.CNT_NUM,vd.duty_code 
+		          FROM TD_PAY TP
+		          LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TP.INST_DUTY_CODE
+		          LEFT JOIN TD_CNT TC ON  TC.CNT_NUM = TP.CNT_NUM 
+		          left join v_change_dutycode vd on tp.inst_duty_code = vd.duty_code 
+		         WHERE TP.DATA_FLAG = 'F0'
+		         AND TC.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+		        UNION ALL
+		        SELECT TF.OU_CODE, TPA.INVOICE_AMT,TPA.CNT_NUM,vd.duty_code 
+		          FROM TD_PAY_ADVANCE TPA
+		          LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TPA.INST_DUTY_CODE
+		          LEFT JOIN TD_CNT TC ON  TC.CNT_NUM = TPA.CNT_NUM 
+		          left join v_change_dutycode vd on tpa.inst_duty_code = vd.duty_code 
+		         WHERE TPA.DATA_FLAG = 'F0'
+		         AND TC.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}) T
+		  <where>
+			<if test="monDataFlag == 0 ">
+				AND EXISTS (
+					SELECT 1
+					FROM TI_TRADE_BACKWASH 
+					WHERE CNT_NUM = T.CNT_NUM
+					AND DATA_FLAG = '0'
+				)
+			</if>
+		  </where>
+	</select>
+	
+	<select id="getPaySumAmt" parameterType="string" resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsMgr">
+		SELECT NVL(SUM(INVOICE_AMT),0) AS paySumAmt,invoice_type
+		FROM 
+	      (SELECT T.OU_CODE, T.INVOICE_AMT,T.CNT_NUM,'1' AS pay_type,T.provider_type,
+		      CASE  WHEN  t.invoice_amt &lt; 0
+		      THEN '贷项通知单'
+		      else DECODE(t.pay_type,
+		                          '0',
+		                          '预付款',
+		                          DECODE(t.provider_type,
+		                                upper( 'EMPLOYEE'),
+		                                 '费用报表',
+	                                 '标准')) end AS invoice_type
+	          FROM
+	          (SELECT TF.OU_CODE, decode(vd.duty_code,null,TP.INVOICE_AMT,0) INVOICE_AMT ,TP.CNT_NUM,'1' as pay_type,tp.provider_code,TC.PROVIDER_TYPE
+	                  FROM TD_PAY TP
+	                  LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TP.INST_DUTY_CODE
+	                  LEFT JOIN TD_CNT TC ON  TC.CNT_NUM = TP.CNT_NUM 
+	                  left join v_change_dutycode vd on tp.inst_duty_code = vd.duty_code 
+	                 WHERE TP.DATA_FLAG = 'F0'
+	                 AND TC.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+	                UNION ALL
+	                SELECT TF.OU_CODE, decode(vd.duty_code,null,TPA.INVOICE_AMT,0) INVOICE_AMT,TPA.CNT_NUM,'0' as pay_type,tpa.provider_code,TC.PROVIDER_TYPE
+	                  FROM TD_PAY_ADVANCE TPA
+	                  LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TPA.INST_DUTY_CODE
+	                  LEFT JOIN TD_CNT TC ON  TC.CNT_NUM = TPA.CNT_NUM 
+	                  left join v_change_dutycode vd on tpa.inst_duty_code = vd.duty_code 
+	                 WHERE TPA.DATA_FLAG = 'F0'
+	                 AND TC.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+	          ) T
+	      ) 
+		  <where>
+			<if test="monDataFlag == 0 ">
+				AND EXISTS (
+					SELECT 1
+					FROM TI_TRADE_BACKWASH 
+					WHERE CNT_NUM = T.CNT_NUM
+					AND DATA_FLAG = '0'
+				)
+			</if>
+		  </where>
+		  group by invoice_type
+	</select>
+<!--	
+	<select id="getAdvCntInfo" parameterType="string" resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsMgr">
+		SELECT COUNT(DISTINCT OU_CODE) as advOuCnt, COUNT(1) as advCnt, NVL(SUM(decode(vd.duty_code,null,TPC.CANCEL_AMT,0)),0) as advSumAmt,
+		  count(vd.duty_code) as advNotSendCnt,COUNT(DISTINCT vd.duty_code) as advNotSendOuCnt 
+		  FROM TD_PAY_ADVANCE_CANCEL TPC
+		  LEFT JOIN TD_PAY TP ON TP.PAY_ID = TPC.NORMAL_PAY_ID
+		  LEFT JOIN TD_PAY_ADVANCE TPA ON TPA.PAY_ID = TPC.ADVANCE_PAY_ID
+		  LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TPA.INST_DUTY_CODE
+		  LEFT JOIN TD_CNT TC ON  TC.CNT_NUM = TP.CNT_NUM 
+		  left join v_change_dutycode vd on tpa.inst_duty_code = vd.duty_code 
+		 WHERE TPC.DATA_FLAG = '00' 
+		 	AND TPA.DATA_FLAG = 'F4' 
+		 	AND TP.DATA_FLAG = 'F0' 
+		 	AND TC.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+	</select>
+-->	
+
+	<select id="getOrderCntInfo" parameterType="string" resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsMgr">
+				SELECT COUNT(distinct TOR.ORDER_ID) AS ORDERCNT,
+		       		   NVL(SUM(decode(vd.duty_code,null,TCD.EXEC_AMT,0)), 0) AS ORDERSUMAMT,
+		               COUNT(DISTINCT TF.OU_CODE) AS ORDEROUCNT,
+		               count(distinct nvl2(vd.duty_code,TOR.ORDER_ID,'') ) ordNotSendCnt,
+		               COUNT(DISTINCT vd.duty_code) AS ordNotSendOuCnt 
+					  FROM TD_ORDER TOR
+					  JOIN TD_CNT_DEVICE TCD ON TOR.ORDER_ID = TCD.ORDER_ID
+					  LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TOR.ORDER_DUTY_CODE
+					  JOIN TD_CNT TC ON TC.CNT_NUM = TCD.CNT_NUM 
+					  left join v_change_dutycode vd on tor.order_duty_code = vd.duty_code 
+					WHERE TC.ORG1_CODE =  #{org1Code,jdbcType=VARCHAR}
+					   AND TC.DATA_FLAG = '19'
+					   AND TOR.DATA_FLAG = '04'
+	</select>
+	
+	<select id="getFmsDownloadList" parameterType="com.forms.prms.web.amortization.fmsMgr.domain.FmsDownload"
+		resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsDownload">
+		SELECT 
+			TD.BATCH_NO,
+			TD.TRADE_TYPE,
+			TD.ALL_CNT,
+			SUBSTR(
+			        TD.DOWNLOAD_PATH , 
+			        INSTR(TD.DOWNLOAD_PATH ,'/',-1 ,1)  +1
+			      ) DOWNLOAD_PATH,
+			TD.DOWNLOAD_DATE,
+			TD.DOWNLOAD_TIME,
+			TD.DATA_FLAG,
+			TD.TRADE_DATE,
+			TD.DEAL_LOG,
+			SS1.PARAM_NAME AS TRADE_TYPE_NAME,
+			SS2.PARAM_NAME AS DATA_FLAG_NAME 
+		FROM TI_DOWNLOAD TD LEFT JOIN SYS_SELECT SS1 ON SS1.CATEGORY_ID = 'DOWNLOAD_TRADE_TYPE' AND TD.TRADE_TYPE = SS1.PARAM_VALUE 
+			LEFT JOIN SYS_SELECT SS2 ON SS2.CATEGORY_ID = 'DOWNLOAD_DATA_FLAG' AND TD.DATA_FLAG = SS2.PARAM_VALUE 
+		<where>
+			<if test="batchNo != null and batchNo != ''">
+				AND TD.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+			</if>
+			<if test="tradeType != null and tradeType != ''">
+				AND TD.TRADE_TYPE = #{tradeType,jdbcType=VARCHAR}
+			</if>
+			<if test="dataFlag != null and dataFlag != ''">
+				AND TD.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				AND TD.TRADE_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND TD.TRADE_DATE &lt;= #{endDate,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY TD.TRADE_DATE DESC,TD.TRADE_TYPE
+	</select>
+	
+	<select id="getFmsDownload" parameterType="com.forms.prms.web.amortization.fmsMgr.domain.FmsDownload"
+		resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsDownload">
+		SELECT TD.* FROM TI_DOWNLOAD TD
+		<where>
+			<if test="batchNo != null and batchNo != ''">
+				AND TD.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+			</if>
+			<if test="tradeType != null and tradeType != ''">
+				AND TD.TRADE_TYPE = #{tradeType,jdbcType=VARCHAR}
+			</if>
+			<if test="dataFlag != null and dataFlag != ''">
+				AND TD.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getFmsUploadList" parameterType="com.forms.prms.web.amortization.fmsMgr.domain.FmsUpload"
+		resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsUpload">
+		SELECT 
+			TD.BATCH_NO,
+			TD.OU_CODE,
+			TD.TRADE_TYPE,
+			TD.ALL_CNT,
+			SUBSTR(
+			          TD.UPLOAD_PATH , 
+			          decode(INSTR(TD.UPLOAD_PATH ,'/',-1 ,1),0,INSTR(TD.UPLOAD_PATH ,'\',-1 ,1)+1,INSTR(TD.UPLOAD_PATH ,'/',-1 ,1)+1)
+			        ) UPLOAD_PATH,
+			TD.UPLOAD_DATE,
+			TD.UPLOAD_TIME,
+			SUBSTR(
+			          TD.DOWNLOAD_PATH , 
+			          decode(INSTR(TD.DOWNLOAD_PATH ,'/',-1 ,1),0,INSTR(TD.DOWNLOAD_PATH ,'\',-1 ,1)+1,INSTR(TD.DOWNLOAD_PATH ,'/',-1 ,1)+1) 
+			        ) DOWNLOAD_PATH,
+			TD.DOWNLOAD_DATE,
+			TD.DOWNLOAD_TIME,
+			TD.DATA_FLAG,
+			TD.TRADE_DATE,
+			TD.SEQ_NO,
+			TD.CHK_SUCC_CNT,
+			TD.DEAL_LOG
+		 FROM TI_UPLOAD TD
+		<where>
+			<!--超级管理员可进行根据OU代码和ou名称的模糊查询-->
+			<if test=" user.isSuperAdmin == 1 and likeOuCode!=null and likeOuCode !='' "> 
+				AND TD.OU_CODE LIKE concat(concat('%',#{likeOuCode}),'%')
+			</if>
+			<if test=" user.isSuperAdmin == 1 and likeOuName!=null  and likeOuName !='' "> 
+			AND EXISTS (SELECT distinct 1 from TB_FNDWRR  WHERE TD.OU_CODE=TB_FNDWRR.OU_CODE 
+			and OU_NAME like concat(concat('%',#{likeOuName}),'%'))
+			</if>
+			<!--非总行超级管理员 看所在省行-->
+			<if test="user.org1Code != 'A0001' and user.isSuperAdmin == 1"> 
+				AND EXISTS (SELECT 1 
+				              FROM TB_FNDWRR F 
+				             WHERE F.OU_CODE = TD.OU_CODE 
+				               AND F.ORG1_CODE = #{user.org1Code,jdbcType=VARCHAR} )
+			</if>
+			<!--非超级管理员-->
+			<if test="user.isSuperAdmin == 0"> 
+				AND TD.OU_CODE = #{user.ouCode,jdbcType=VARCHAR}
+			</if>
+			<if test="tradeType != null and tradeType != ''">
+				AND TD.TRADE_TYPE = #{tradeType,jdbcType=VARCHAR}
+			</if>
+			<if test="dataFlag != null and dataFlag != ''">
+				AND TD.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				AND TD.TRADE_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND TD.TRADE_DATE &lt;= #{endDate,jdbcType=VARCHAR}
+			</if>
+			<if test="ouCode != null and ouCode != ''">
+				AND TD.OU_CODE = #{ouCode,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY TD.UPLOAD_DATE DESC
+	</select>
+	
+	<select id="getOuList" parameterType="com.forms.prms.web.amortization.fmsMgr.domain.FmsUpload"
+		resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsUpload">
+		SELECT DISTINCT OU_CODE,OU_NAME
+		 FROM TB_FNDWRR TF
+		<where>
+			<!--非总行超级管理员 看所在省行-->
+			<if test="user.org1Code != 'A0001' and user.isSuperAdmin == 1"> 
+				AND TF.ORG1_CODE = #{user.org1Code,jdbcType=VARCHAR} 
+			</if>
+			<!--非超级管理员-->
+			<if test="user.isSuperAdmin == 0"> 
+				AND TF.OU_CODE = #{user.ouCode,jdbcType=VARCHAR}
+			</if>
+		</where>
+		ORDER BY TF.OU_CODE
+	</select>
+	
+	<select id="getFmsUpload" parameterType="com.forms.prms.web.amortization.fmsMgr.domain.FmsUpload"
+		resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsUpload">
+		SELECT TD.* FROM TI_UPLOAD TD
+		<where>
+			<if test="batchNo != null and batchNo != ''">
+				AND TD.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+			</if>
+			<if test="tradeType != null and tradeType != ''">
+				AND TD.TRADE_TYPE = #{tradeType,jdbcType=VARCHAR}
+			</if>
+			<if test="dataFlag != null and dataFlag != ''">
+				AND TD.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</if>
+		</where>
+	</select>
+	
+	<select id="getCglBatchList" parameterType="com.forms.prms.web.amortization.fmsMgr.domain.FmsCglBatch" 
+		resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsCglBatch" >
+		SELECT T.* FROM TL_CGL_BATCH T 
+		<!-- 登陆用户查看所属一级分行下的任务 -->
+		 WHERE T.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			<if test="taskType != null and taskType != ''">
+				AND T.TASK_TYPE = #{taskType,jdbcType=VARCHAR}
+			</if>
+			<if test="dataFlag != null and dataFlag != ''">
+				AND T.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				AND T.TRADE_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				AND T.TRADE_DATE &lt;= #{endDate,jdbcType=VARCHAR}
+			</if>
+		ORDER BY T.FEE_YYYYMM DESC,T.TASK_TYPE DESC
+	</select>
+	
+	<!-- 检查应付发票是否存在异常的状态 -->
+	<select id="check31Upload" parameterType="String"
+	                           resultType="String">
+    SELECT NVL(COUNT(1),0)
+	  FROM TI_UPLOAD T 
+ LEFT JOIN TB_FNDWRR F 
+        ON T.OU_CODE = F.OU_CODE
+	 WHERE T.TRADE_TYPE = '31'
+	   AND T.DATA_FLAG != '04'
+       AND F.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 检查当月冲销预提任务状态 -->
+	<select id="checkProvision" parameterType="String"
+	                            resultType="com.forms.prms.web.amortization.fmsMgr.domain.FmsCglBatch">
+	SELECT T.DATA_FLAG 
+	  FROM TL_CGL_BATCH T 
+	 WHERE T.TASK_TYPE  = '0'
+	   AND T.FEE_YYYYMM = TO_CHAR(SYSDATE,'YYYYMM')
+	   AND T.ORG1_CODE  = #{org1Code,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="checkProvisionMonth" parameterType="String"
+	              resultType ="String">
+	 SELECT 1 FROM DUAL 
+	 WHERE TO_CHAR(SYSDATE,'YYYYMM') = #{yyyyMM,jdbcType=VARCHAR}   
+	</select>
+
+	<!--检查系统时间是否大于任务时间  -->
+	<select id="checkPPMonth" parameterType="String"
+	              resultType ="String">
+	 SELECT 1 FROM DUAL 
+	 WHERE TO_CHAR(SYSDATE,'YYYYMM') &gt; #{yyyyMM,jdbcType=VARCHAR}   
+	</select>	
+	
+	
+	<!--查询log日志信息-->
+	<select id="querLog" parameterType="String" resultType ="String">
+		SELECT DEAL_LOG
+		FROM ${tableName}
+		WHERE BATCH_NO = #{batchNo, jdbcType=VARCHAR}
+	</select>
+	
+	<!--查询未处理fms文件数量-->
+	<select id="getDealCount" parameterType="String" resultType ="com.forms.prms.web.amortization.fmsMgr.domain.DealCountBean">
+		select nvl(sum(decode(trade_type, '31', 1, 0)),0) count31,
+		       nvl(sum(decode(trade_type, '32', 1, 0)),0) count32,
+		       nvl(sum(decode(trade_type, '33', 1, 0)),0) count33,
+		       nvl(sum(decode(trade_type, '34', 1, 0)),0) count34
+	   from ti_upload a where (data_flag = '02' or data_flag = '06') and 
+			   exists
+			   (
+			       select 1 from tb_fndwrr b where b.org1_code = #{org1Code, jdbcType=VARCHAR} 
+			       and a.ou_code = b.ou_code
+			   )
+	</select>
+	
+	<select id="getSucResult" resultType ="String">
+		select substr(download_path,instr(download_path ,'\',-1 ,1)+1) suc_file from ti_download where data_flag = '02'
+	</select>
+	
+	<select id="getCheckFileList" resultType ="String">
+		select substr(upload_path,instr(upload_path ,'\',-1 ,1)+1) from ti_upload where (data_flag = '02' or data_flag = '06') 
+	</select>
+	
+	<insert id="initCglBatchPriv" parameterType="String">
+    INSERT INTO TL_CGL_BATCH
+    (FEE_YYYYMM,
+     TASK_TYPE,
+     DATA_FLAG,
+     TRADE_DATE,
+     TRADE_TIME,
+     ALL_CNT,
+     SUC_CNT,
+     ORG1_CODE
+    )
+    VALUES
+    ( TO_CHAR(SYSDATE,'YYYYMM'),
+      '0',
+      '02',
+      TO_CHAR(SYSDATE,'YYYYMMDD'),
+      TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+      0,
+      0,
+      #{org1Code,jdbcType=VARCHAR}
+     )
+	</insert>
+	
+	<insert id="initCglBatchPP" parameterType="String">
+    INSERT INTO TL_CGL_BATCH
+    (FEE_YYYYMM,
+     TASK_TYPE,
+     DATA_FLAG,
+     TRADE_DATE,
+     TRADE_TIME,
+     ALL_CNT,
+     SUC_CNT,
+     ORG1_CODE
+    )
+    VALUES
+    ( TO_CHAR(SYSDATE,'YYYYMM'),
+      '1',
+      '04',
+      TO_CHAR(SYSDATE,'YYYYMMDD'),
+      TO_CHAR(SYSDATE, 'HH24:MI:SS'),
+      0,
+      0,
+      #{org1Code,jdbcType=VARCHAR}
+     )
+	</insert>
+	
+	
+</mapper>

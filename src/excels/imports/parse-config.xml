@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<functions>
+	<datasources>
+		<datasource id="ds1">
+			<username>HQERP</username>
+			<password>HQERP</password>
+			<!--WEB服务器上ORACLE客户端配置的TNS NAME-->
+			<tnsname>//172.16.8.241/orcl</tnsname>
+			<encoding>GBK</encoding>
+		</datasource>
+	</datasources>
+	<function-items>
+		<!-- 10月21日新增(预算汇总表数据导入) -->
+		<!-- 【预算汇总】-[Excel模板：预算汇总初始化数据-导入模板(V_1021)]-[Sheet1：预算汇总数据]  导入配置-->
+		<function-item>
+			<function-id>BGT_SUM_DATA_IMPORT</function-id> 
+			<business-deal-class>com.forms.prms.web.budget.bgtImport.service.BudgetImportDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>BGT_SUM_DATAINIT_IMP_TEMP.xml</sheet-config>
+		</function-item>
+	
+	
+		<!-- 预算模板(资产类)的汇总配置 -->
+		<function-item>
+			<function-id>BUDGET_TEMP01</function-id>
+			<business-deal-class>com.forms.prms.web.budget.budgetplan.service.BudgetTemplateZiChanBusinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>BUDGET_TEMP_MAIN01.xml</sheet-config>
+		</function-item>
+		
+		<!-- 预算模板(费用类)的汇总配置 -->
+		<function-item>
+			<function-id>BUDGET_TEMP02</function-id>
+			<business-deal-class>com.forms.prms.web.budget.budgetplan.service.BudgetTemplateFeeBusinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>BUDGET_TEMP_MAIN02.xml</sheet-config>
+		</function-item>
+		<!-- 资产类预算导入配置 -->
+		<function-item>
+			<function-id>BUDGET_IMPORT_ASSET</function-id>
+			<business-deal-class>com.forms.prms.web.budget.budgetdeclare.service.BudgetImportAssetBusinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>BUDGET_IMPORT_ASSET.xml</sheet-config>
+		</function-item>
+		
+		<!-- 费用类预算导入配置 -->
+		<function-item>
+			<function-id>BUDGET_IMPORT_FEE</function-id>
+			<business-deal-class>com.forms.prms.web.budget.budgetdeclare.service.BudgetImportFeeBusinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>BUDGET_IMPORT_FEE.xml</sheet-config>
+		</function-item>
+		
+		
+		<!-- 【数据迁移】-[Excel模板：合同数据]-[Sheet1：合同信息]  导入配置-->
+		<function-item>
+			<function-id>DM_CNTINFO</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.CntDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_CNTINFO.xml</sheet-config>
+		</function-item>
+		<!-- 【数据迁移】-[Excel模板：合同数据]-[Sheet2：合同物料信息]  导入配置-->
+		<function-item>
+			<function-id>DM_CNTMATR</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.CntDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_CNTDEVICE.xml</sheet-config>
+		</function-item>
+		<!-- 【数据迁移】-[Excel模板：合同数据]-[Sheet3：合同分期付款信息]  导入配置-->
+		<function-item>
+			<function-id>DM_CNTFK</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.CntDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_CNTFK.xml</sheet-config>
+		</function-item>
+		<!-- 【数据迁移】-[Excel模板：合同数据]-[Sheet4：租金递增条件]  导入配置-->
+		<function-item>
+			<function-id>DM_CNTTENANCY</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.CntDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_CNTTENANCYCONDI.xml</sheet-config>
+		</function-item>
+		
+		
+		<!-- 【数据迁移】—[Excel模板：普通付款数据]-[Sheet1:预付款信息]	导入配置 -->
+		<function-item>
+			<function-id>DM_TDPAYADVANCE</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.TdPayDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_TDPAYADVANCE.xml</sheet-config>
+		</function-item>
+		
+		<!-- 【数据迁移】—[Excel模板：普通付款数据]-[Sheet2:正常付款信息]	导入配置 -->
+		<function-item>
+			<function-id>DM_TDPAY</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.TdPayDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_TDPAY.xml</sheet-config>
+		</function-item>
+		<!-- 【数据迁移】—[Excel模板：普通付款数据]-[Sheet3:预付款核销信息]	导入配置 -->
+		<function-item>
+			<function-id>DM_TDPAYADCANCEL</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.TdPayDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_TDPAYADCANCEL.xml</sheet-config>
+		</function-item>
+		<!-- 【数据迁移】—[Excel模板：普通付款数据]-[Sheet4:预付款合同采购设备]	导入配置 -->
+		<function-item>
+			<function-id>DM_TDPAYDEVICEAD</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.TdPayDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_TDPAYDEVICEAD.xml</sheet-config>
+		</function-item>
+		<!-- 【数据迁移】—[Excel模板：普通付款数据]-[Sheet5:正常付款合同采购设备]	导入配置 -->
+		<function-item>
+			<function-id>DM_TDPAYDEVICENOR</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.TdPayDataBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_TDPAYDEVICENOR.xml</sheet-config>
+		</function-item>
+		
+		
+		<!-- 测试数据迁移-表1-Sheet1的配置 -->
+		<function-item>
+			<function-id>DATAMIGRATE_TEST_TB1</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.SqlldrZsysRoleBussinessDeal</business-deal-class>
+<!-- 			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class> -->
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SqlLdrExcelDeal</excel-deal-class>
+<!-- 			<sheet-config>DATAMIGRATE_TB_XXX.xml</sheet-config> -->
+			<sheet-config>DATAMIGRATE_TBSQLLDR_XXX.xml</sheet-config>
+		</function-item>
+		<!-- 测试数据迁移-表1-Sheet2的配置 -->
+		<function-item>
+			<function-id>DATAMIGRATE_TEST_TB2</function-id> 
+			<business-deal-class>com.forms.prms.web.reportmgr.dataMgr.dataMigrate.service.ZsysRoleBussinessDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>DATAMIGRATE_TB_XXX.xml</sheet-config>
+		</function-item>
+		
+		<!-- 监控指标导入-》专项包 的汇总配置 -->
+		<function-item>
+			<function-id>MONT_APRV_TEMP01_11</function-id>
+			<business-deal-class>com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.service.ImportData0111Deal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>MONT_APRV_TEMP01_11.xml</sheet-config>
+		</function-item>
+		<!-- 监控指标导入-》非省行统购 的汇总配置 -->
+		<function-item>
+			<function-id>MONT_APRV_TEMP01_12</function-id>
+			<business-deal-class>com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.service.ImportData0111Deal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>MONT_APRV_TEMP01_12.xml</sheet-config>
+		</function-item>
+		
+		<!-- 审批链导入-》 专项包费用 的汇总配置 -->
+		<function-item>
+			<function-id>MONT_APRV_TEMP02_11</function-id>
+			<business-deal-class>com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.service.ImportData0111Deal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>MONT_APRV_TEMP02_11.xml</sheet-config>
+		</function-item>
+		<!--  审批链导入-》省行统购 的汇总配置 -->
+		<function-item>
+			<function-id>MONT_APRV_TEMP02_12</function-id>
+			<business-deal-class>com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.service.ImportData0111Deal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>MONT_APRV_TEMP02_12.xml</sheet-config>
+		</function-item>
+		<!-- 物料信息导入配置-->
+		<function-item>
+			<function-id>MATR_TYPE</function-id>
+			<business-deal-class>com.forms.prms.web.sysmanagement.matrtype.service.MatrImportDeal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>MATR_TYPE.xml</sheet-config>
+		</function-item>
+		<!-- 用户职责信息导入配置-->
+		<!--<function-item>
+			<function-id>USER_ROLE_RLN_IMPORT</function-id>
+			<business-deal-class>com.forms.prms.web.sysmanagement.montAprvBatch.dataImport.service.ImportData0111Deal</business-deal-class>
+			<excel-deal-class>com.forms.platform.excel.imports.impl.SimpleExcelDeal</excel-deal-class>
+			<sheet-config>USER_ROLE_RLN_IMPORT.xml</sheet-config>
+		</function-item>-->
+	</function-items>
+</functions>

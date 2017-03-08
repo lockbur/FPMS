@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.contract.deliver.dao.DeliverDAO">
+
+	<!-- 查看合同列表 -->
+	<select id="list" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm"
+							resultType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		SELECT CNT.*,TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF 
+	 		ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '20' 
+	       AND CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+	ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	
+	<!-- 合同发起移交 -->
+	<update id="deliver" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '25',
+		       DELIVER_DUTY_CODE = #{deliverDutyCode, jdbcType=VARCHAR}
+	     WHERE DATA_FLAG = '20'
+	       AND CNT_NUM IN 
+	     <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</update>	
+	
+	
+	<!-- 查看移交列表 -->
+	<select id="deliverList" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm"
+							resultType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		SELECT CNT.*,
+		      TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF 
+	 		ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '25' 
+	       AND CNT.DELIVER_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+	ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 接受移交 -->
+	<update id="accept" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '20',
+		   	   PAY_DUTY_CODE = #{deliverDutyCode, jdbcType=VARCHAR},
+		       DELIVER_DUTY_CODE = null
+	     WHERE DATA_FLAG = '25'
+	    	 AND CNT_NUM IN 
+	       <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</update>
+	
+	<!-- 拒绝移交 -->
+	<update id="reject" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '20',
+		       DELIVER_DUTY_CODE = null
+	     WHERE DATA_FLAG = '25'
+	       AND CNT_NUM IN 
+	     <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</update>
+	
+	<!-- 查看取消移交列表 -->
+	<select id="cancelList" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm"
+							resultType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		SELECT CNT.*,
+		       TF.DUTY_NAME AS CREATEDEPTNAME,
+		       SEL.PARAM_NAME AS DATA_FLAG_NAME,
+		       SEL1.PARAM_NAME AS CNT_TYPE_NAME
+		  FROM TD_CNT CNT
+	 LEFT JOIN TB_FNDWRR TF 
+	 		ON TF.DUTY_CODE = CNT.CREATE_DEPT
+	 LEFT JOIN SYS_SELECT SEL 
+	        ON SEL.CATEGORY_ID = 'CNT_DATE_FLAG' 
+	       AND SEL.PARAM_VALUE = CNT.DATA_FLAG
+	 LEFT JOIN SYS_SELECT SEL1 
+	        ON SEL1.CATEGORY_ID = 'CNT_TYPE' 
+	       AND SEL1.PARAM_VALUE = CNT.CNT_TYPE
+	     WHERE CNT.DATA_FLAG = '25' 
+	       AND CNT.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+    <if test="cntNum != null and '' != cntNum">
+		AND CNT.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="cntType != null and '' != cntType">
+		AND CNT.CNT_TYPE = #{cntType,jdbcType=VARCHAR}
+	</if>
+	<if test="providerName != null and '' != providerName">
+		AND CNT.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+	</if>
+	<if test="startDate != null and '' != startDate">
+		AND CNT.SIGN_DATE &gt;= #{startDate,jdbcType=VARCHAR}
+	</if>
+	<if test="endDate != null and '' != endDate">
+		AND #{endDate,jdbcType=VARCHAR} &gt;= CNT.SIGN_DATE
+	</if>
+	<if test="createDept != null and '' != createDept">
+		AND CNT.CREATE_DEPT = #{createDept,jdbcType=VARCHAR}
+	</if>
+	ORDER BY CNT.CREATE_DATE DESC
+	</select>
+	
+	<!-- 取消移交 -->
+	<update id="cancel" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		UPDATE TD_CNT 
+		   SET DATA_FLAG = '20',
+		       DELIVER_DUTY_CODE = null
+	     WHERE DATA_FLAG = '25'
+	       AND CNT_NUM IN 
+	     <foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</update>
+	<select id="getDutyS" parameterType="com.forms.prms.web.contract.deliver.domain.DeliverForm"
+							resultType="com.forms.prms.web.contract.deliver.domain.DeliverForm">
+		SELECT DELIVER_DUTY_CODE
+		FROM TD_CNT TC
+		WHERE TC.CNT_NUM IN
+		<foreach collection="cntNums" item="cntNumItem" open="(" close=")" separator=",">
+	     	 #{cntNumItem, jdbcType=VARCHAR}
+	     </foreach>
+	</select>
+	
+	  <!--业务提醒汇总过程调用-->
+	<insert id="callWarnCount" parameterType="String">
+		CALL PRC_SYS_WARN_COUNT(#{deliverDutyCode, jdbcType=VARCHAR},'C')
+	</insert>
+	
+	
+</mapper>

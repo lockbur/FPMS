@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd"> 
+<mapper namespace="com.forms.prms.web.sysmanagement.referencespecial.dao.ReferenceSpecialDAO">
+	
+	<!-- 参考 列表 -->
+	<select id="referenceList" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference"
+	                           resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference">
+		SELECT REFERENCE_ID,
+			   REFERENCE_NAME,
+			   SCOPE,
+			   CASE SCOPE 
+			   WHEN '3' THEN '全局'
+			   WHEN '1' THEN '总行'
+			   WHEN '2' THEN '分行'
+			   WHEN '4' THEN '停用'
+			   ELSE '未知'
+			   END AS SCOPE_NAME
+		  FROM TB_REFERENCE 
+		 <where>
+		 	<if test="referenceId != null and referenceId != ''">
+				AND REFERENCE_ID LIKE trim(#{referenceId,jdbcType=VARCHAR}) || '%'
+			</if>
+			<if test="referenceName != null and referenceName != ''">
+				AND REFERENCE_NAME LIKE '%' ||trim(#{referenceName,jdbcType=VARCHAR}) || '%'
+			</if>
+			<if test="scope != null and scope != ''">
+				AND SCOPE = trim(#{scope,jdbcType=VARCHAR}) 
+			</if>
+		 </where>
+		 ORDER BY REFERENCE_ID
+	</select>
+	
+	<!-- 参考 检查Id是否存在 -->
+	<select id="checkRID" parameterType="String"
+	                      resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference">
+		SELECT * FROM TB_REFERENCE WHERE REFERENCE_ID = #{referenceId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 参考 新增 -->
+	<insert id="referenceAdd" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference">
+		INSERT INTO TB_REFERENCE 
+		(
+		 REFERENCE_ID,
+	     REFERENCE_NAME,
+	     SCOPE
+	     )
+	     VALUES
+	     (
+	       trim(#{referenceId, jdbcType=VARCHAR }),
+	       trim(#{referenceName, jdbcType=VARCHAR }),
+	       trim(#{scope, jdbcType=VARCHAR })
+	     )
+	</insert>
+	
+	<!-- 参考详情 -->
+	<select id="referenceView" parameterType="String"
+								resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference">
+		SELECT REFERENCE_ID,
+			   REFERENCE_NAME,
+			   SCOPE,
+			   CASE SCOPE 
+			   WHEN '3' THEN '全局'
+			   WHEN '1' THEN '总行'
+			   WHEN '2' THEN '分行'
+			   WHEN '4' THEN '停用'
+			   ELSE '未知'
+			   END AS SCOPE_NAME
+		  FROM TB_REFERENCE 
+		 WHERE REFERENCE_ID = #{referenceId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 参考 更新 -->
+	<update id="referenceUpd" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference">
+		UPDATE TB_REFERENCE 
+		   SET REFERENCE_NAME = trim(#{referenceName, jdbcType=VARCHAR }),
+		       SCOPE = trim(#{scope, jdbcType=VARCHAR }) 
+		 WHERE REFERENCE_ID = #{referenceId, jdbcType=VARCHAR }
+	</update>
+	
+	
+<!-- 专项  -->
+	<!-- 专项 列表 -->
+	<select id="specialList" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special"
+	                           resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special">
+		SELECT SPECIAL_ID,
+			   SPECIAL_NAME,
+			   SCOPE,
+			   CASE SCOPE 
+			   WHEN '3' THEN '全局'
+			   WHEN '1' THEN '总行'
+			   WHEN '2' THEN '分行'
+			   WHEN '4' THEN '停用'
+			   ELSE '未知'
+			   END AS SCOPE_NAME
+		  FROM TB_SPECIAL 
+		 <where>
+		 	<if test="specialId != null and specialId != ''">
+				AND SPECIAL_ID LIKE trim(#{specialId,jdbcType=VARCHAR}) || '%'
+			</if>
+			<if test="specialName != null and specialName != ''">
+				AND SPECIAL_NAME LIKE '%' ||trim(#{specialName,jdbcType=VARCHAR}) || '%'
+			</if>
+			<if test="scope != null and scope != ''">
+				AND SCOPE = trim(#{scope,jdbcType=VARCHAR}) 
+			</if>
+		 </where>
+		 ORDER BY SPECIAL_ID
+	</select>
+	
+	<!-- 专项 检查Id是否存在 -->
+	<select id="checkSID" parameterType="String"
+	                      resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special">
+		SELECT * FROM TB_SPECIAL WHERE SPECIAL_ID = #{specialId,jdbcType=VARCHAR}
+	</select>
+	
+	<!-- 专项 新增 -->
+	<insert id="specialAdd" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special">
+		INSERT INTO TB_SPECIAL 
+		(
+		 SPECIAL_ID,
+	     SPECIAL_NAME,
+	     SCOPE
+	     )
+	     VALUES
+	     (
+	       trim(#{specialId, jdbcType=VARCHAR }),
+	       trim(#{specialName, jdbcType=VARCHAR }),
+	       trim(#{scope, jdbcType=VARCHAR })
+	     )
+	</insert>
+
+	<!-- 专项详情 -->
+	<select id="specialView" parameterType="String"
+								resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special">
+		SELECT SPECIAL_ID,
+			   SPECIAL_NAME,
+			   SCOPE,
+			   CASE SCOPE 
+			   WHEN '3' THEN '全局'
+			   WHEN '1' THEN '总行'
+			   WHEN '2' THEN '分行'
+			   WHEN '4' THEN '停用'
+			   ELSE '未知'
+			   END AS SCOPE_NAME
+		  FROM TB_SPECIAL 
+		 WHERE SPECIAL_ID = #{specialId,jdbcType=VARCHAR}
+	</select>	
+	
+	<!-- 专项 更新 -->
+	<update id="specialUpd" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special">
+		UPDATE TB_SPECIAL 
+		   SET SPECIAL_NAME = trim(#{specialName, jdbcType=VARCHAR }),
+		       SCOPE = trim(#{scope, jdbcType=VARCHAR }) 
+		 WHERE SPECIAL_ID = #{specialId, jdbcType=VARCHAR }
+	</update>
+	
+	<!-- 弹出层专项 -->
+	<select id="specialPage" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special"
+								resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Special">
+		SELECT SPECIAL_ID,
+			   SPECIAL_NAME
+		  FROM TB_SPECIAL 
+		  <where>
+		  	<if test="org1Code =='A0001'">
+				AND SCOPE!='4'
+		    </if>
+		    <if test="org1Code !='A0001'">
+				AND SCOPE!='4' AND SCOPE!='1'
+		    </if>
+		     <if test="specialId != null and specialId != ''">
+				AND SPECIAL_ID LIKE trim(#{specialId,jdbcType=VARCHAR}) || '%'
+			</if>
+		    <if test="specialName != null and specialName != ''">
+				AND SPECIAL_NAME LIKE trim(#{specialName,jdbcType=VARCHAR}) || '%'
+			</if>
+		  </where>
+	</select>	
+	<!-- 弹出层参考 -->
+	<select id="referencePage" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference"
+								resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.Reference">
+		SELECT 
+		REFERENCE_ID,
+		REFERENCE_NAME
+		FROM TB_REFERENCE 
+		  <where>
+		  	<if test="org1Code =='A0001'">
+				AND SCOPE!='4'
+		    </if>
+		    <if test="org1Code !='A0001'">
+				AND SCOPE!='4' AND SCOPE!='1'
+		    </if>
+		    <if test="referenceId != null and referenceId != ''">
+				AND REFERENCE_ID LIKE trim(#{referenceId,jdbcType=VARCHAR}) || '%'
+			</if>
+		    <if test="referenceName != null and referenceName != ''">
+				AND REFERENCE_NAME LIKE trim(#{referenceName,jdbcType=VARCHAR}) || '%'
+			</if>
+		  </where>
+	</select>	
+		<!-- 税码 列表 -->
+	<select id="taxCodeList" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode"
+	                           resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		SELECT  tax_code,   
+				tax_rate    ,
+				deduct_flag ,
+			    cgl_code    ,
+				has_taxrow  ,
+				CASE deduct_flag 
+			   WHEN 'Y' THEN '可抵扣'
+			   WHEN 'N' THEN '不可抵扣'
+			   ELSE '未知'
+			   END AS deduct_flag_name,
+			   CASE has_taxrow 
+			   WHEN 'Y' THEN '产生'
+			   WHEN 'N' THEN '不产生'
+			   ELSE '未知'
+			   END AS has_taxrow_name
+		  FROM TB_TAX_CODE 
+		 <where>
+		 	<if test="taxCode != null and taxCode != ''">
+				AND tax_code LIKE trim(#{taxCode,jdbcType=VARCHAR}) || '%'
+			</if>
+			<if test="isZero !=  null and isZero != ''">
+				AND tax_rate =trim('0') 
+			</if>
+			<if test="isZero = null or isZero=''">
+				<if test="taxRate != null and taxRate != ''">
+				AND tax_rate =trim(#{taxRate,jdbcType=NUMERIC}) 
+			   </if>
+			</if>
+			<if test="cglCode != null and cglCode != ''">
+				AND cgl_code = trim(#{cglCode,jdbcType=VARCHAR})
+			</if>
+			<if test="deductFlag != null and deductFlag != ''">
+				AND deduct_flag = trim(#{deductFlag,jdbcType=CHAR}) 
+			</if>
+		 </where>
+		 ORDER BY tax_rate, deduct_flag
+	</select>
+	<!-- 税码 检查编号是否存在 -->
+	<select id="checkTaxCode" parameterType="String"
+	                      resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		SELECT * FROM TB_TAX_CODE WHERE TAX_CODE = #{taxCode,jdbcType=VARCHAR}
+	</select>
+	<!-- 税码 新增 -->
+	<insert id="taxCodeAdd" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		INSERT INTO TB_TAX_CODE 
+		(
+		 TAX_CODE,
+	     TAX_RATE,
+	     DEDUCT_FLAG,
+	     <if test="cglCode != null and cglCode != ''">
+		  CGL_CODE,	
+		 </if>
+	     HAS_TAXROW,
+	     VALID_FLAG,
+	     INST_USER,
+	     INST_DATE,
+	     INST_TIME,
+	     UPD_USER,
+	     UPD_DATE,
+	     UPD_TIME
+	     )
+	     VALUES
+	     (
+	       trim(#{taxCode, jdbcType=VARCHAR }),
+	       trim(#{taxRate, jdbcType=NUMERIC }/100),
+	       trim(#{deductFlag, jdbcType=VARCHAR }),
+	       <if test="cglCode != null and cglCode != ''">
+		    trim(#{cglCode, jdbcType=VARCHAR }),
+		   </if>
+	       trim(#{hasTaxrow, jdbcType=VARCHAR }),
+	       trim(#{validFlag, jdbcType=VARCHAR }),
+	       trim(#{instUser, jdbcType=VARCHAR }),
+	       to_char(sysdate,'YYYY-MM-DD'),
+	       to_char(sysdate,'HH24:MI:SS') ,
+	       trim(#{updUser, jdbcType=VARCHAR }),
+	       to_char(sysdate,'YYYY-MM-DD'),
+	       to_char(sysdate,'HH24:MI:SS') 
+	     )
+	</insert>
+	<!-- 税码详情 -->
+	<select id="preTaxCodeUpdate" parameterType="String"
+								resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		SELECT  tax_code,   
+				tax_rate    ,
+				deduct_flag ,
+			    cgl_code    ,
+				has_taxrow  ,
+				VALID_FLAG,
+				CASE deduct_flag 
+			   WHEN 'Y' THEN '可抵扣'
+			   WHEN 'N' THEN '不可抵扣'
+			   ELSE '未知'
+			   END AS deduct_flag_name
+		  FROM TB_TAX_CODE 
+		  where tax_code=#{taxCode,jdbcType=VARCHAR}
+	</select>	
+	<!-- 税码 更新 -->
+	<update id="taxCodeUpdate" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		UPDATE TB_TAX_CODE 
+		   SET HAS_TAXROW = trim(#{hasTaxrow,jdbcType=VARCHAR }),
+		       VALID_FLAG = trim(#{validFlag,jdbcType=VARCHAR }) ,
+		       UPD_USER=#{updUser,jdbcType=VARCHAR},
+		       UPD_DATE=to_char(sysdate,'YYYY-MM-DD'),
+		       UPD_TIME= to_char(sysdate,'HH24:MI:SS') 
+		 WHERE TAX_CODE = #{taxCode, jdbcType=VARCHAR }
+	</update>
+	 <!-- 新增核算码百分比信息-->
+    <insert id="cglPerCntAdd" parameterType="java.util.HashMap">
+    	INSERT INTO TB_TAX_CODE_CGL(
+			   TAX_CODE,
+			   PER_CNT,
+			   CGL_CODE
+			)
+   		<foreach collection="list" item="item" index="index" separator="union all">
+	       select 
+	            #{item.taxCode   , jdbcType=VARCHAR      },
+				#{item.perCnt     ,jdbcType=NUMERIC    },
+				#{item.cglCode   , jdbcType=VARCHAR      }
+	       from dual
+   		</foreach>
+    </insert>
+    <!-- 税码百分比核算码集合 -->
+	<select id="perCntCglList" parameterType="String"
+								resultType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		SELECT  
+			PER_CNT,
+			CGL_CODE
+		FROM TB_TAX_CODE_CGL
+		where tax_code=#{taxCode,jdbcType=VARCHAR}
+	</select>
+	<delete id="delPerCntCgl" parameterType="com.forms.prms.web.sysmanagement.referencespecial.domain.TaxCode">
+		DELETE FROM  TB_TAX_CODE_CGL
+		WHERE TAX_CODE=#{taxCode,jdbcType=VARCHAR}
+	</delete>	
+</mapper>

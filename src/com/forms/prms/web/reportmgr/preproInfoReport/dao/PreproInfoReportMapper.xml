@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.reportmgr.preproInfoReport.dao.PreproInfoReportDAO">
+
+	<select id="getPreproinfoReport" parameterType="com.forms.prms.web.reportmgr.preproInfoReport.domain.PreproInfoReportBean"
+			resultType="com.forms.prms.web.reportmgr.preproInfoReport.domain.PreproInfoReportBean">
+SELECT BASE.PAY_TYPE,
+       BASE.ORG1_CODE,
+       BASE.ORG1_NAME,
+       BASE.ORG2_CODE,
+       BASE.ORG2_NAME,
+       BASE.FEE_DEPT,
+       BASE.CGL_CODE,
+       BASE.MATR_CODE,
+       BASE.MATR_NAME,
+       BASE.CNT_NUM,
+       BASE.CNT_NAME,
+       BASE.NOTAX_ALL_PAY_AMT,
+       BASE.COUNT_ALL_PAY_AMT,
+       BASE.COUNT_ALL_IN_AMT,
+       BASE.COUNT_ALL_OUT_AMT,
+       BASE.YEAR_ALL_PAY_AMT,
+       BASE.YEAR_ALL_IN_AMT,
+       BASE.YEAR_ALL_OUT_AMT,
+       BASE.YEAR_ALL_FEE
+  FROM V_PREPRO_REPORT BASE
+  <where>
+	<if test="con.org1Code != null and '' != con.org1Code and 'null' != con.org1Code">
+		AND BASE.ORG1_CODE = #{con.org1Code ,jdbcType=VARCHAR}
+	</if>
+	<if test="con.org2Code != null and '' != con.org2Code and 'null' != con.org2Code">
+		AND BASE.ORG2_CODE = #{con.org2Code ,jdbcType=VARCHAR}
+	</if>
+	<if test="con.feeDept != null and '' != con.feeDept and 'null' != con.feeDept">
+		AND BASE.FEE_DEPT = #{con.feeDept ,jdbcType=VARCHAR}
+	</if>
+	<if test="con.cglCode != null and '' != con.cglCode and 'null' != con.cglCode">
+		AND BASE.CGL_CODE = #{con.cglCode ,jdbcType=VARCHAR}
+	</if>
+	<if test="con.feeYear != null and '' != con.feeYear and 'null' != con.feeYear">
+		AND BASE.FEE_START_YEAR &lt;= #{con.feeYear ,jdbcType=VARCHAR}
+        AND BASE.FEE_END_YEAR &gt;= #{con.feeYear ,jdbcType=VARCHAR} 
+	</if>
+	<!-- 省行 -->
+			<if test="con.orgFlag == 1">
+				AND BASE.ORG1_CODE = #{org1Code,jdbcType=VARCHAR}
+			</if>
+			<!-- 二级行 -->
+			<if test="con.orgFlag == 2">
+				AND EXISTS
+				(
+				   SELECT 1 FROM TB_FNDWRR TBF WHERE TBF.ORG2_CODE = #{org2Code,jdbcType=VARCHAR} and 
+				   (
+				   	    TBF.DUTY_CODE = BASE.CREATE_DEPT OR 
+				   		TBF.DUTY_CODE = BASE.PAY_DUTY_CODE OR 
+				   		TBF.DUTY_CODE = BASE.FEE_DEPT 
+				   )
+				)
+			</if>
+			<!-- 业务部门 -->		
+			<if test="con.orgFlag == 3">
+				AND (BASE.CREATE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					OR BASE.PAY_DUTY_CODE = #{dutyCode,jdbcType=VARCHAR}
+					OR BASE.FEE_DEPT = #{dutyCode,jdbcType=VARCHAR}
+					)
+			</if>
+</where>
+ ORDER BY BASE.ORG1_CODE, 
+          BASE.ORG2_CODE, 
+          BASE.CNT_NUM
+	</select>
+
+</mapper>

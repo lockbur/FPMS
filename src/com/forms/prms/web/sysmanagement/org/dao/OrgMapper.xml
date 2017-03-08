@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.org.dao.OrgDao">
+	
+	
+	<!-- 查询机构列表 -->
+	
+	<select id="getOrgListTag"
+		parameterType="com.forms.prms.web.sysmanagement.org.domain.BaseBean"
+		resultType="com.forms.prms.web.sysmanagement.org.domain.OrgUnit">
+		select  
+			temp.dId,
+  			temp.dName,
+  			temp.dLevel,
+  			temp.pId
+  		  from
+			(
+			      select 
+				    DISTINCT
+				    duty_code || '4' tId,
+				    duty_code dId,
+				    duty_name dName,
+				    org_code pId,
+				    org_code || '3' tpId,
+				    '4' dLevel
+				  from tb_fndwrr
+				  union all
+				  (
+				  select 
+				    DISTINCT
+				    org_code || '3' tId,
+				    org_code dId,
+				    org_name dName,
+				    nvl(org2_code, org1_code) pId,
+				    decode(org2_code, null, org2_code || '2', org1_code || '1') tpId,
+				    '3' dLevel
+				  from tb_fndwrr
+				  )
+				  union all
+				  (
+				   select 
+				    DISTINCT
+				    org2_code || '2' tId,
+				    org2_code dId,
+				    org2_name dName,
+				    org1_code pId,
+				    org1_code || '1' tpId,
+				    '2' dLevel
+				   from tb_fndwrr 
+				   where org2_code is not null
+				  )
+				  union all
+				  (
+				    select 
+				      DISTINCT
+				      org1_code || '1' tId,
+				      org1_code dId,
+				      org1_name dName,
+				      '00000' pId,
+				      '000000' tpId,
+				      '1' dLevel
+				    from tb_fndwrr 
+			  	  )
+			) temp
+		 start with temp.dLevel = '1'
+		 connect by  prior temp.tId = temp.tpId
+		 order by temp.tpId,temp.tId
+	</select>
+	
+	<!-- 责案中心查询 -->
+	<select id="getCachedZtreeTag"
+		parameterType="com.forms.prms.web.sysmanagement.org.domain.BaseBean"
+		resultType="com.forms.prms.web.sysmanagement.org.domain.Duty">
+			SELECT 
+			  DUTY_CODE,
+			  DUTY_NAME,
+			  OU_CODE,
+			  OU_NAME,
+			  ORG_CODE,
+			  ORG_NAME,
+			  ORG2_CODE,
+			  ORG2_NAME,
+			  ORG1_CODE,
+			  ORG1_NAME
+			FROM TB_FNDWRR 
+	</select>
+	
+	<select id="getDevTypeListTag" 
+		parameterType="com.forms.prms.web.sysmanagement.org.domain.BaseBean"
+		resultType="com.forms.prms.web.sysmanagement.org.domain.DeviceType">
+		SELECT 
+		  NODE_ID,
+		  NODE_NAME NODE_NM,
+		  UP_NODE_ID,
+		  LVL,
+		  IS_VALID,
+		  FIRST_ADD_USER_ID,
+		  FIRST_ADD_DATE,
+		  FIRST_ADD_TIME,
+		  LAST_MODIFY_USER_ID,
+		  LAST_MODIFY_DATE,
+		  LAST_MODIFY_TIME
+		FROM RM_BASE_DEV_TYPE
+		WHERE 1 = 1
+		
+		<!-- 叶子等级限定 -->
+	    <if test=" null != leafLevel and '' != leafLevel ">
+		  AND ( LVL &lt;= #{leafLevel, jdbcType = VARCHAR}
+		  
+		<if test=" null != rootLevel and '' != rootLevel ">
+		     OR LVL = #{rootLevel, jdbcType = VARCHAR}
+		</if>
+		<if test=" null != rootNodeId and '' != rootNodeId ">
+	 	     <if test=" null == rootNodeList ">
+				 OR NODE_ID = #{rootNodeId, jdbcType = VARCHAR}
+			 </if>
+			 <if test=" null != rootNodeList ">
+				 OR NODE_ID IN (
+				 	SELECT NODE_ID FROM RM_BASE_DEV_TYPE ONE START WITH NODE_ID IN
+				<foreach collection="rootNodeList" item="rootNode" separator="," open="(" close=")" >
+					#{rootNode, jdbcType = VARCHAR}
+				</foreach>
+				 CONNECT BY PRIOR ONE.UP_NODE_ID = ONE.NODE_ID
+				)
+			 </if>
+	 	</if>
+	 	 	)
+	    </if>
+		
+		<!-- rootNodeId is null -->  
+		<if test=" null == rootNodeId or '' == rootNodeId ">
+			START WITH LVL = #{rootLevel, jdbcType = VARCHAR}
+		</if>
+		
+		<!-- rootNodeId is not null -->
+		<if test=" null != rootNodeId and '' != rootNodeId ">
+			
+			<!-- rootLevel is null -->
+			<if test=" null == rootLevel or '' == rootLevel ">
+				<if test=" null == rootNodeList ">
+					START WITH NODE_ID = #{rootNodeId, jdbcType = VARCHAR}
+				</if>
+				<if test=" null != rootNodeList ">
+					START WITH NODE_ID IN
+					<foreach collection="rootNodeList" item="rootNode" separator="," open="(" close=")" >
+						#{rootNode, jdbcType = VARCHAR}
+					</foreach>
+				</if>
+			</if> 
+			
+			<!-- rootLevel is not null -->
+			<if test=" null != rootLevel and '' != rootLevel ">
+				AND LVL &gt;= #{rootLevel, jdbcType = VARCHAR}
+				<if test=" null == rootNodeList ">
+					START WITH NODE_ID = #{rootNodeId, jdbcType = VARCHAR}
+				</if>
+				<if test=" null != rootNodeList ">
+					START WITH NODE_ID IN
+					<foreach collection="rootNodeList" item="rootNode" separator="," open="(" close=")" >
+						#{rootNode, jdbcType = VARCHAR}
+					</foreach>
+				</if>
+			</if>   
+		</if>    
+		
+		CONNECT BY PRIOR NODE_ID = UP_NODE_ID
+		ORDER BY NODE_ID ASC
+	</select>
+	
+	
+	<insert id="insertInteAddress" >
+		INSERT INTO SYS_PARAMETER A
+		  (A.PARAM_VAR_NAME,
+		   A.PARAM_DISP_NAME,
+		   A.PARAM_VALUE,
+		   A.CATEGORY_ID,
+		   A.ENABLE_MANAGE,
+		   A.IS_PWD_TYPE)
+		
+		  (SELECT 
+		    'MEMORY_TB_FNDWRR',
+		    '内存中机构树刷新标识',
+		    '00000000000',
+		    '1',
+		    '0',
+		    '0'
+		    from dual where not exists(
+		      select 1 from  SYS_PARAMETER B
+		      WHERE B.PARAM_VAR_NAME = 'MEMORY_TB_FNDWRR')
+		    )
+	</insert>
+	<update id="updateInteAddress" parameterType="String">
+		UPDATE SYS_PARAMETER A SET A.PARAM_VALUE = A.PARAM_VALUE || ' | ' ||  #{myAddress, jdbcType = VARCHAR}
+		WHERE A.PARAM_VAR_NAME='MEMORY_TB_FNDWRR' AND INSTR(A.PARAM_VALUE, #{myAddress, jdbcType = VARCHAR}) = 0
+	</update>
+	
+	<select id="getOrg1Code" parameterType="String" resultType="String">
+		SELECT DISTINCT ORG1_CODE FROM TB_FNDWRR A 
+		WHERE A.ORG1_CODE =#{rootId, jdbcType = VARCHAR}
+		 OR A.ORG2_CODE = #{rootId, jdbcType = VARCHAR}
+		 OR A.ORG_CODE =  #{rootId, jdbcType = VARCHAR}
+	</select>
+	
+	
+</mapper>

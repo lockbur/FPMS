@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.payexamine.dao.PayExamineDao">
+	<!--合同付款和预付款信息列表查询-->
+	<select id="getList" parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean" resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT T.*,
+			TC.CNT_NAME,
+			TC.CNT_TYPE,
+			SEL2.PARAM_NAME AS CNT_TYPE_NAME,
+			TC.IS_ORDER,
+			SS.PARAM_NAME AS payDataFlag
+		FROM (SELECT 
+				'N' AS isPrePay,
+				TP.CNT_NUM,
+				TP.PAY_ID,
+				TP.PAY_DATE,
+				TP.PAY_AMT,
+				TP.INVOICE_ID,
+				TP.INVOICE_AMT,
+				TP.DATA_FLAG,
+				TP.PROVIDER_CODE,
+				TP.PROVIDER_NAME,
+				TP.INST_DUTY_CODE,
+				TP.IS_CREDIT_NOTE,
+				TP.INVOICE_ID_BLUE,
+				TP.INST_USER AS INST_OPER,
+				NVL2(TEMP1.pay_id, 'N', 'Y') AS IS_ENABLE
+			FROM TD_PAY TP
+			 LEFT JOIN (SELECT pay_id FROM td_pay A WHERE A.INST_USER = #{instOper,jdbcType=VARCHAR}) TEMP1 ON TEMP1.PAY_ID = TP.PAY_ID
+			UNION
+			SELECT 
+				'Y' AS isPrePay,
+				TPA.CNT_NUM,
+				TPA.PAY_ID,
+				TPA.PAY_DATE,
+				TPA.PAY_AMT,
+				TPA.INVOICE_ID,
+				TPA.INVOICE_AMT,
+				TPA.DATA_FLAG,
+				TPA.PROVIDER_CODE,
+				TPA.PROVIDER_NAME,
+				TPA.INST_DUTY_CODE,
+				'' AS IS_CREDIT_NOTE,
+				'' as INVOICE_ID_BLUE,
+				TPA.INST_USER AS INST_OPER,
+				NVL2(TEMP2.pay_id, 'N', 'Y') AS IS_ENABLE
+			FROM TD_PAY_ADVANCE TPA
+			LEFT JOIN (SELECT pay_id FROM TD_PAY_ADVANCE B WHERE B.INST_USER = #{instOper,jdbcType=VARCHAR}) TEMP2 ON TEMP2.PAY_ID = TPA.PAY_ID
+		) T
+		LEFT JOIN TD_CNT TC  ON T.CNT_NUM = TC.CNT_NUM
+		LEFT JOIN SYS_SELECT SEL2 ON SEL2.CATEGORY_ID = 'CNT_TYPE' AND SEL2.PARAM_VALUE = TC.CNT_TYPE
+		LEFT JOIN SYS_SELECT SS	ON T.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='PAY_DATA_FLAG'
+<!-- 		WHERE ( T.isPrePay ='Y' OR TC.IS_ORDER = '1' OR (TC.IS_ORDER = '0' AND T.IS_CREDIT_NOTE = '0')) -->
+<!-- 		AND T.INST_DUTY_CODE=#{instDutyCode,jdbcType=VARCHAR} -->
+		WHERE T.INST_DUTY_CODE=#{instDutyCode,jdbcType=VARCHAR}
+		AND T.DATA_FLAG like 'B_'
+		<if test="cntNum != null and '' != cntNum">
+			AND T.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND TC.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND T.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="payId != null and '' != payId">
+			AND T.PAY_ID LIKE '%' || #{payId ,jdbcType=VARCHAR} || '%'  
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND T.PAY_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND T.PAY_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		ORDER BY T.PAY_DATE DESC,T.CNT_NUM DESC
+	</select>
+	<!--合同预付款详细信息查询-->
+	<select id="getPrePayByPayId" parameterType="String" resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT 
+			'Y' AS isPrePay,
+			TPA.CNT_NUM,
+			TC.CNT_AMT,
+			TC.ZB_AMT,
+			TC.NORMARL_TOTAL_AMT,
+			TC.ADVANCE_TOTAL_AMT,
+			TC.CNT_TYPE,
+			TC.CNT_TAX_AMT,
+			TC.CNT_ALL_AMT,
+			TPA.PAY_ID,
+			TPA.INVOICE_ID,
+			TPA.PROVIDER_TYPE,
+			TPA.ATTACHMENT_NUM,
+			TPA.PROVIDER_NAME,
+			TPA.PROV_ACT_NO,
+			TPA.BANK_INFO as bankName,
+			TPA.INVOICE_AMT,
+			TPA.PAY_AMT,
+			TPA.PAY_DATE,
+			TPA.INVOICE_MEMO,
+			TPA.PROV_ACT_CURR,
+			TPA.DATA_FLAG,
+			TC.FREEZE_TOTAL_AMT,
+			TC.SUSPENSE_TOTAL_AMT,
+			TPA.PAY_MODE,
+			SS.PARAM_NAME as payModeName,
+			TIP.ID,
+			TIP.ICMS_PKUUID
+		FROM TD_PAY_ADVANCE TPA
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  TPA.PAY_ID=TIP.ID
+		LEFT JOIN SYS_SELECT SS ON  SS.PARAM_VALUE=TPA.PAY_MODE AND SS.CATEGORY_ID='SYS_PAY_WAY'
+		LEFT JOIN TD_CNT TC ON TPA.CNT_NUM = TC.CNT_NUM
+		WHERE TPA.PAY_ID = #{payId,jdbcType=VARCHAR}
+	</select>
+	
+	<!--合同付款详细信息查询-->
+	<select id="getPayByPayId" parameterType="String" resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT 
+			'N' AS isPrePay,
+			TP.CNT_NUM,
+			TC.CNT_AMT,
+			TC.ZB_AMT,
+			TC.NORMARL_TOTAL_AMT,
+			TC.ADVANCE_TOTAL_AMT,
+			TC.CNT_TYPE,
+			TC.CNT_TAX_AMT,
+			TC.CNT_ALL_AMT,
+			TP.PAY_ID,
+			TP.INVOICE_ID,
+			TP.PROVIDER_TYPE,
+			TP.ATTACHMENT_NUM,
+			TP.PROVIDER_NAME,
+			TP.PROV_ACT_NO,
+			TP.BANK_INFO as bankName,
+			TP.INVOICE_AMT,
+			TP.INVOICE_AMT_TAX,
+			TP.INVOICE_AMT_NOTAX,
+			TP.PAY_AMT,
+			TP.PAY_DATE,
+			TP.INVOICE_MEMO,
+			TP.SUSPENSE_AMT,
+			TP.SUSPENSE_DATE,
+			TP.SUSPENSE_REASON,
+			TP.SUSPENSE_PERIOD,
+			TP.SUSPENSE_NAME,
+			TP.ADVANCE_CANCEL_AMT,
+			TP.PAY_MODE,
+			TP.DATA_FLAG,
+			TP.IS_CREDIT_NOTE,
+			TC.FREEZE_TOTAL_AMT,
+			TC.SUSPENSE_TOTAL_AMT,
+			SS.PARAM_NAME as payModeName,
+			TIP.ID,
+			TIP.ICMS_PKUUID,
+			TP.IS_FROZEN_BGT ,
+			TP.INVOICE_ID_BLUE
+		FROM TD_PAY TP
+		LEFT JOIN TI_ICMS_PKUUID TIP ON  TP.PAY_ID=TIP.ID
+		LEFT JOIN  SYS_SELECT SS ON  SS.PARAM_VALUE=TP.PAY_MODE 
+		AND SS.CATEGORY_ID='SYS_PAY_WAY'
+		LEFT JOIN TD_CNT TC  ON TP.CNT_NUM = TC.CNT_NUM
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+	</select>
+	<!--预付款设备采购信息-->
+	<select id="getPrePayDeviceListByPayId" parameterType="String" resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT 
+			TMT.CGL_CODE,
+			TP.PROJ_NAME,
+			TMT.MATR_NAME,
+			TCD.DEVICE_MODEL_NAME,
+			TCD.EXEC_AMT,
+			TCD.EXEC_PRICE,
+			TCD.PAYED_AMT,
+			TCD.FREEZE_AMT,
+			TCD.TAX_CODE,
+			NVL(DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,TCD.TAX_NAMT),0) TAX_AMT,
+			NVL(TCD.PAYED_AMT_TAX,0) PAYED_AMT_TAX,
+			NVL(TCD.FREEZE_AMT_TAX,0) FREEZE_AMT_TAX,
+			TPD.SUB_INVOICE_AMT ,
+			TPD.ADD_TAX_AMT ,
+			TCD.FEE_DEPT,
+		    TF.DUTY_NAME AS FEE_DEPT_NAME,
+			TPD.IVROW_MEMO 
+		FROM TD_PAY_DEVICE	TPD
+		LEFT JOIN TD_CNT_DEVICE TCD ON TPD.CNT_NUM=TCD.CNT_NUM AND TPD.SUB_ID=TCD.SUB_ID
+		LEFT JOIN TB_MATR_TYPE TMT ON TCD.MATR_CODE=TMT.MATR_CODE
+		LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID=TCD.PROJ_ID
+		LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TCD.FEE_DEPT
+		WHERE TPD.PAY_ID=#{payId,jdbcType=VARCHAR}
+		AND TPD.PAY_TYPE='0'
+		AND TPD.SUB_INVOICE_AMT!=0
+	</select>
+	<!--付款设备采购信息-->
+	<select id="getPayDeviceListByPayId" parameterType="String" resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT 
+			TMT.CGL_CODE,
+			TP.PROJ_NAME,
+			TMT.MATR_NAME,
+			TCD.DEVICE_MODEL_NAME,
+			TCD.EXEC_AMT,
+			TCD.EXEC_PRICE,
+			TCD.PAYED_AMT,
+			TCD.FREEZE_AMT,
+			TCD.TAX_CODE,
+			NVL(DECODE(TCD.DEDUCT_FLAG,'Y',TCD.TAX_YAMT,TCD.TAX_NAMT),0) TAX_AMT,
+			NVL(TCD.PAYED_AMT_TAX,0) PAYED_AMT_TAX,
+			NVL(TCD.FREEZE_AMT_TAX,0) FREEZE_AMT_TAX,
+			TPD.SUB_INVOICE_AMT ,
+			TPD.ADD_TAX_AMT ,
+			TCD.FEE_DEPT,
+		    TF.DUTY_NAME AS FEE_DEPT_NAME,
+			TPD.IVROW_MEMO 
+		FROM TD_PAY_DEVICE	TPD
+		LEFT JOIN TD_CNT_DEVICE TCD ON TPD.CNT_NUM=TCD.CNT_NUM AND TPD.SUB_ID=TCD.SUB_ID
+		LEFT JOIN TB_MATR_TYPE TMT ON TCD.MATR_CODE=TMT.MATR_CODE
+		LEFT JOIN TD_PROJECT TP ON TP.PROJ_ID=TCD.PROJ_ID
+		LEFT JOIN TB_FNDWRR TF ON TF.DUTY_CODE = TCD.FEE_DEPT
+		WHERE TPD.PAY_ID=#{payId,jdbcType=VARCHAR}
+		AND TPD.PAY_TYPE='1'
+		AND TPD.SUB_INVOICE_AMT!=0
+	</select>
+	
+	<select id="getPrePayCancleListByCntNum" parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean" resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		<!--
+		 SELECT 
+		     TPC.ADVANCE_PAY_ID,
+		     TPA.PAY_AMT,
+		     (
+		     	SELECT NVL(SUM(TPC.CANCEL_AMT),0)
+				FROM TD_PAY_ADVANCE_CANCEL TPC
+				LEFT JOIN TD_PAY_ADVANCE TPA ON TPA.PAY_ID  = TPC.ADVANCE_PAY_ID
+				WHERE TPA.CNT_NUM     = #{cntNum ,jdbcType=VARCHAR}
+				AND TPA.DATA_FLAG = 'F4'
+	            AND TPC.DATA_FLAG IN('00','08','10','12')
+			 ) AS CANCEL_AMT_TOTAL,
+		     SUM(DECODE(TPC.NORMAL_PAY_ID,#{payId ,jdbcType=VARCHAR},TPC.CANCEL_AMT,0)) AS CANCEL_AMT
+		  FROM TD_PAY_ADVANCE_CANCEL TPC
+		  LEFT JOIN TD_PAY_ADVANCE TPA ON TPA.PAY_ID = TPC.ADVANCE_PAY_ID
+		  WHERE TPA.CNT_NUM = #{cntNum ,jdbcType=VARCHAR}
+		  AND TPC.NORMAL_PAY_ID = #{payId ,jdbcType=VARCHAR}
+		  AND TPA.DATA_FLAG = 'F4'
+	      AND TPC.DATA_FLAG IN('00','08','10','12')
+		  GROUP BY TPC.ADVANCE_PAY_ID,TPA.PAY_AMT
+		  -->
+		  
+		  select tpc.advance_pay_id,
+		       tpa.pay_amt,
+		       sum(decode(tpc.data_flag,'00',tpc.cancel_amt,'08',tpc.cancel_amt,
+                      '10',tpc.cancel_amt,'12',tpc.cancel_amt,0)) cancel_amt_total,
+		       sum(decode(tpc.normal_pay_id,
+		                  #{payId ,jdbcType=VARCHAR},
+		                  tpc.cancel_amt,
+		                  0)) as cancel_amt
+		  from td_pay_advance_cancel tpc
+		  left join td_pay_advance tpa
+		    on tpa.pay_id = tpc.advance_pay_id
+		 where tpa.cnt_num = #{cntNum ,jdbcType=VARCHAR}
+		   and tpa.data_flag_invoice = '2'
+		  group by tpc.advance_pay_id,
+		          tpa.pay_amt
+		  
+	</select>
+	<!--更新预付款表的状态为待扫描-->
+	<update id="agreePrePay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY_ADVANCE  TPA SET 
+        TPA.DATA_FLAG=decode((select tc.is_order from td_cnt tc left join TD_PAY_ADVANCE tpa  on tc.cnt_num=tpa.cnt_num where tpa.pay_id=#{payId,jdbcType=VARCHAR}),'0','C1','1','C0'),
+        TPA.PAY_EXAMINE_USER = #{payExamineUser,jdbcType=VARCHAR}
+		WHERE TPA.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TPA.DATA_FLAG like 'B_'
+	</update>
+	<!--更新付款表的状态为待扫描-->
+	<update id="agreePay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY  TP SET 
+        TP.DATA_FLAG=decode((select tc.is_order from td_cnt tc left join TD_PAY tp  on tc.cnt_num=tp.cnt_num where tp.pay_id=#{payId,jdbcType=VARCHAR}),'0','C1','1','C0'),
+        TP.PAY_EXAMINE_USER = #{payExamineUser,jdbcType=VARCHAR}
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TP.DATA_FLAG like 'B_'
+	</update>
+	<!--更新预付款表的状态为退回-->
+	<update id="backPrePay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY_ADVANCE TPA SET 
+		TPA.DATA_FLAG=decode(#{dataFlag,jdbcType=VARCHAR},'B0','AB','BC','AC','BD','AD',TPA.DATA_FLAG),
+		TPA.PAY_EXAMINE_USER = #{payExamineUser,jdbcType=VARCHAR}
+		WHERE TPA.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TPA.DATA_FLAG like 'B_'
+	</update>
+	<!--更新付款表的状态退回-->
+	<update id="backPay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY TP SET 
+		TP.DATA_FLAG=decode(#{dataFlag,jdbcType=VARCHAR},'B0','AB','BC','AC','BD','AD',TP.DATA_FLAG),
+		TP.PAY_EXAMINE_USER = #{payExamineUser,jdbcType=VARCHAR}
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TP.DATA_FLAG like 'B_'
+	</update>
+	<!--更新预付款表的状态为付款待确认-->
+	<update id="scanAgreePrePay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean" >
+		UPDATE TD_PAY_ADVANCE TPA SET 
+		TPA.DATA_FLAG=#{payDataFlag,jdbcType=VARCHAR}
+		WHERE TPA.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TPA.DATA_FLAG like 'C_'
+	</update>
+	<!--更新付款表的状态为付款待确认-->
+	<update id="scanAgreePay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY TP SET 
+		TP.DATA_FLAG=#{payDataFlag,jdbcType=VARCHAR}
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TP.DATA_FLAG like 'C_'
+	</update>
+	<!--更新预付款表的状态为扫描退回-->
+	<update id="scanBackPrePay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY_ADVANCE TPA SET 
+		TPA.DATA_FLAG=decode(#{dataFlag,jdbcType=VARCHAR},'C0','BC','CD','BD',TPA.DATA_FLAG)
+		WHERE TPA.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TPA.DATA_FLAG like 'C_'
+	</update>
+	<!--更新付款表的状态扫描退回-->
+	<update id="scanBackPay"
+		parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		UPDATE TD_PAY TP SET 
+		TP.DATA_FLAG='AC'
+		WHERE TP.PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND TP.DATA_FLAG like 'C_'
+	</update>
+	
+	<!--付款添加到log表中-->
+	<insert id = "addArgeePayLog" parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		INSERT INTO TD_PAY_AUDIT_LOG
+		(
+			PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_PAY_AUDIT_LOG WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}),
+			#{payDataFlag ,jdbcType=VARCHAR},
+			#{auditMemo ,jdbcType=VARCHAR},
+			#{instOper ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+	<!--付款添加到log表中-->
+	<insert id = "addBackPayLog" parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		INSERT INTO TD_PAY_AUDIT_LOG
+		(
+			PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_PAY_AUDIT_LOG WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}),
+			decode(#{dataFlag,jdbcType=VARCHAR},'B0','AB','BC','AC','BD','AD','C0','BC','C1','BC','CD','BD'),
+			#{auditMemo ,jdbcType=VARCHAR},
+			#{instOper ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+	<select  id="getinstDutyCodes"  parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean"  resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT DUTY_CODE FROM TB_FNDWRR
+		WHERE ORG_CODE=#{instDutyCode,jdbcType=VARCHAR}
+	</select>
+	<insert id="addIcms" parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		INSERT INTO TD_BATCH_ICMS_HEADER
+		(
+			BATCH_NO,
+			MAIN_CNT,
+			ATTACH_CNT,
+			DATA_FLAG,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME,
+			INST_ORG21_CODE
+		)
+		VALUES(
+			#{instOper,jdbcType=VARCHAR}||to_char(sysdate, 'YYYYMMDDHH24MISS'),
+			nvl(#{mainCnt,jdbcType=VARCHAR},0),
+			#{attachCnt,jdbcType=VARCHAR},
+			#{dataFlag,jdbcType=VARCHAR},
+			#{instOper,jdbcType=VARCHAR},
+			to_char(sysdate,'YYYY-MM-DD'),
+			to_char(sysdate,'HH24:MI:SS'),
+			#{instOrg21Code,jdbcType=VARCHAR}
+		)
+	</insert>
+	<select  id="scanList"  parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean"  resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">
+		SELECT 
+			TBIH.BATCH_NO,
+			TBIH.MAIN_CNT,
+			TBIH.ATTACH_CNT,
+			TBIH.MAIN_CNT_OK,
+			TBIH.ATTACH_CNT_OK,
+			SS.PARAM_NAME AS dataFlagName,
+			TBIH.DATA_FLAG,
+			TBIH.INST_OPER,
+			TBIH.INST_DATE,
+			TBIH.INST_TIME
+		FROM TD_BATCH_ICMS_HEADER TBIH
+		LEFT JOIN SYS_SELECT SS	ON TBIH.DATA_FLAG=SS.PARAM_VALUE
+		AND SS.CATEGORY_ID='SCAN_DATA_FLAG'		
+		WHERE TBIH.INST_OPER = #{instOper,jdbcType=VARCHAR}
+		<if test="batchNo != null and '' != batchNo">
+		AND TBIH.BATCH_NO = #{batchNo,jdbcType=VARCHAR} 
+		</if>
+		<if test="payId != null and '' != payId">
+		AND EXISTS(SELECT 1 FROM TD_BATCH_ICMS_DETAIL TBID WHERE TBIH.BATCH_NO=TBID.BATCH_NO AND TBID.PAY_ID =  #{payId,jdbcType=VARCHAR})
+		</if>
+		ORDER BY TBIH.BATCH_NO DESC
+	</select>
+	<select id="scanDetailList"  parameterType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean"  resultType="com.forms.prms.web.pay.payexamine.domain.PayExamineBean">		
+		SELECT BATCH_NO,
+		       INNER_ID,
+		       TBID.PAY_ID,
+		       ATTACH_CNT,
+		       DATA_FLAG,
+		       MEMO,
+		       ICMS_PKUUID,
+		       UPLOAD_TIME,
+		       AUDIT_TIME,
+		       SS.PARAM_NAME AS DATAFLAGNAME,
+		       NVL2(PAY.PAY_ID, 'Y', 'N') IS_ENABLE
+		  FROM TD_BATCH_ICMS_DETAIL TBID
+		  LEFT JOIN SYS_SELECT SS 
+		         ON TBID.DATA_FLAG = SS.PARAM_VALUE AND SS.CATEGORY_ID = 'SCAN_DETAIL_DATA_FLAG'
+		  LEFT JOIN (SELECT PAY_ID, INST_DUTY_CODE
+		               FROM TD_PAY_ADVANCE A
+		              WHERE EXISTS (SELECT 1
+		                       FROM TB_FNDWRR T
+		                      WHERE T.DUTY_CODE = A.INST_DUTY_CODE
+		                        AND T.OU_CODE = #{instOperOuCode,jdbcType=VARCHAR})
+		             UNION
+		             SELECT PAY_ID, INST_DUTY_CODE
+		               FROM TD_PAY A
+		              WHERE EXISTS (SELECT 1
+		                       FROM TB_FNDWRR T
+		                      WHERE T.DUTY_CODE = A.INST_DUTY_CODE
+		                        AND T.OU_CODE = #{instOperOuCode,jdbcType=VARCHAR})) PAY 
+		         ON TBID.PAY_ID = PAY.PAY_ID	
+		  where BATCH_NO = #{batchNo,jdbcType=VARCHAR}                                                      
+	</select>
+	<!--尝试更新扫描汇总表状态为处理完成-->
+	<update id="updateScanBatchDataFlag"  parameterType="String">
+		update  TD_BATCH_ICMS_HEADER  T
+		SET T.DATA_FLAG =
+			 (SELECT DECODE( COUNT(1),  0 , '03', '02')  
+			  FROM TD_BATCH_ICMS_DETAIL A 
+			  WHERE A.BATCH_NO = T.BATCH_NO AND A.DATA_FLAG = '02')
+		WHERE T.BATCH_NO = #{batchNo,jdbcType=VARCHAR} 
+	</update>
+	<select id="isOrder"  parameterType="String"  resultType="String">
+		select tc.IS_ORDER from td_cnt tc 
+		left join  TD_PAY_ADVANCE  tpa
+		on tc.cnt_num=tpa.cnt_num
+		where tpa.pay_id=#{payId,jdbcType=VARCHAR}
+	</select>
+	<select id="isOrder1"  parameterType="String"  resultType="String">
+		select tc.IS_ORDER from td_cnt tc 
+		left join  TD_PAY  tp
+		on tc.cnt_num=tp.cnt_num
+		where tp.pay_id=#{payId,jdbcType=VARCHAR}
+	</select>
+</mapper>       

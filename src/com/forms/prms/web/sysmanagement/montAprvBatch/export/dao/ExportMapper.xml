@@ -1,0 +1,730 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.montAprvBatch.export.dao.ExportDao">
+	
+	<delete id="deleteMont" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+			delete from tbl_mont_name
+			where batch_no=#{batchNo,jdbcType=VARCHAR}
+	</delete>
+	<delete id="deleteAprv" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+			delete from tbl_aprv_chain
+			where batch_no=#{batchNo,jdbcType=VARCHAR}
+	</delete>
+	<select id="getAprvContent" parameterType="String"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+			select  fee_code,
+					mont_code,
+					mont_name,
+					matr_code,
+					matr_name,
+					matr_buy_dept,
+					matr_buy_dept_name,
+					matr_audit_dept,
+					matr_audit_dept_name,
+					finc_dept_s,
+					finc_dept_s_name,
+					finc_dept_2,
+					finc_dept_2_name,
+					finc_dept_1,
+					finc_dept_1_name,
+					decompose_org,
+					err_desc
+					from tbl_aprv_chain tac
+					left join UPLOAD_DATA_ERROR_INFO u
+					on tac.batch_no=u.batch_no and tac.excel_no=u.row_no
+					where tac.batch_no=#{batchNo,jdbcType=VARCHAR} 
+	</select>
+	<select id="getMontContent" parameterType="String"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+			select  decode(mont_type,'11','专项包','12','省行统购资产','21','非省行统购类资产','22','非专项包费用类') mont_type,
+					matr_code,
+					matr_name,
+					last_mont_name,
+					last_mont_proj_type,
+					mont_code,
+					mont_name,
+					decode(mont_proj_type,'11','专项包','','') mont_proj_type,
+					err_desc
+					from tbl_mont_name tmn
+					left join UPLOAD_DATA_ERROR_INFO u
+					on tmn.batch_no=u.batch_no and tmn.excel_no=u.row_no
+					where tmn.batch_no=#{batchNo,jdbcType=VARCHAR} 
+	</select>
+	<!--最大年份数据-->
+	<select id="getLastYearData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		select distinct data_year from tb_mont_name where
+		  org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and mont_type=  #{subType,jdbcType=VARCHAR} 
+	</select>
+	<!--专项包审批链最大年份数据-->
+	<select id="getLastYearDataAprvZX" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		select distinct data_year from TB_APRV_CHAIN_SPEC where
+		  org1_code = #{org21Code,jdbcType=VARCHAR} 
+	</select>
+	<!--监控指标正式表数据  正式表里有数据 就得拿出 他变动关系-->
+	<select id="getMontList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		<!--  
+
+		select b.last_mont_code as last_Mont_Code,
+		 d.mont_name as last_Mont_Name,d.PROJ_TYPE as last_Mont_Proj_Type,
+		  b.matr_code,c.matr_name, a.data_year ,
+		  a.mont_code,a.mont_name,a.proj_type as mont_proj_type
+		 from tb_mont_name a
+		 left join TB_MONT_MATR_CONTRA b on b.mont_code =  a.mont_code
+		 left join tb_matr_type c on c.matr_code = b.matr_code 
+		 left join tb_mont_NAME_HIS d  on d.mont_code = b.last_mont_code
+		 where  a.org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and a.mont_type=  #{subType,jdbcType=VARCHAR} 
+		 and a.data_year = #{dataYear,jdbcType=VARCHAR}
+		 -->
+		 SELECT
+		  A.MATR_CODE, 
+		  B.MATR_NAME,
+		  C.MONT_CODE AS LAST_MONT_CODE,
+		  C.MONT_NAME as LAST_MONT_NAME,
+		  C.PROJ_TYPE AS LAST_PROJ_TYPE
+		 FROM TB_MONT_MATR_CONTRA A
+		 LEFT JOIN TB_MATR_TYPE   B  ON B.MATR_CODE = A.MATR_CODE
+		 LEFT JOIN TB_MONT_NAME   C ON C.MONT_CODE = A.MONT_CODE
+		 where  C.org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and C.mont_type=  #{subType,jdbcType=VARCHAR} 
+		 and C.data_year = #{dataYear,jdbcType=VARCHAR}
+		 -->
+	</select>
+	<!--监控指标正式表数据  正式表和FUT表都没有当年的数据 说明 当年的数据还没有制定 就直接拿正式表里的数据 不限制年份-->
+	<select id="lastYearMontList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		<!--
+		select a.mont_code as last_Mont_Code,
+		 a.mont_name as last_Mont_Name,a.PROJ_TYPE as last_Mont_Proj_Type,
+		  b.matr_code,c.matr_name, a.data_year 
+		 from tb_mont_name a
+		 left join TB_MONT_MATR_CONTRA b on b.mont_code =  a.mont_code
+		 left join tb_matr_type c on c.matr_code = b.matr_code 
+		 left join tb_mont_NAME_HIS d  on d.mont_code = b.last_mont_code
+		 where  a.org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and a.mont_type=  #{subType,jdbcType=VARCHAR} 
+		 -->
+		  SELECT
+		  A.MATR_CODE, 
+		  B.MATR_NAME,
+		  C.MONT_CODE AS LAST_MONT_CODE,
+		  C.MONT_NAME as LAST_MONT_NAME,
+		  C.PROJ_TYPE AS LAST_PROJ_TYPE,
+		  C.mont_name   AS MONT_NAME,
+		 C.PROJ_TYPE    AS MONT_PROJ_TYPE
+		 FROM TB_MONT_MATR_CONTRA A
+		 LEFT JOIN TB_MATR_TYPE   B  ON B.MATR_CODE = A.MATR_CODE
+		 LEFT JOIN TB_MONT_NAME   C ON C.MONT_CODE = A.MONT_CODE
+		 where  C.org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and C.mont_type=  #{subType,jdbcType=VARCHAR} 
+		 
+	</select>
+	<!--监控指标fut表数据-->
+	<select id="getLastMontsFromTable" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		SELECT 
+		 A.MATR_CODE,
+		 C.MATR_NAME,
+		 C.CGL_CODE,
+		 DECODE(A.IS_VALID,'1','可用','废弃') IS_VALID_NAME,
+		 B.MONT_CODE AS LAST_MONT_CODE,
+		 B.MONT_NAME AS LAST_MONT_NAME,
+		 A.MONT_PROJ_TYPE AS LAST_PROJ_TYPE
+		 FROM TB_MONT_MATR_CONTRA  A
+		 LEFT JOIN TB_MONT_NAME B  ON B.MONT_CODE = A.MONT_CODE
+		 LEFT JOIN TB_MATR_TYPE C ON C.MATR_CODE = A.MATR_CODE
+		 where  B.org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and B.mont_type=  #{subType,jdbcType=VARCHAR} 
+		 and B.data_year = #{dataYear,jdbcType=VARCHAR}
+		 ORDER BY A.MONT_CODE,A.MATR_CODE,C.CGL_CODE ASC
+	</select>
+	<!--监控指标fut表数据-->
+	<select id="getMontListForThisYear" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		 SELECT 
+		 A.MATR_CODE,
+		 C.MATR_NAME,
+		 C.CGL_CODE,
+		 DECODE(A.IS_VALID,'1','可用','废弃') IS_VALID_NAME,
+		 B.MONT_CODE AS LAST_MONT_CODE,
+		 B.MONT_NAME AS LAST_MONT_NAME,
+		 B.PROJ_TYPE AS LAST_PROJ_TYPE,
+		 B.mont_name   AS MONT_NAME,
+		 B.PROJ_TYPE   AS MONT_PROJ_TYPE
+		 FROM TB_MONT_MATR_CONTRA  A
+		 LEFT JOIN TB_MONT_NAME B  ON B.MONT_CODE = A.MONT_CODE
+		 LEFT JOIN TB_MATR_TYPE C ON C.MATR_CODE = A.MATR_CODE
+		 where  B.org21_code = #{org21Code,jdbcType=VARCHAR} 
+		 and B.mont_type=  #{subType,jdbcType=VARCHAR} 
+		 and B.data_year = #{dataYear,jdbcType=VARCHAR}
+	</select>
+	<!--专项包正式审批链历史表数据-->
+	<select id="getAprvZxHisList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		select 
+		a.mont_code,
+		b.mont_name,
+		a.matr_code,
+		c.matr_name,
+		a.matr_buy_dept,
+		d1.duty_name as matr_buy_dept_name,
+		a.matr_audit_dept,
+		d2.duty_name as matr_audit_dept_name ,
+		a.finc_dept_s ,
+		d3.duty_name as finc_dept_s_name,
+		a.finc_dept_2,
+		d4.duty_name as finc_dept_2_name,
+		a.finc_dept_1,
+		d5.duty_name as finc_dept_1_name
+		 from TB_APRV_CHAIN_SPEC_his a 
+		    left join tb_mont_name_his b on b.mont_code = a.mont_code 
+		    left join tb_matr_type c on a.matr_code = c.matr_code
+		    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+		    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+		    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+		    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+		    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+		 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+		 and a.org1_code= #{org21Code,jdbcType=VARCHAR} 
+	</select>
+	<!--查询 监控指标视图里的数据-->
+	<select id="getAllMontList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		select * from V_MONT_MATR  
+		where data_year = #{dataYear,jdbcType=VARCHAR}
+		and org21_code =#{org21Code,jdbcType=VARCHAR}
+		and mont_type =#{subType,jdbcType=VARCHAR}   
+	</select>
+	
+	<!--监控指标是否在正式表-->
+	<select id="isExistsFromMont" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean" 
+			resultType="String">
+		select count(1) as counts  from tb_mont_name 
+		where data_year = #{dataYear,jdbcType=VARCHAR}
+		and org21_code = #{org21Code,jdbcType=VARCHAR}
+		and mont_type = #{subType,jdbcType=VARCHAR}
+	</select>
+		<!--导出的时候出发转移数据-->
+	<update id="transferMontData" parameterType="String">
+		CALL PRC_COPY_MONT_FROM_FUT
+		(#{montType, jdbcType=VARCHAR},#{org21Code, jdbcType=VARCHAR},#{dataYear, jdbcType=VARCHAR},#{type, jdbcType=VARCHAR})
+	</update>
+	<!--有没有这个类型的数据-->
+	<select id="isFirst" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="Integer">
+		SELECT 
+		COUNT(1)
+		FROM TBL_MONT_APRV
+		WHERE ORG21_CODE =#{org21Code, jdbcType=VARCHAR}
+		  AND PRO_TYPE=#{proType, jdbcType=VARCHAR}
+		  AND SUB_TYPE=#{subType, jdbcType=VARCHAR}
+		  AND CNT_STATUS='C5'
+	</select>
+	<!--没有该类型的数据则把所有物料导出-->
+	<select id="selectInitData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+			SELECT 
+			MATR_CODE,
+			MATR_NAME,
+			CGL_CODE
+			FROM TB_MATR_TYPE	
+			<where>
+				<if test="subType == 12 or subType ==21">
+					and MATR_TYPE ='1'
+				</if>
+				<if test="subType == 22">
+					and MATR_TYPE ='3'	
+				</if>
+			</where>
+	</select>
+	
+	<!--更新导出任务状态-->
+	<update id="updateTaskDataFlag" parameterType="string">
+		UPDATE TD_TASK_EXPORT
+		SET DATA_FLAG = '02'
+		WHERE TASK_ID = #{taskId, jdbcType=VARCHAR}
+	</update>
+	<!--显示年份-->
+	<select id="showYear" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="String">
+		SELECT MAX(DATA_YEAR)
+		FROM TBL_MONT_APRV
+		WHERE ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  AND PRO_TYPE = #{proType, jdbcType=VARCHAR}
+		  AND SUB_TYPE = #{subType, jdbcType=VARCHAR}
+		  AND CNT_STATUS IN ('C4','C5')
+	</select>
+	<!--得到类型的最新数据汇总信息-->
+	<select id="isWorking" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="Integer">
+		<!--
+		SELECT count(1)
+		FROM TBL_MONT_APRV A
+		WHERE A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  AND A.PRO_TYPE = '01'
+		  AND A.SUB_TYPE = #{subType, jdbcType=VARCHAR}
+		  AND A.CNT_STATUS IN ('C4','E5')
+		  AND A.DATA_YEAR = #{dataYear, jdbcType=VARCHAR}
+		  -->
+		  SELECT count(1)
+		FROM TBL_MONT_APRV A
+		WHERE A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  AND A.PRO_TYPE = #{proType, jdbcType=VARCHAR}
+		  AND A.SUB_TYPE = #{subType, jdbcType=VARCHAR}
+		  AND NVL2(A.CNT_STATUS,A.CNT_STATUS,A.EXCEL_STATUS) NOT IN ('E1','E3','E6','C5','C6')
+		  AND A.DATA_YEAR = #{dataYear, jdbcType=VARCHAR}
+	</select>
+	<!--是否有待 修改的审批链-->
+	<select id="isNoUpAprv" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="Integer">
+		SELECT COUNT(1) FROM TB_APRV_CHAIN_UP A 
+		WHERE A.DATA_YEAR = #{dataYear, jdbcType=VARCHAR}
+	      AND A.APRV_TYPE = #{subType, jdbcType=VARCHAR}
+		  AND A.ORG21_CODE=#{org21Code, jdbcType=VARCHAR}
+		  AND ROWNUM=1
+	</select>
+	<select id="yearMontIsOk" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="Integer">
+		SELECT count(1) 
+		FROM TBL_MONT_APRV A
+		WHERE A.ORG21_CODE = #{org21Code, jdbcType=VARCHAR}
+		  AND A.PRO_TYPE = '01'
+		   AND A.SUB_TYPE=  #{subType, jdbcType=VARCHAR}
+		  AND A.CNT_STATUS IN  ('C5')
+		  AND A.DATA_YEAR = to_char(sysdate,'yyyy')
+	</select>
+	<!--直接从表里面导出来-->
+	<select id="getAprvSpecTable" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		SELECT * FROM(
+		select  
+		tf.mont_code,
+		tf.mont_name,
+		a.matr_code,
+		c.matr_name,
+		a.matr_buy_dept,
+		d1.duty_name as matr_buy_dept_name,
+		a.matr_audit_dept,
+		d2.duty_name as matr_audit_dept_name ,
+		a.finc_dept_s ,
+		d3.duty_name as finc_dept_s_name,
+		a.finc_dept_2,
+		d4.duty_name as finc_dept_2_name,
+		a.finc_dept_1,
+		d5.duty_name as finc_dept_1_name
+		 from ${aprvChainTable} a 
+		 <!-- 本年数据的监控指标都会同步更改-->
+		 	left join tb_mont_name tf on tf.mont_code = a.mont_code
+		    left join tb_matr_type c on a.matr_code = c.matr_code
+		    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+		    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+		    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+		    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+		    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+		 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+		 and a.org1_code= #{org21Code,jdbcType=VARCHAR} 
+		 
+		  union
+	     select
+	     TMC.MONT_CODE,
+	     TMN.MONT_NAME,
+	     TMT.MATR_CODE,
+	     TMT.MATR_NAME,
+	     	'' AS matr_buy_dept,
+			'' as matr_buy_dept_name,
+			'' AS matr_audit_dept,
+		 '' as matr_audit_dept_name ,
+			'' AS finc_dept_s ,
+			'' as finc_dept_s_name,
+			'' AS finc_dept_2,
+			'' as finc_dept_2_name,
+			'' AS finc_dept_1,
+			'' as finc_dept_1_name
+	     from Tb_Mont_Matr_Contra TMC
+	     LEFT JOIN TB_MONT_NAME TMN ON TMN.MONT_CODE = TMC.MONT_CODE
+	     LEFT JOIN TB_MATR_TYPE TMT ON TMT.MATR_CODE = TMC.MATR_CODE
+	     WHERE TMN.DATA_YEAR = #{dataYear,jdbcType=VARCHAR} 
+	        AND TMN.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} 
+	        AND TMN.MONT_TYPE='11'
+	        AND TMC.IS_VALID ='1'
+	        AND NOT EXISTS(
+	            SELECT 1 FROM TB_APRV_CHAIN_SPEC TACS 
+	            WHERE TACS.MONT_CODE = TMC.MONT_CODE
+	            AND TACS.MATR_CODE = TMC.MATR_CODE
+	        )
+		 ) UT    ORDER BY UT.MONT_CODE,UT.MATR_CODE ASC
+		 
+	</select>
+	<!--专项包正式审批链表数据   为了下一年的数据-->
+	<select id="getAprvSpecTableChange" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		select distinct
+		tf.mont_code,
+		tf.mont_name,
+		a.matr_code,
+		c.matr_name,
+		a.matr_buy_dept,
+		d1.duty_name as matr_buy_dept_name,
+		a.matr_audit_dept,
+		d2.duty_name as matr_audit_dept_name ,
+		a.finc_dept_s ,
+		d3.duty_name as finc_dept_s_name,
+		a.finc_dept_2,
+		d4.duty_name as finc_dept_2_name,
+		a.finc_dept_1,
+		d5.duty_name as finc_dept_1_name
+		 from ${aprvChainTable} a 
+		  left join tb_mont_matr_contra_change tc on tc.mont_code_old = a.mont_code and tc.matr_code = a.matr_code
+		 	<!--2015年制定2016年的审批链，前面已经验证了2016年的监控指标制定了，就直接得到最新的监控指标 -->
+		 	left join tb_mont_name tf on tf.mont_code = tc.mont_code_last
+		    left join tb_matr_type c on a.matr_code = c.matr_code
+		    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+		    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+		    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+		    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+		    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+		 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+		 and a.org1_code= #{org21Code,jdbcType=VARCHAR}  
+		 
+	</select>
+	<select id="getCountAprvSpecTable" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="Integer">
+		select count(1) from (
+		select distinct
+		tf.mont_code,
+		tf.mont_name,
+		a.matr_code,
+		c.matr_name,
+		a.matr_buy_dept,
+		d1.duty_name as matr_buy_dept_name,
+		a.matr_audit_dept,
+		d2.duty_name as matr_audit_dept_name ,
+		a.finc_dept_s ,
+		d3.duty_name as finc_dept_s_name,
+		a.finc_dept_2,
+		d4.duty_name as finc_dept_2_name,
+		a.finc_dept_1,
+		d5.duty_name as finc_dept_1_name
+		 from ${aprvChainTable} a 
+		  left join tb_mont_matr_contra_change tc on tc.mont_code_old = a.mont_code and tc.matr_code = a.matr_code
+		 	<!--2015年制定2016年的审批链，前面已经验证了2016年的监控指标制定了，就直接得到最新的监控指标 -->
+		 	left join tb_mont_name tf on tf.mont_code = tc.mont_code_last
+		    left join tb_matr_type c on a.matr_code = c.matr_code
+		    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+		    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+		    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+		    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+		    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+		 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+		 and a.org1_code= #{org21Code,jdbcType=VARCHAR}  
+		 )
+	</select>
+	<!--非专项包正式审批链表数据-->
+	<select id="getAprvNoSpecTable" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		<if test="subType == 21 or subType ==22">
+			select * from (
+					select 
+				a.FEE_CODE,
+				d0.duty_name as FEE_NAME,
+				tf.mont_code,
+				tf.mont_name,
+				a.matr_code,
+				c.matr_name,
+				a.matr_buy_dept,
+				d1.duty_name as matr_buy_dept_name,
+				a.matr_audit_dept,
+				d2.duty_name as matr_buy_audit_name ,
+				a.finc_dept_s ,
+				d3.duty_name as finc_dept_s_name,
+				a.finc_dept_2,
+				d4.duty_name as finc_dept_2_name,
+				a.finc_dept_1,
+				d5.duty_name as finc_dept_1_name,
+				A.DECOMPOSE_ORG,
+				a.org_code,
+				D7.org_name AS ORG_NAME,
+				d6.duty_name as DECOMPOSE_ORG_name
+				 from  ${aprvChainNoSpecTable}  a 
+				 	left join tb_mont_name tf on tf.mont_code = a.mont_code
+				    left join tb_matr_type c on a.matr_code = c.matr_code
+				     left join tb_fndwrr d0 on d0.duty_code = a.FEE_CODE
+				    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+				    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+				    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+				    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+				    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+				      left join tb_fndwrr d6 on d6.duty_code = a.DECOMPOSE_ORG 
+				      LEFT JOIN TB_FNDWRR D7 ON D7.ORG_CODE = A.ORG_CODE 
+				 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+				 and a.org21_code= #{org21Code,jdbcType=VARCHAR} 
+				 and aprv_type =#{subType,jdbcType=VARCHAR} 
+				 
+				  UNION
+        SELECT '' as FEE_CODE,
+               '' as FEE_NAME,
+               FOJ.mont_code,
+               FOJ.mont_name,
+               FOJ. matr_code as matr_code,
+               FOJ.matr_name as matr_name,
+               '' as matr_buy_dept,
+               '' as matr_buy_dept_name,
+               '' as matr_audit_dept,
+               '' as matr_buy_audit_name,
+               '' as finc_dept_s,
+               '' as finc_dept_s_name,
+               '' as finc_dept_2,
+               '' as finc_dept_2_name,
+               '' as finc_dept_1,
+               '' as finc_dept_1_name,
+               '' as DECOMPOSE_ORG,
+               TFN.org_code,
+               TFN.org_name AS ORG_NAME,
+               '' as DECOMPOSE_ORG_name
+        
+          FROM (select distinct org2_code, org_Code,org_name from TB_FNDWRR where  ORG2_CODE = #{org21Code,jdbcType=VARCHAR} ) TFN
+          ,(SELECT tmc.matr_code,
+                                 tmc.mont_code,
+                                 tmn.mont_name,
+                                 tmt.matr_name,
+                                 TMN.ORG21_CODE,
+                                 TMN.MONT_TYPE
+                            FROM TB_MONT_MATR_CONTRA TMC
+                            LEFT JOIN TB_MONT_NAME TMN
+                              ON TMC.MONT_CODE = TMN.MONT_CODE
+                            LEFT JOIN TB_MATR_TYPE TMT
+                              ON TMT.MATR_CODE = TMC.MATR_CODE
+                           WHERE TMN.DATA_YEAR =#{dataYear,jdbcType=VARCHAR} 
+                             AND TMN.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} 
+                             AND TMN.MONT_TYPE = #{subType,jdbcType=VARCHAR} 
+                             AND TMC.IS_VALID = '1'
+                             AND NOT EXISTS
+                           (SELECT 1
+                                    FROM TB_APRV_CHAIN_NOSPEC TAC
+                                   WHERE TAC.MONT_CODE = TMC.MONT_CODE
+                                     AND TAC.MATR_CODE = TMC.MATR_CODE)) FOJ
+            
+				 ) UT ORDER BY 
+		 NVL(UT.FEE_CODE,UT.ORG_CODE)  ,UT.MONT_CODE   ,UT.MATR_CODE ASC
+		</if>
+		<if test="subType == 12">
+			select * from (
+					select 
+				a.FEE_CODE,
+				d0.duty_name as FEE_NAME,
+				tf.mont_code,
+				tf.mont_name,
+				a.matr_code,
+				c.matr_name,
+				a.matr_buy_dept,
+				d1.duty_name as matr_buy_dept_name,
+				a.matr_audit_dept,
+				d2.duty_name as matr_buy_audit_name ,
+				a.finc_dept_s ,
+				d3.duty_name as finc_dept_s_name,
+				a.finc_dept_2,
+				d4.duty_name as finc_dept_2_name,
+				a.finc_dept_1,
+				d5.duty_name as finc_dept_1_name,
+				A.DECOMPOSE_ORG,
+				a.org_code,
+				D7.org_name AS ORG_NAME,
+				d6.duty_name as DECOMPOSE_ORG_name
+				 from  ${aprvChainNoSpecTable}  a 
+				 	left join tb_mont_name tf on tf.mont_code = a.mont_code
+				    left join tb_matr_type c on a.matr_code = c.matr_code
+				     left join tb_fndwrr d0 on d0.duty_code = a.FEE_CODE
+				    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+				    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+				    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+				    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+				    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+				      left join tb_fndwrr d6 on d6.duty_code = a.DECOMPOSE_ORG 
+				      LEFT JOIN TB_FNDWRR D7 ON D7.ORG_CODE = A.ORG_CODE 
+				 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+				 and a.org21_code= #{org21Code,jdbcType=VARCHAR} 
+				 and aprv_type =#{subType,jdbcType=VARCHAR} 
+				 
+				  UNION
+        SELECT '' as FEE_CODE,
+               '' as FEE_NAME,
+               FOJ.mont_code,
+               FOJ.mont_name,
+               FOJ. matr_code as matr_code,
+               FOJ.matr_name as matr_name,
+               '' as matr_buy_dept,
+               '' as matr_buy_dept_name,
+               '' as matr_audit_dept,
+               '' as matr_buy_audit_name,
+               '' as finc_dept_s,
+               '' as finc_dept_s_name,
+               '' as finc_dept_2,
+               '' as finc_dept_2_name,
+               '' as finc_dept_1,
+               '' as finc_dept_1_name,
+               '' as DECOMPOSE_ORG,
+               TFN.org_code,
+               TFN.org_name AS ORG_NAME,
+               '' as DECOMPOSE_ORG_name
+        
+          FROM (select distinct org1_code, org_Code,org_name from TB_FNDWRR where  ORG1_CODE = #{org21Code,jdbcType=VARCHAR} ) TFN
+          ,(SELECT tmc.matr_code,
+                                 tmc.mont_code,
+                                 tmn.mont_name,
+                                 tmt.matr_name,
+                                 TMN.ORG21_CODE,
+                                 TMN.MONT_TYPE
+                            FROM TB_MONT_MATR_CONTRA TMC
+                            LEFT JOIN TB_MONT_NAME TMN
+                              ON TMC.MONT_CODE = TMN.MONT_CODE
+                            LEFT JOIN TB_MATR_TYPE TMT
+                              ON TMT.MATR_CODE = TMC.MATR_CODE
+                           WHERE TMN.DATA_YEAR =#{dataYear,jdbcType=VARCHAR} 
+                             AND TMN.ORG21_CODE = #{org21Code,jdbcType=VARCHAR} 
+                             AND TMN.MONT_TYPE = #{subType,jdbcType=VARCHAR} 
+                             AND TMC.IS_VALID = '1'
+                             AND NOT EXISTS
+                           (SELECT 1
+                                    FROM TB_APRV_CHAIN_NOSPEC TAC
+                                   WHERE TAC.MONT_CODE = TMC.MONT_CODE
+                                     AND TAC.MATR_CODE = TMC.MATR_CODE)) FOJ
+             
+				 ) UT ORDER BY 
+		 NVL(UT.FEE_CODE,UT.ORG_CODE)  ,UT.MONT_CODE   ,UT.MATR_CODE ASC
+		</if>
+		 
+	</select>
+	<!--非专项包正式审批链表数据   为了下一年的数据-->
+	<select id="getAprvNoSpecTableChange" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		select distinct
+		a.FEE_CODE,
+		d0.duty_name as FEE_NAME,
+		tf.mont_code,
+		tf.mont_name,
+		a.matr_code,
+		c.matr_name,
+		a.matr_buy_dept,
+		d1.duty_name as matr_buy_dept_name,
+		a.matr_audit_dept,
+		d2.duty_name as matr_audit_dept_name ,
+		a.finc_dept_s ,
+		d3.duty_name as finc_dept_s_name,
+		a.finc_dept_2,
+		d4.duty_name as finc_dept_2_name,
+		a.finc_dept_1,
+		d5.duty_name as finc_dept_1_name,
+		A.DECOMPOSE_ORG,
+		a.org_code,
+		D7.ORG_NAME AS org_name,
+		d6.duty_name as DECOMPOSE_ORG_name
+		 from  ${aprvChainNoSpecTable}  a 
+		  left join tb_mont_matr_contra_change tc on tc.mont_code_old = a.mont_code and tc.matr_code = a.matr_code
+		 	left join tb_mont_name tf on tf.mont_code = tc.mont_code_last
+		    left join tb_matr_type c on a.matr_code = c.matr_code
+		     left join tb_fndwrr d0 on d0.duty_code = a.FEE_CODE
+		    left join tb_fndwrr d1 on d1.duty_code = a.matr_buy_dept
+		    left join tb_fndwrr d2 on d2.duty_code = a.matr_audit_dept
+		    left join tb_fndwrr d3 on d3.duty_code = a.finc_dept_s
+		    left join tb_fndwrr d4 on d4.duty_code = a.finc_dept_2
+		    left join tb_fndwrr d5 on d5.duty_code = a.finc_dept_1 
+		    left join tb_fndwrr d6 on d6.duty_code = a.DECOMPOSE_ORG
+		    LEFT JOIN TB_FNDWRR D7 ON D7.ORG_CODE = A.ORG_CODE 
+		 where a.data_year = #{dataYear,jdbcType=VARCHAR} 
+		 and a.org1_code= #{org21Code,jdbcType=VARCHAR} 
+		 and aprv_type =#{subType,jdbcType=VARCHAR}  
+		 NVL(UT.FEE_CODE,UT.ORG_CODE)  ,UT.MONT_CODE   ,UT.MATR_CODE ASC
+	</select>
+	<!--审批链初始化数据-->
+	<select id="selectInitAprvData" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		<if test="subType == 11 ">
+			SELECT 
+					distinct
+					c.mont_code,
+					b.mont_name,
+					c.matr_code,
+					D.MATR_NAME
+				from   TB_MONT_MATR_CONTRA C 
+				left join tb_mont_name b on b.mont_code =  c.mont_code
+				LEFT JOIN TB_MATR_TYPE D ON D.MATR_CODE = C.MATR_CODE
+				where b.mont_type='11'
+				  and b.org21_code = #{org21Code,jdbcType=VARCHAR} 
+				  and c.is_valid ='1'
+				  ORDER BY  C.MONT_CODE   ,C.MATR_CODE ASC
+		</if>
+		<if test="subType == 12 ">
+			SELECT 
+					distinct
+					b.mont_code,
+					b.mont_name,
+					c.matr_code,
+					D.MATR_NAME,
+					A.ORG_CODE,
+					A.ORG_NAME
+				from tb_fndwrr a 
+				,TB_MONT_NAME B 
+				 
+				     
+				LEFT JOIN TB_MONT_MATR_CONTRA C ON C.MONT_CODE = B.MONT_CODE 
+				LEFT JOIN TB_MATR_TYPE D ON D.MATR_CODE = C.MATR_CODE
+				where  a.org1_code = #{org21Code,jdbcType=VARCHAR} 
+				 and c.is_valid ='1'
+				 AND   B.ORG21_CODE = A.ORG1_CODE
+				            AND B.MONT_TYPE=#{subType,jdbcType=VARCHAR} 
+				            and b.data_year =#{dataYear,jdbcType=VARCHAR} 
+				   ORDER BY 
+     A.ORG_CODE  ,B.MONT_CODE   ,C.MATR_CODE ASC
+		</if>
+		<if test="subType == 21 or subType == 22 ">
+			SELECT 
+					distinct
+					b.mont_code,
+					b.mont_name,
+					c.matr_code,
+					D.MATR_NAME,
+					A.ORG_CODE,
+					A.ORG_NAME
+				from tb_fndwrr a 
+				,TB_MONT_NAME B 
+				 
+				      
+				LEFT JOIN TB_MONT_MATR_CONTRA C ON C.MONT_CODE = B.MONT_CODE 
+				LEFT JOIN TB_MATR_TYPE D ON D.MATR_CODE = C.MATR_CODE
+				where  a.org2_code = #{org21Code,jdbcType=VARCHAR} 
+				 and c.is_valid ='1'
+				  AND B.ORG21_CODE = A.ORG2_CODE
+				            AND B.MONT_TYPE=#{subType,jdbcType=VARCHAR} 
+				            and b.data_year =#{dataYear,jdbcType=VARCHAR}
+				   ORDER BY 
+     A.ORG_CODE  ,B.MONT_CODE   ,C.MATR_CODE ASC 
+				            
+		</if>
+				
+
+	</select>
+	
+	<!--加一条汇总信息-->
+	<insert id="insertSum" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.export.domain.ExportBean">
+		INSERT INTO 
+		BATCH_NO,
+		ORG21_CODE,
+		PRO_TYPE,
+		SUB_TYPE,
+		EXCEL_STATUS
+		values(
+		 #{batchNo,jdbcType=VARCHAR},
+		 #{proType,jdbcType=VARCHAR},
+		 #{subType,jdbcType=VARCHAR},
+		 #{status,jdbcType=VARCHAR}  
+		)
+		FROM TBL_MONT_APRV
+		
+	</insert>
+			
+</mapper>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+<!-- 		<mapping cell="A1">bean.title</mapping> -->
+		<mapping cell="A1" regExp="\u6b63\u5e38\u4ed8\u6b3e\u5408\u540c\u91c7\u8d2d\u8bbe\u5907\u4fe1\u606f" formatDesc="该值应该为[正常付款合同采购设备信息]">bean.headInfos</mapping>
+
+		<mapping cell="A2" regExp="\u5408\u540c\u7f16\u53f7" formatDesc="该值应该为[合同编号]">bean.headInfos</mapping>
+		<mapping cell="B2" regExp="\u6b63\u5e38\u4ed8\u6b3e\u5355\u53f7" formatDesc="该值应该为[正常付款单号]">bean.headInfos</mapping>
+		<mapping cell="C2" regExp="\u7269\u6599\u7f16\u53f7" formatDesc="该值应该为[物料编号]">bean.headInfos</mapping>
+		<mapping cell="D2" regExp="\u7269\u6599\u540d\u79f0" formatDesc="该值应该为[物料名称]">bean.headInfos</mapping>
+		<mapping cell="E2" regExp="\u53d1\u7968\u5206\u914d\u91d1\u989d\u0028\u5143\u0029" formatDesc="该值应该为[发票分配金额(元)]">bean.headInfos</mapping>
+		<mapping cell="F2" regExp="\u53d1\u7968\u884c\u8bf4\u660e" formatDesc="该值应该为[发票行说明]">bean.headInfos</mapping>
+	</section>
+	<loop startRow="1" endRow="1" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.reportmgr.dataMgr.dataMigrate.domain.TdPayDeviceBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0">detail.cntNum</mapping>
+			<mapping row="1" col="1">detail.payId</mapping>
+			<mapping row="1" col="2">detail.matrCode</mapping>
+			<mapping row="1" col="3">detail.matrName</mapping>
+			<mapping row="1" col="4">detail.subInvoiceAmt</mapping>
+			<mapping row="1" col="5">detail.ivrowMemo</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

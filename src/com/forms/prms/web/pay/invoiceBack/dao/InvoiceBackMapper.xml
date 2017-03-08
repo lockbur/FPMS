@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.invoiceBack.dao.InvoiceBackDao">
+	<select id="list" parameterType="com.forms.prms.web.pay.payquery.domain.PayQueryBean" resultType="com.forms.prms.web.pay.payquery.domain.PayQueryBean">
+		SELECT T.*,
+			TC.CNT_NAME,
+			TC.CNT_TYPE,
+			SEL2.PARAM_NAME AS CNT_TYPE_NAME,
+			TC.IS_ORDER,
+			TC.PROVIDER_NAME,
+			SS.PARAM_NAME AS payDataFlag
+		FROM (SELECT 
+				'N' AS isPrePay,
+				TP.CNT_NUM,
+				TP.PAY_ID,
+				TP.PAY_DATE,
+				TP.PAY_AMT,
+				TP.INVOICE_ID,
+				TP.INVOICE_AMT,
+				TP.DATA_FLAG,
+				TP.PROVIDER_CODE,
+				TP.INST_DUTY_CODE,
+				TP.IS_CREDIT_NOTE,
+				TP.INVOICE_ID_BLUE
+			FROM TD_PAY TP
+			UNION
+			SELECT 
+				'Y' AS isPrePay,
+				TPA.CNT_NUM,
+				TPA.PAY_ID,
+				TPA.PAY_DATE,
+				TPA.PAY_AMT,
+				TPA.INVOICE_ID,
+				TPA.INVOICE_AMT,
+				TPA.DATA_FLAG,
+				TPA.PROVIDER_CODE,
+				TPA.INST_DUTY_CODE,
+				'' as IS_CREDIT_NOTE,
+				'' as INVOICE_ID_BLUE
+			FROM TD_PAY_ADVANCE TPA
+		) T
+		LEFT JOIN SYS_SELECT SS ON T.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='PAY_DATA_FLAG'
+		LEFT JOIN TD_CNT TC  ON T.CNT_NUM = TC.CNT_NUM
+		LEFT JOIN SYS_SELECT SEL2 ON SEL2.CATEGORY_ID = 'CNT_TYPE' AND SEL2.PARAM_VALUE = TC.CNT_TYPE
+		LEFT JOIN TB_FNDWRR TF  ON T.INST_DUTY_CODE = TF.DUTY_CODE
+		WHERE TF.OU_Code=#{ouCode,jdbcType=VARCHAR}
+		AND (T.DATA_FLAG = 'CD' or T.DATA_FLAG = 'C0' or T.DATA_FLAG='C1')
+		<if test="cntNum != null and '' != cntNum">
+			AND T.CNT_NUM LIKE '%' || #{cntNum ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="cntType != null and '' != cntType">
+			AND TC.CNT_TYPE = #{cntType ,jdbcType=VARCHAR}
+		</if>
+		<if test="providerName != null and '' != providerName">
+			AND TC.PROVIDER_NAME LIKE '%' || #{providerName,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="createDept != null and '' != createDept">
+			AND T.INST_DUTY_CODE = #{createDept ,jdbcType=VARCHAR}
+		</if>
+		<if test="payId != null and '' != payId">
+			AND T.PAY_ID LIKE '%' || #{payId ,jdbcType=VARCHAR} || '%' 
+		</if>
+		<if test="befDate != null and '' != befDate">
+			AND T.PAY_DATE &gt;= #{befDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="aftDate != null and '' != aftDate">
+			AND T.PAY_DATE &lt;=  #{aftDate ,jdbcType=VARCHAR}
+		</if>
+		<if test="isOrder != null and '' != isOrder">
+			AND TC.IS_ORDER=  #{isOrder ,jdbcType=VARCHAR}
+		</if>
+		<if test="isCreditNote != null and '' != isCreditNote">
+			AND (T.IS_CREDIT_NOTE =  #{isCreditNote ,jdbcType=VARCHAR} OR T.IS_CREDIT_NOTE is null)
+		</if>
+		ORDER BY T.PAY_DATE DESC,T.CNT_NUM DESC
+	</select>
+	
+	<!--更新付款的状态-->
+	<update id="updatePayStatus" parameterType="com.forms.prms.web.pay.payquery.domain.PayQueryBean">
+		UPDATE ${table} 
+		SET DATA_FLAG=#{payDataFlag,jdbcType=VARCHAR}
+		WHERE PAY_ID = #{payId,jdbcType=VARCHAR}
+		AND (DATA_FLAG = 'CD' or DATA_FLAG = 'C0' or DATA_FLAG = 'C1')
+	</update>
+	
+	<!--添加log操作日志到TD_PAY_AUDIT_LOG表-->
+	<insert id="addPayLog" parameterType="com.forms.prms.web.pay.payquery.domain.PayQueryBean">
+		INSERT INTO TD_PAY_AUDIT_LOG
+		(
+			PAY_ID,
+			INNER_NO,
+			DATA_FLAG,
+			OPER_MEMO,
+			INST_OPER,
+			INST_DATE,
+			INST_TIME
+		)
+		VALUES
+		(
+			#{payId ,jdbcType=VARCHAR},
+			(SELECT NVL(MAX(INNER_NO),0)+1 FROM TD_PAY_AUDIT_LOG WHERE PAY_ID = #{payId ,jdbcType=VARCHAR}),
+			#{payDataFlag ,jdbcType=VARCHAR},
+			#{auditMemo ,jdbcType=VARCHAR},
+			#{instOper ,jdbcType=VARCHAR},
+			TO_CHAR(SYSDATE, 'YYYY-MM-DD'),
+			TO_CHAR(SYSDATE, 'HH24:MI:SS')
+		)
+	</insert>
+</mapper>		

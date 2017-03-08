@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.dao.ApprvDao">
+		<select id="getList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		SELECT distinct batch_no,
+				  org21_code,
+				  pro_type,
+				  sub_type,
+				  ss.param_name as sub_type_name,
+				  NVL2(tma.CNT_STATUS,tma.CNT_STATUS,tma.EXCEL_STATUS)status,
+				  NVL2(SS2.PARAM_NAME,SS2.PARAM_NAME,SS1.PARAM_NAME) status_name,
+				  path,
+				  INST_TYPE,
+				  INST_MEMO,
+				  DATA_YEAR,
+				  inst_user,
+				  inst_date,
+				  inst_time,
+				  SOURCE_FILENAME,
+				  memo,
+				  EXCEL_STATUS,
+				  CNT_STATUS
+				FROM tbl_mont_aprv tma
+				left join tb_fndwrr tf
+				on tma.org21_Code=tf.org1_Code
+				left join SYS_SELECT ss1 on ss1.PARAM_VALUE=tma.EXCEL_STATUS
+				and ss1.CATEGORY_ID='MONT_EXCEL_STATUS'
+				left join SYS_SELECT ss2 on ss2.PARAM_VALUE=tma.CNT_STATUS
+				and ss2.CATEGORY_ID='MONT_CNT_STATUS'
+				left join sys_select ss on tma.sub_type = ss.param_value and ss.category_id = 'MONT_TYPE'
+				where tma.org21_Code=#{org21Code,jdbcType=VARCHAR}
+				and tma.data_year >= to_char(sysdate, 'YYYY')
+				AND (
+					TMA.EXCEL_STATUS IN('E4','E5','E6')
+					OR
+					TMA.CNT_STATUS IN ('C2','C3','C4','C5','C6')
+				)
+				<if test="orgType == '01'">
+					AND TMA.SUB_TYPE IN ('11','12')
+				</if>
+				<if test="orgType == '02'">
+					AND TMA.SUB_TYPE IN ('21','22')
+				</if>
+				<if test="proType != null and proType != ''">
+					AND tma.pro_type = #{proType,jdbcType=VARCHAR}
+		  		</if>
+		  		<if test="subType != null and subType != ''">
+					AND tma.sub_type = #{subType,jdbcType=VARCHAR}
+			   </if>	
+		  		<if test="dataYear != null and dataYear != ''">
+					AND tma.data_year = #{dataYear,jdbcType=VARCHAR}
+			   </if>	
+			   order by tma.INST_DATE desc,INST_TIME desc
+		  		
+	</select>
+		
+	
+	<select id="getPath" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		SELECT TMA.* FROM TBL_MONT_APRV TMA WHERE TMA.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	<!--审核通过-->
+	<update id="audit" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		<if test="proType == 01">
+			call PRC_MADB_AUDIT_MONT(#{batchNo,jdbcType=VARCHAR})
+		</if>
+		<if test="proType == 02">
+			call PRC_MADB_AUDIT_APRV(#{batchNo,jdbcType=VARCHAR})
+		</if>
+	</update>
+	<!--审核通过-->
+	<update id="auditCopy" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+			call PRC_MADB_AUDIT_COPY(#{batchNo,jdbcType=VARCHAR})
+	</update>
+	<!--得到所有监控指标名称-->
+	<select id="getAllMontName" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean"
+			resultType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		SELECT DISTINCT A.MONT_NAME,B.ORG21_CODE,b.data_year,b.pro_type,b.sub_type FROM TBL_MONT_NAME a
+		LEFT JOIN TBL_MONT_APRV B ON A.BATCH_NO = B.BATCH_NO
+		WHERE A.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	<!--更新临时表的监控指标代码-->
+	<update id="updateMontCode" parameterType="String">
+		update tbl_mont_name
+		set mont_code =  #{montCode,jdbcType=VARCHAR}
+		where batch_no =  #{batchNo,jdbcType=VARCHAR}
+		and mont_name= #{montName,jdbcType=VARCHAR}
+	</update>
+	 
+	 <!--根据监控指标名称 修改监控指标代码-->
+	<update id="updateCodeByName" parameterType="String">
+		update tbl_mont_name a
+   		set a.mont_code =  (select distinct b.mont_code
+                        from tbl_mont_name b
+                       where a.mont_name = b.mont_name
+                       and a.batch_no = b.batch_no
+                       and a.seq != b.seq
+                       
+                         and b.mont_code is not null)
+                         where a.batch_no = #{batchNo,jdbcType=VARCHAR}
+	</update>
+	<!--拿出监控指标最大的-->
+	 <select id="getMaxCode" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean"
+			resultType="String">
+		 select distinct mont_code from tbl_mont_name 
+		 	where substr(mont_code,12,5) =
+                         (select max(substr(mont_code,12,5)) from tbl_mont_name where batch_no = #{batchNo,jdbcType=VARCHAR})
+          and batch_no = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	<!--将状态改为审核中-->
+	<update id="updateExcelStatus" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update tbl_mont_aprv set EXCEL_STATUS=#{statusNext,jdbcType=VARCHAR}
+		where batch_no=#{batchNo,jdbcType=VARCHAR}
+		and EXCEL_STATUS=#{statusPre,jdbcType=VARCHAR}
+	</update>
+	<update id="updateCntStatus" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update tbl_mont_aprv set CNT_STATUS=#{statusNext,jdbcType=VARCHAR}
+		where batch_no=#{batchNo,jdbcType=VARCHAR}
+		<if test = "statusPre == 'C0'">
+				and CNT_STATUS  IS NULL
+		</if>
+		<if test = "statusPre != 'C0'">
+			and CNT_STATUS=#{statusPre,jdbcType=VARCHAR}
+		</if>
+	</update>
+	<update id="updateC4AndIpAddress" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update tbl_mont_aprv set CNT_STATUS=#{statusNext,jdbcType=VARCHAR}
+		,IP_ADDRESS=#{ipAddress,jdbcType=VARCHAR}
+		where batch_no=#{batchNo,jdbcType=VARCHAR} 
+	</update>
+	<!--得到中间的三位批次号-->
+	<select id="getCode" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean"
+			resultType="String">
+		 SELECT max(substr(mont_code,12,3)) FROM tb_mont_name 
+		     WHERE DATA_YEAR = #{dataYear,jdbcType=VARCHAR}
+		     AND MONT_TYPE = #{subType,jdbcType=VARCHAR}
+		     AND ORG21_CODE = #{org21Code,jdbcType=VARCHAR}
+		 
+	</select>
+	
+	<!--复核合同勾选列表查询-->
+	<select id="cntChooseList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean" resultType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		SELECT 
+			BATCH_NO,
+			CNT_NUM,
+			MATR_CODE,
+			MATR_NAME,
+			MONT_CODE_OLD,
+			MONT_NAME_OLD,
+			STATUS,
+			MONT_CODE_NEW,
+			MONT_NAME_NEW,
+			MONT_SELECT
+		FROM TBL_MONT_SPLIT
+		WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		AND STATUS = #{status,jdbcType=VARCHAR}
+	</select>
+	<update id="updateCntStatusMemo" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update tbl_mont_aprv set cnt_STATUS=#{statusNext,jdbcType=VARCHAR},
+		MEMO = SUBSTRB(#{memo,jdbcType=VARCHAR},1,2000),
+		IP_ADDRESS = NULL
+		where batch_no=#{batchNo,jdbcType=VARCHAR}
+		and cnt_STATUS=#{statusPre,jdbcType=VARCHAR}
+	</update>
+	<update id="updateExcelStatusMemo" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update tbl_mont_aprv set EXCEL_STATUS=#{statusNext,jdbcType=VARCHAR},
+		MEMO = SUBSTRB(#{memo,jdbcType=VARCHAR},1,2000)
+		where batch_no=#{batchNo,jdbcType=VARCHAR}
+		and EXCEL_STATUS=#{statusPre,jdbcType=VARCHAR}
+	</update>
+	
+	<!--复核处理（非所有）-->
+	<update id="checkDeal" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		UPDATE TBL_MONT_SPLIT
+		SET STATUS = #{status,jdbcType=VARCHAR},
+		AUDIT_MEMO = SUBSTRB(#{auditMemo,jdbcType=VARCHAR},1,1000) 
+		WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		AND CNT_NUM = #{cntNum,jdbcType=VARCHAR}
+		and matr_code = #{matrCode,jdbcType=VARCHAR}
+		AND mont_code_old = #{montCodeOld,jdbcType=VARCHAR}
+		AND STATUS = '01'
+	</update>
+	
+	<!--复核处理同一批次所有的数据-->
+	<update id="checkDealAll" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		UPDATE TBL_MONT_SPLIT
+		SET STATUS = #{status,jdbcType=VARCHAR},
+		AUDIT_MEMO = SUBSTRB(#{auditMemo,jdbcType=VARCHAR},1,1000) 
+		WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		AND STATUS = '01'
+	</update>
+	
+	<!--TBL_MONT_SPLIT表中这个批次下还01状态的数据-->
+	<select id="queryList" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean" resultType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		SELECT *
+		FROM TBL_MONT_SPLIT
+		WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		AND STATUS = '01'
+	</select>
+	
+	<!-- <insert id="addMontSplit" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		INSERT INTO TBL_MONT_SPLIT A
+		  (batch_no,
+		   cnt_num,
+		   matr_code,
+		   matr_name,
+		   mont_code_old,
+		   mont_name_old,
+		   mont_code_new,
+		   mont_name_new,
+		   status,
+		   mont_select)
+		   (SELECT 
+		   	  #{batchNo,jdbcType=VARCHAR},
+	          b.cnt_num,
+	          b.matr_code,
+	          tm.matr_name,
+	          c.last_mont_code,
+	          c.last_mont_name,
+	          '',
+	          '',
+	          '00',
+	          WM_CONCAT(' ' ||C.MONT_CODE  || '^^' || C.MONT_NAME || ' ')
+		     FROM TD_CNT_DEVICE B
+		     left join td_cnt tc on b.cnt_num = tc.cnt_num
+		     left join tb_matr_type tm
+		       on tm.matr_code = b.matr_code
+		     LEFT JOIN TBL_MONT_APRV D
+		       ON D.BATCH_NO = ''
+		     LEFT JOIN TBL_MONT_NAME C
+		       ON C.LAST_MONT_CODE =
+		          decode(B.curr_year,
+		                 D.DATA_YEAR,
+		                 B.curr_mont_code,
+		                 nvl2(B.next_mont_code, B.next_mont_code, B.curr_mont_code))
+		      AND B.MATR_CODE = C.MATR_CODE
+		    WHERE C.BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		    and tc.data_flag IN('19','20','21','25','30','32','35','40') 
+		    GROUP BY B.CNT_NUM,
+		             b.matr_code,
+		             tm.matr_name,
+		             c.last_mont_code,
+		             c.last_mont_name
+		             having count(b.cnt_num || '-' || b.sub_id)>1)
+	</insert> -->
+	
+	<update id="updateCntStatusC7" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update TBL_MONT_APRV
+		set CNT_STATUS = 'C7'
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		and CNT_STATUS = 'C2'
+		and not exists(
+			SELECT 1
+			FROM TBL_MONT_SPLIT
+			WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+			AND STATUS != '03'
+		)
+	</update>
+	<update id="updateCntStatusC3" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		update TBL_MONT_APRV
+		set CNT_STATUS = 'C3'
+		where BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+		and CNT_STATUS = 'C2'
+		and not exists(
+			SELECT 1
+			FROM TBL_MONT_SPLIT
+			WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+			AND STATUS = '01'
+		)
+		and exists(
+			SELECT 1
+			FROM TBL_MONT_SPLIT
+			WHERE BATCH_NO = #{batchNo,jdbcType=VARCHAR}
+			AND STATUS = '02'
+		)
+	</update>
+	<!--检查是否有还没有插入SPLIT表的合同信息-->
+	<!--
+	<select id="isHaveNoSplit" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean" resultType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		SELECT
+	    count(1)
+	    from 
+	    td_cnt_device a
+	    left join td_cnt tc on tc.cnt_num = a.cnt_num
+	    where tc.data_flag IN('19','20','21','25','30','32','35','40') 
+	    and exists(
+	      select 1 from  tbl_mont_name b where b.batch_no = #{batchNo,jdbcType=VARCHAR}
+	      and b.matr_code = a.matr_code
+	      and b.last_mont_code = nvl2(a.next_mont_code,a.next_mont_code,a.curr_mont_code)
+	      group by b.last_mont_code,b.matr_code
+	      having count(1)>1
+	    )
+	    and not exists(
+	        select 1 from tbl_mont_split c 
+	        where c.cnt_num = a.cnt_num
+	        and c.matr_code = a.matr_code
+	        and c.mont_code_old = nvl2(a.next_mont_code,a.next_mont_code,a.curr_mont_code)
+	    );
+	</select>
+	-->
+	<insert id="intoSplit" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean">
+		INSERT INTO TBL_MONT_SPLIT A
+		  (batch_no,
+		   cnt_num,
+		   matr_code,
+		   matr_name,
+		   mont_code_old,
+		   mont_name_old,
+		   status,
+		   mont_select)
+		   (select s.batch_no,
+			       s.cnt_num,
+			       s.matr_code,
+			       tm.matr_name,
+			       tmn.mont_code,
+      			   tmn.mont_name,
+			       s.status,
+			       s.mont_new_list
+			  from (SELECT distinct  #{batchNo,jdbcType=VARCHAR} as batch_no,
+			                        b.cnt_num,
+			                        b.matr_code as matr_code,
+			                        c.last_mont_code,
+			                        '00' as status,
+			                        to_char(WM_CONCAT(' ' || C.MONT_CODE || '@@' || C.MONT_NAME || ' ')) as mont_new_list
+			          FROM TD_CNT_DEVICE B
+			          left join td_cnt tc on b.cnt_num = tc.cnt_num 
+			          LEFT JOIN TBL_MONT_NAME C  ON C.LAST_MONT_CODE = nvl2(B.next_mont_code, B.next_mont_code, B.curr_mont_code)
+			                                    AND B.MATR_CODE = C.MATR_CODE
+			         WHERE C.BATCH_NO =  #{batchNo,jdbcType=VARCHAR}
+			           and tc.data_flag IN
+			               ('19', '20', '21', '25', '30', '32', '35', '40')
+			         GROUP BY B.CNT_NUM, b.sub_id, b.matr_code, c.last_mont_code
+			        having count(b.cnt_num || '-' || b.sub_id) > 1) s
+			  left join tb_matr_type tm
+			    on tm.matr_code = s.matr_code
+			  left join tb_mont_name tmn
+			    on tmn.mont_code = s.last_mont_code
+		)
+
+	</insert>
+	<select id="getCountCntSplit" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean" 
+							resultType="Integer">
+		select count(1) from tbl_mont_split where batch_no = #{batchNo,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="getLastStatus" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean" 
+							resultType="String">
+		SELECT 
+		NVL2(A.CNT_STATUS,A.CNT_STATUS,A.EXCEL_STATUS) AS STATUS
+		FROM TBL_MONT_APRV  A
+		WHERE BATCH_NO =  #{batchNo,jdbcType=VARCHAR}
+	</select>
+	<update id="updateBack" parameterType="com.forms.prms.web.sysmanagement.montAprvBatch.apprv.domain.ApprvBean" >
+		update TBL_MONT_APRV A SET A.EXCEL_STATUS ='E6' ,
+		A.CNT_STATUS =NULL ,A.MEMO=SUBSTRB( #{memo,jdbcType=VARCHAR},1000)
+		WHERE A.BATCH_NO=#{batchNo,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateIpAddress" parameterType="String">
+		UPDATE TBL_MONT_APRV SET IP_ADDRESS =  #{ipAddress,jdbcType=VARCHAR} WHERE BATCH_NO =  #{batchNo,jdbcType=VARCHAR}
+	</update>
+</mapper>

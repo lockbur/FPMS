@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.forms.prms.web.pay.ordercheck.dao.OrderCheckDAO">
+	
+	<!--查找补录完成待复核的订单-->
+	<select id="queryList" parameterType="com.forms.prms.web.pay.ordercheck.domain.OrderCheckBean" 
+			resultType="com.forms.prms.web.pay.ordercheck.domain.OrderCheckBean">
+		SELECT 
+			TOR.ORDER_ID,
+			TOR.STOCK_NUM,
+			TOR.CNT_NUM,
+			TF.DUTY_NAME AS ORDER_DUTY_CODE_NAME,
+			SS.PARAM_NAME AS DATA_FLAG_NAME
+		FROM TD_ORDER TOR
+		LEFT JOIN SYS_SELECT SS ON TOR.DATA_FLAG=SS.PARAM_VALUE AND SS.CATEGORY_ID='ORDER_DATA_FLAG'
+		LEFT JOIN TB_FNDWRR TF ON  TOR.ORDER_DUTY_CODE=TF.DUTY_CODE
+		WHERE TOR.INST_DUTY_CODE=#{instDutyCode,jdbcType=VARCHAR}
+		AND TOR.DATA_FLAG='02'
+		<if test="orderId != null and '' != orderId">
+			AND TOR.ORDER_ID LIKE '%' || #{orderId ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="stockNum != null and '' != stockNum">
+			AND TOR.STOCK_NUM  LIKE '%'|| #{stockNum ,jdbcType=VARCHAR}|| '%'
+		</if>
+		<if test="cntNum != null and '' != cntNum">
+			AND TOR.CNT_NUM LIKE '%' || #{cntNum,jdbcType=VARCHAR} || '%'
+		</if>
+		<if test="orderDutyCode != null and '' != orderDutyCode">
+			AND TOR.ORDER_DUTY_CODE = #{orderDutyCode ,jdbcType=VARCHAR}
+		</if>
+	</select>
+	
+	
+	<!--通过订单号查找详细信息-->
+	<select id="orderInfo" parameterType="String"  resultType="com.forms.prms.web.pay.ordercheck.domain.OrderCheckBean">
+		SELECT 
+			TOR.ORDER_ID,
+			TOR.ORDER_MEMO,
+			TOR.STOCK_NUM,
+			TOR.STOCK_AMT,
+			TPB.PROVIDER_NAME AS STOCK_PROV_NAME,
+			TOR.CNT_NUM,
+			TOR.DEPT_ID,
+			TOR.SIGN_DATE,
+			TOR.START_DATE,
+			TOR.END_DATE,
+			TOR.PROCUREMENT_ROUTE,
+			TF.DUTY_NAME AS INST_DUTY_CODE_NAME,
+			TOR.INST_DATE,
+			TOR.INST_TIME,
+			TOR.INST_USER,
+			TF1.DUTY_NAME AS ORDER_DUTY_CODE_NAME,
+			TOR.PAY_TERM_MEMO,
+			TOR.PO_NUMBER
+		FROM TD_ORDER TOR
+		LEFT JOIN TB_FNDWRR TF ON  TOR.INST_DUTY_CODE=TF.DUTY_CODE
+		LEFT JOIN TB_FNDWRR TF1 ON  TOR.ORDER_DUTY_CODE=TF1.DUTY_CODE
+		LEFT JOIN TB_PROVIDER TPB ON  TOR.STOCK_PROV=TPB.PROVIDER_CODE
+		WHERE  TOR.ORDER_ID=#{orderId,jdbcType=VARCHAR}
+	</select>
+	
+	<!--订单复核-->
+	<update id="orderCheck" parameterType="com.forms.prms.web.pay.ordercheck.domain.OrderCheckBean">
+		UPDATE TD_ORDER TOR
+		SET TOR.DATA_FLAG = #{dataFlag,jdbcType=VARCHAR}
+		WHERE TOR.ORDER_ID=#{orderId,jdbcType=VARCHAR}
+		AND TOR.DATA_FLAG = '02'
+	</update>
+</mapper>

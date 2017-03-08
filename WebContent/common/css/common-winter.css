@@ -1,0 +1,21 @@
+table {
+	border: #aed0ea 1px;
+}
+
+table th {
+	background-color: #deedf7;
+	color: #222222;
+}
+
+.banner {
+	background-color: #f2f5f7;
+}
+
+.menu {
+	background-color: #deedf7;
+	color: #222222;
+}
+
+.menu a {
+	color: #222222;
+}

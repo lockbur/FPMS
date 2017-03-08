@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<worksheet errorDeal="1000">
+	<section startRow="0" endRow="1">
+	</section>
+	<loop startRow="2" endRow="2" items="bean.templateInfo" var="detail"
+		varType="com.forms.prms.web.budget.budgetdeclare.domain.FeeBudgetDetailBean">
+		<section startRow="1" endRow="1">
+			<mapping row="1" col="0" columnName="预算监控指标">detail.montCode</mapping>
+			<mapping row="1" col="1" columnName="捐益子目">detail.jyZm</mapping>
+			<mapping row="1" col="2" columnName="核算码">detail.acCode</mapping>
+			<mapping row="1" col="3" columnName="分行自定义1">detail.columnOne</mapping>
+			<mapping row="1" col="4" columnName="分行自定义2">detail.columnTwo</mapping>
+			<mapping row="1" col="5" columnName="物料编码">detail.matrCode</mapping>
+			<mapping row="1" col="6" columnName="物料名称">detail.matrName</mapping>
+			<mapping row="1" col="7" columnName="预算金额">detail.budgetAmount</mapping>
+			<mapping row="1" col="8" columnName="备注说明">detail.memoDesr</mapping>
+		</section>
+		<loopbreakcondition>
+			<rowcheck offset="0">
+				<cellcheck offset="0"></cellcheck>
+			</rowcheck>
+		</loopbreakcondition>
+	</loop>
+</worksheet>

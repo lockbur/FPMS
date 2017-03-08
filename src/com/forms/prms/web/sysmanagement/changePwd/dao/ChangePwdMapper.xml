@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+        "http://www.mybatis.org/dtd/mybatis-3-mapper.dtd">  
+<mapper namespace="com.forms.prms.web.sysmanagement.changePwd.dao.ChangePwdDao">
+
+	<select id="queryPwdSafe" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean" resultType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		SELECT  T.USER_ID, T.QUESTION_SEQ, T.QUESTION_ANSWER, T.QUESTION_ID,S.PARAM_NAME AS QUESTION_INFO
+  				FROM SYS_USER_QUES_PWD T
+  				LEFT JOIN SYS_SELECT S ON T.QUESTION_ID = S.PARAM_VALUE
+                             AND S.CATEGORY_ID = 'SYS_PASSWORD_QUESTION'
+ 		WHERE T.USER_ID = #{userId,jdbcType=VARCHAR}
+   		AND T.QUESTION_SEQ = #{questionSeq,jdbcType=VARCHAR}
+	</select>
+	<select id="existUserId" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean" resultType="String">
+		select user_id from sys_user where user_id=#{userId,jdbcType=VARCHAR}
+	</select>
+	<select id="existPwdQuestion" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean" resultType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		select user_id from SYS_USER_QUES_PWD where user_id=#{userId,jdbcType=VARCHAR}
+	</select>
+	<select id="existEmail" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean" resultType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		select notes_id as email from SYS_USER where user_id=#{userId,jdbcType=VARCHAR}
+	</select>
+	
+	<select id="queryPwdAnswer" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean" resultType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		SELECT question_answer as answer
+			FROM SYS_USER_QUES_PWD sups
+			WHERE user_id       =#{userId,jdbcType=VARCHAR}
+			AND sups.question_id=#{questionId,jdbcType=VARCHAR}
+	</select>
+	
+	<insert id="insertEmailResetPwd" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		merge into SYS_USER_EMAIL_PWD E
+		using (select #{userId, jdbcType = VARCHAR } as USER_ID,
+		              #{tokenId, jdbcType = VARCHAR } as TOKEN_ID,
+		              sysdate as TOKEN_CREATE_TIME
+		         from DUAL) T
+		on (E.USER_ID = T.USER_ID)
+		when matched then
+		  update
+		     set E.TOKEN_ID = T.TOKEN_ID, E.TOKEN_CREATE_TIME = T.TOKEN_CREATE_TIME
+		when not matched then
+		  insert
+		    (USER_ID, TOKEN_ID, TOKEN_CREATE_TIME, IS_USED)
+		  values
+		    (T.USER_ID, T.TOKEN_ID, T.TOKEN_CREATE_TIME, '1')
+	</insert>
+	<select id="selectEmailResetPwd" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean" resultType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		select T.USER_ID,
+		       T.TOKEN_ID,
+		       T.TOKEN_CREATE_TIME,
+		       T.TOKEN_CREATE_TIME + (1 / 24 / 60 * 1) TOKEN_VALID_TIME,
+		       sysdate as SYS_DATE
+		  from SYS_USER_EMAIL_PWD T
+		 where T.USER_ID = #{userId,jdbcType=VARCHAR}
+	</select>
+	<delete id="deleteEmailResetPwd" parameterType="com.forms.prms.web.sysmanagement.changePwd.domain.PwdSafeBean">
+		delete from SYS_USER_EMAIL_PWD where USER_ID = #{userId,jdbcType=VARCHAR}
+	</delete>
+</mapper>

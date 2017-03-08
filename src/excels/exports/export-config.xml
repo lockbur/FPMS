@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<functions>
+	<function-item>
+		<!--导出配置编号  -->
+		<function-id>PROCHECK</function-id>
+		<!-- 导出信息处理类，需实现IExportDataDeal接口 -->
+		<export-data-class>com.forms.prms.web.amortization.provisionMgr.service.ProCheckExportDeal</export-data-class>
+		<!-- 导出模板位置 -->
+		<excel-template>/procheckTemplateExcels/procheckTemplateExcel.xlsx</excel-template>
+	</function-item>
+
+	<function-item>
+		<!--导出配置编号  -->
+		<function-id>CONTRACT_01</function-id>
+		<!-- 导出信息处理类，需实现IExportDataDeal接口 -->
+		<export-data-class>com.forms.prms.web.contract.query.service.ContractExportDeal</export-data-class>
+		<!-- 导出模板位置 -->
+		<excel-template>/contractTemplateExcels/contractTemplateExcel.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 资产类预算模板基础模板编号 -->
+		<function-id>BUDGET_ZCBASIC_TEMP</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetplan.service.BudgetBasicTempExportDeal</export-data-class>
+		<excel-template>/budgetBasicTempExcel/budgetZCBasicTemp.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 费用类预算模板基础模板编号 -->
+		<function-id>BUDGET_FEEBASIC_TEMP</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetplan.service.BudgetBasicTempExportDeal</export-data-class>
+		<excel-template>/budgetBasicTempExcel/budgetFeeBasicTemp.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 预算模板资产类模板编号 -->
+		<function-id>BUDGET_ZC_TEMP</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetplan.service.BudgetTempExportDeal</export-data-class>
+		<excel-template>/budgetBasicTempExcel/ZC_DECLARE_TEMPLATE.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 预算模板费用类模板编号 -->
+		<function-id>BUDGET_FEE_TEMP</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetplan.service.BudgetTempExportDeal</export-data-class>
+		<excel-template>/budgetBasicTempExcel/FEE_DECLARE_TEMPLATE.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 汇总时模板申报明细 -->
+		<function-id>TMPLT_REPORT_DETAIL</function-id>
+		<export-data-class>com.forms.prms.web.budget.finandeptsum.service.FinanDeptSumDownDeal</export-data-class>
+		<excel-template>/budgetTmpltAuditExcel/budgetTmpltAudit.xlsx</excel-template>
+	</function-item>
+	<function-item>
+	<!-- 资产类预算申报数据提交时导出 -->
+	<function-id>ZC_BUDGET_REPORT_INPUT</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInput.service.BudgetReportInputExcel</export-data-class>
+		<excel-template>/budgetReportInputExcel/ZCbudgetReportInput.xlsx</excel-template>
+	</function-item>
+	<function-item>
+	<!-- 费用类预算申报数据提交时导出 -->
+	<function-id>FY_BUDGET_REPORT_INPUT</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInput.service.BudgetReportInputExcel</export-data-class>
+		<excel-template>/budgetReportInputExcel/FYbudgetReportInput.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- TID异常信息查询数据导出(根据搜索条件进行数据导出) -->
+		<function-id>ABNORDATA_EXPORT_TID_ACCOUNT</function-id>
+		<export-data-class>com.forms.prms.web.amortization.abnormalDataMgr.service.AbnormalDataExportDeal</export-data-class>
+		<excel-template>/abnormalDataExportTempExcel/tidAccountExportTemp.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<function-id>ABNORDATA_EXPORT_TID_AP_INVOI</function-id>
+		<export-data-class>com.forms.prms.web.amortization.abnormalDataMgr.service.AbnormalDataExportDeal</export-data-class>
+		<excel-template>/abnormalDataExportTempExcel/tidApInvoiceExportTemp.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<function-id>ABNORDATA_EXPORT_TID_AP_PAY</function-id>
+		<export-data-class>com.forms.prms.web.amortization.abnormalDataMgr.service.AbnormalDataExportDeal</export-data-class>
+		<excel-template>/abnormalDataExportTempExcel/tidApPayExportTemp.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<function-id>ABNORDATA_EXPORT_TID_CGL_AMT</function-id>
+		<export-data-class>com.forms.prms.web.amortization.abnormalDataMgr.service.AbnormalDataExportDeal</export-data-class>
+		<excel-template>/abnormalDataExportTempExcel/tidCglAmtExportTemp.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<function-id>ABNORDATA_EXPORT_TID_ORDER</function-id>
+		<export-data-class>com.forms.prms.web.amortization.abnormalDataMgr.service.AbnormalDataExportDeal</export-data-class>
+		<excel-template>/abnormalDataExportTempExcel/tidOrderExportTemp.xlsx</excel-template>
+	</function-item>
+	<!--下面是监控指标审批链批量导出 START-->
+	<function-item>
+		<!-- 导出的专项包监控指标模板基础模板编号 -->
+		<function-id>EXPORT_MONT_ZX_BATCH_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.montAprvBatch.export.service.ExportExcel</export-data-class>
+		<excel-template>/montAprvBatchExportTempExcel/export/montBatchExportZX.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 导出的非专项包监控指标模板基础模板编号 -->
+		<function-id>EXPORT_MONT_BATCH_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.montAprvBatch.export.service.ExportExcel</export-data-class>
+		<excel-template>/montAprvBatchExportTempExcel/export/montBatchExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 导出的专项包审批链模板基础模板编号 -->
+		<function-id>EXPORT_APRV_ZX_BATCH_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.montAprvBatch.export.service.ExportExcel</export-data-class>
+		<excel-template>/montAprvBatchExportTempExcel/export/aprvBatchExportZX.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 导出的非专项包审批链模板基础模板编号 -->
+		<function-id>EXPORT_APRV_BATCH_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.montAprvBatch.export.service.ExportExcel</export-data-class>
+		<excel-template>/montAprvBatchExportTempExcel/export/aprvBatchExport.xlsx</excel-template>
+	</function-item>
+	<!--下面是监控指标审批链批量导出   END-->
+	
+	
+	<!--下面是页面上到处监控指标和审批链的导出模板-->
+	<!--
+	<function-item>
+		<function-id>MONT_ZXB_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.montindex.service.ExportExcel</export-data-class>
+		<excel-template>/montListExportExcel/montListZXBExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<function-id>MONT_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.montindex.service.ExportExcel</export-data-class>
+		<excel-template>/montListExportExcel/montListExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<function-id>APRV_ZX_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.service.ExportExcel</export-data-class>
+		<excel-template>/aprvListExportExcel/specAprvListExport.xlsx</excel-template>
+	</function-item>	
+	<function-item>
+		<function-id>APRV_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.sysmanagement.approvechain.approveChainMgr.service.ExportExcel</export-data-class>
+		<excel-template>/aprvListExportExcel/nospecAprvListExport.xlsx</excel-template>
+	</function-item>		
+	-->
+	<!-- 预算监控-预算维度数据部分 -->
+	<function-item>
+		<!-- 01预算维度下Total查询SQL中数据的导出  -->
+		<function-id>BUDGETINS_BGT_TOTAL_DIMENSION</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInspect.service.BgtInspectTotalExportExcel</export-data-class>
+		<excel-template>/budgetInspectExportExcel/budget_bgt_sum.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 02预算维度下下达明细查询SQL中数据的导出  -->
+		<function-id>BUDGET_INSP_BGTDIMEN_RELDTL</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInspect.service.BgtInspectTotalExportExcel</export-data-class>
+		<excel-template>/budgetInspectExportExcel/BudgetInsp_BgtDimension_ReleaseDetails.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 03预算维度下使用明细查询SQL中数据的导出  -->
+		<function-id>BUDGET_INSP_BGTDIMEN_USEDTL</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInspect.service.BgtInspectTotalExportExcel</export-data-class>
+		<excel-template>/budgetInspectExportExcel/budget_bgt_sum_used.xlsx</excel-template>
+	</function-item>
+	
+	<!-- 预算监控-合同维度数据部分 -->
+	<function-item>
+		<!-- 01合同维度下Total查询SQL中数据的导出  -->
+		<function-id>BUDGET_INSP_BGTDIMEN_CNT</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInspect.service.BgtInspectCntTotalExportExcel</export-data-class>
+		<excel-template>/budgetInspectExportExcel/BudgetInsp_CntDimension_CntTotal.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 02合同维度下XX明细查询SQL中数据的导出  -->
+		<function-id>BUDGET_INSP_BGTDIMEN_CNTDTL</function-id>
+		<export-data-class>com.forms.prms.web.budget.budgetInspect.service.BgtInspectCntTotalExportExcel</export-data-class>
+		<excel-template>/budgetInspectExportExcel/BudgetInsp_CntDimension_CntDetails.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 预算导入后如果有错误则导出预算 -->
+		<function-id>EXPORT_BUDGET_ERROR</function-id>
+		<export-data-class>com.forms.prms.web.budget.bgtImport.service.BudgetExport</export-data-class>
+		<excel-template>/budgetImport/budgetErrorExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 预算模板导出 -->
+		<function-id>EXPORT_TEMP_BUDGET</function-id>
+		<export-data-class>com.forms.prms.web.budget.bgtImport.service.BudgetExport</export-data-class>
+		<excel-template>/budgetImport/budgetTempExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 用户数据导出 -->
+		<function-id>USER_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.user.UserExport</export-data-class>
+		<excel-template>/exportData/user/userExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 项目类型数据导出 -->
+		<function-id>PROJ_TYPE_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.proj.ProjExport</export-data-class>
+		<excel-template>/exportData/proj/projExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 订单数据导出 -->
+		<function-id>ORDER_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.order.OrderExport</export-data-class>
+		<excel-template>/exportData/order/orderExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 订单明细数据导出 -->
+		<function-id>ORDER_EXPORT_DETAIL</function-id>
+		<export-data-class>com.forms.prms.web.export.orderDetail.OrderDetailExport</export-data-class>
+		<excel-template>/exportData/order/orderDetailExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 合同物料数据导出 -->
+		<function-id>CNT_DEVICE_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.cnt.CntDeviceExport</export-data-class>
+		<excel-template>/exportData/cnt/cntDeviceExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 合同勾选数据导出 -->
+		<function-id>CNT_CHOICE_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.cntChoice.CntChoiceExport</export-data-class>
+		<excel-template>/exportData/cntChoice/cntChoiceExcel.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 付款数据导出 -->
+		<function-id>PAY_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.pay.PayExport</export-data-class>
+		<excel-template>/exportData/pay/payExport.xlsx</excel-template>
+	</function-item>
+	<!-- 预付款数据导出 -->
+	<function-item>
+		<function-id>PERPAY_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.prepay.PrePayExport</export-data-class>
+		<excel-template>/exportData/prepay/prepayExport.xlsx</excel-template>
+	</function-item>
+	<function-item>
+		<!-- 深圳分行合同物料导出 -->
+		<function-id>SZ_CNT_MATR_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.cnt.CntMatrExport</export-data-class>
+		<excel-template>/exportData/cntMatrInfo/szCntMatrExcel.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 用户角色数据导出 -->
+		<function-id>USER_ROLE_RLN_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.user.UserRoleExport</export-data-class>
+		<excel-template>/exportData/user/userRoleRlnExport.xlsx</excel-template>
+	</function-item>
+	
+	<function-item>
+		<!-- 交叉验证表导出 -->
+		<function-id>FNDWRR_EXPORT</function-id>
+		<export-data-class>com.forms.prms.web.export.fndwrr.FndwrrExport</export-data-class>
+		<excel-template>/exportData/fndwrr/fndwrrExport.xlsx</excel-template>
+	</function-item>
+	
+	<!--合同付款信息报表-->
+	<function-item>
+		<!--导出配置编号  -->
+		<function-id>CNTPAYINFOREPORT</function-id>
+		<!-- 导出信息处理类，需实现IExportDataDeal接口 -->
+		<export-data-class>com.forms.prms.web.export.cntPayinfoReport.CntPayinfoExport</export-data-class>
+		<!-- 导出模板位置 -->
+		<excel-template>/exportData/cntPayinfoReport/cntPayinfoExport.xlsx</excel-template>
+		
+	</function-item>
+	
+	<!--待摊费用明细报表-->
+	<function-item>
+		<!--导出配置编号  -->
+		<function-id>PREPROINFOREPORT</function-id>
+		<!-- 导出信息处理类，需实现IExportDataDeal接口 -->
+		<export-data-class>com.forms.prms.web.export.preproInfoReport.PreproInfoExport</export-data-class>
+		<!-- 导出模板位置 -->
+		<excel-template>/exportData/preproInfoReport/preproInfoExport.xlsx</excel-template>
+	</function-item>
+</functions>
