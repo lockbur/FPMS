@@ -70,3 +70,4 @@ fi
 echo "$curdatestr dmp backup successsfully."  | tee -a $expdir/fpmsbakfile.log
 exit 0
 
+###
